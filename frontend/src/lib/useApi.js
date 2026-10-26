@@ -1,0 +1,28 @@
+import { useCallback, useEffect, useState } from "react";
+import api, { getErrorMessage } from "../api/client";
+
+export function useApi(path, params) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const paramsKey = JSON.stringify(params || {});
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const response = await api.get(path, { params: params || {} });
+      setData(response.data);
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setLoading(false);
+    }
+  }, [path, paramsKey]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  return { data, loading, error, reload: load, setData };
+}
