@@ -8,11 +8,76 @@ export const THU_LABEL = {
   8: "Chủ nhật",
 };
 
+export const TIET_MOI_TIN_CHI = 15;
+export const TIET_MOI_BUOI = 3;
+
+export function tietLyThuyet(soTinChi) {
+  const value = Number(soTinChi);
+  if (!value) return 0;
+  return value * TIET_MOI_TIN_CHI;
+}
+
+export function soBuoiHoc(soTinChi, tietMoiBuoi = TIET_MOI_BUOI) {
+  const value = Number(soTinChi);
+  if (!value) return 0;
+  return Math.ceil((value * TIET_MOI_TIN_CHI) / tietMoiBuoi);
+}
+
 export function formatDate(value) {
   if (!value) return "—";
   const [year, month, day] = String(value).slice(0, 10).split("-");
   if (!year || !month || !day) return String(value);
   return `${day}/${month}/${year}`;
+}
+
+export function parseDateOnly(value) {
+  if (!value) return null;
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : new Date(value.getFullYear(), value.getMonth(), value.getDate());
+  }
+  const [year, month, day] = String(value).slice(0, 10).split("-").map(Number);
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day);
+}
+
+export function addDays(value, days) {
+  const date = parseDateOnly(value);
+  if (!date) return null;
+  date.setDate(date.getDate() + days);
+  return date;
+}
+
+export function startOfWeek(value) {
+  const date = parseDateOnly(value);
+  if (!date) return null;
+  const day = date.getDay();
+  return addDays(date, day === 0 ? -6 : 1 - day);
+}
+
+export function diffInDays(from, to) {
+  const start = parseDateOnly(from);
+  const end = parseDateOnly(to);
+  if (!start || !end) return 0;
+  return Math.round((end.getTime() - start.getTime()) / 86400000);
+}
+
+export function isSameDay(a, b) {
+  const first = parseDateOnly(a);
+  const second = parseDateOnly(b);
+  if (!first || !second) return false;
+  return first.getTime() === second.getTime();
+}
+
+export function formatDayMonth(value) {
+  const date = parseDateOnly(value);
+  if (!date) return "";
+  return `${String(date.getDate()).padStart(2, "0")}/${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
+export function formatWeekRange(weekStart) {
+  const start = parseDateOnly(weekStart);
+  if (!start) return "";
+  return `${formatDayMonth(start)} - ${formatDayMonth(addDays(start, 6))}`;
 }
 
 export function formatDateTime(value) {

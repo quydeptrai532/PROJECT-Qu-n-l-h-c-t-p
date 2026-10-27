@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { CalendarDays } from "lucide-react";
 import { Alert, EmptyState, PageHeader, Spinner } from "../../components/ui";
-import TimetableGrid from "../../components/TimetableGrid";
+import TimetableBoard from "../../components/TimetableBoard";
 import { useApi } from "../../lib/useApi";
 
 export default function TimetablePage() {
@@ -16,13 +16,14 @@ export default function TimetablePage() {
 
   const params = hocKyId ? { hocKyId } : undefined;
   const { data, loading, error } = useApi("/sinh-vien/me/thoi-khoa-bieu", params);
+  const hocKy = (hocKyList || []).find((item) => String(item.id) === String(hocKyId));
 
   return (
     <div>
       <PageHeader
         icon={CalendarDays}
         title="Thời khóa biểu"
-        description="Thời khóa biểu theo tuần của các học phần đã đăng ký."
+        description="Thời khóa biểu của các học phần đã đăng ký, theo từng tuần đến hết học kỳ."
         actions={
           <select
             className="input w-auto min-w-[220px]"
@@ -50,7 +51,7 @@ export default function TimetablePage() {
             description="Đăng ký học phần để thời khóa biểu hiển thị tại đây."
           />
         ) : (
-          <TimetableGrid items={data} />
+          <TimetableBoard key={hocKyId} items={data} hocKy={hocKy} />
         )}
       </div>
     </div>

@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import api, { getErrorMessage } from "../../api/client";
 import { Alert, Badge, EmptyState, PageHeader, Spinner } from "../../components/ui";
-import { formatDate, lichHoc } from "../../lib/format";
+import { formatDate, lichHoc, soBuoiHoc, tietLyThuyet } from "../../lib/format";
 import { useApi } from "../../lib/useApi";
 
 export default function RegisterPage() {
@@ -181,7 +181,8 @@ export default function RegisterPage() {
                       <td className="td">
                         <p className="font-medium text-slate-800">{lop.tenMon}</p>
                         <p className="text-xs text-slate-500">
-                          {lop.maMon} · {lop.soTinChi} tín chỉ
+                          {lop.maMon} · {lop.soTinChi} tín chỉ · {tietLyThuyet(lop.soTinChi)} tiết ·{" "}
+                          {soBuoiHoc(lop.soTinChi)} buổi
                         </p>
                       </td>
                       <td className="td">{lop.tenGiangVien}</td>
