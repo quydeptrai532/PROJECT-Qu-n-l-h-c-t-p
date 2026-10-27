@@ -3,7 +3,7 @@ import { Download, Layers, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import api, { getErrorMessage } from "../../api/client";
 import { useConfirm } from "../../components/ConfirmDialog";
 import { Alert, EmptyState, Field, Modal, PageHeader, Spinner } from "../../components/ui";
-import { lichHoc } from "../../lib/format";
+import { lichHoc, soBuoiHoc, tietLyThuyet } from "../../lib/format";
 import { useApi } from "../../lib/useApi";
 
 const EMPTY_FORM = {
@@ -233,7 +233,10 @@ export default function CourseClassPage() {
                     <td className="td font-medium text-slate-900">{row.ma}</td>
                     <td className="td">
                       <p className="font-medium text-slate-800">{row.tenMon}</p>
-                      <p className="text-xs text-slate-500">{row.maMon} · {row.soTinChi} TC</p>
+                      <p className="text-xs text-slate-500">
+                        {row.maMon} · {row.soTinChi} TC · {tietLyThuyet(row.soTinChi)} tiết LT ·{" "}
+                        {soBuoiHoc(row.soTinChi)} buổi
+                      </p>
                     </td>
                     <td className="td">{row.tenGiangVien}</td>
                     <td className="td">{lichHoc(row.thu, row.tietBatDau, row.soTiet)}</td>
@@ -314,7 +317,7 @@ export default function CourseClassPage() {
               <option value="">-- Chọn môn --</option>
               {(monHocList || []).map((mon) => (
                 <option key={mon.id} value={mon.id}>
-                  {mon.ma} - {mon.ten} ({mon.soTinChi} TC)
+                  {mon.ma} - {mon.ten} ({mon.soTinChi} TC · {tietLyThuyet(mon.soTinChi)} tiết)
                 </option>
               ))}
             </select>

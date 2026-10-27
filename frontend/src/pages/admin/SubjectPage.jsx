@@ -4,6 +4,7 @@ import api, { getErrorMessage } from "../../api/client";
 import { useConfirm } from "../../components/ConfirmDialog";
 import { Alert, EmptyState, Field, Modal, PageHeader, Spinner } from "../../components/ui";
 import { useApi } from "../../lib/useApi";
+import { soBuoiHoc, tietLyThuyet } from "../../lib/format";
 
 const EMPTY_FORM = { ma: "", ten: "", soTinChi: "3", khoaId: "" };
 
@@ -167,7 +168,7 @@ export default function SubjectPage() {
       <PageHeader
         icon={BookMarked}
         title="Môn học"
-        description="Danh mục môn học, số tín chỉ và cấu hình môn tiên quyết."
+        description="Danh mục môn học, số tín chỉ, số tiết lý thuyết (1 TC = 15 tiết = 5 buổi) và môn tiên quyết."
         actions={
           <button type="button" className="btn-primary" onClick={openCreate}>
             <Plus size={16} /> Thêm môn học
@@ -201,12 +202,14 @@ export default function SubjectPage() {
           <EmptyState icon={BookMarked} title="Chưa có môn học" description="Thêm môn học để mở lớp học phần." />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px]">
+            <table className="w-full min-w-[900px]">
               <thead className="bg-slate-50">
                 <tr>
                   <th className="th">Mã môn</th>
                   <th className="th">Tên môn học</th>
                   <th className="th text-center">Tín chỉ</th>
+                  <th className="th text-center">Tiết lý thuyết</th>
+                  <th className="th text-center">Số buổi (3 tiết/buổi)</th>
                   <th className="th">Khoa</th>
                   <th className="th text-right">Thao tác</th>
                 </tr>
@@ -217,6 +220,8 @@ export default function SubjectPage() {
                     <td className="td font-medium text-slate-900">{row.ma}</td>
                     <td className="td">{row.ten}</td>
                     <td className="td text-center">{row.soTinChi}</td>
+                    <td className="td text-center">{tietLyThuyet(row.soTinChi)}</td>
+                    <td className="td text-center">{soBuoiHoc(row.soTinChi)}</td>
                     <td className="td text-slate-500">{row.khoaTen}</td>
                     <td className="td">
                       <div className="flex justify-end gap-1">
@@ -279,7 +284,11 @@ export default function SubjectPage() {
               required
             />
           </Field>
-          <Field label="Số tín chỉ" required>
+          <Field
+            label="Số tín chỉ"
+            required
+            hint={`1 tín chỉ = 15 tiết lý thuyết = 5 buổi (3 tiết/buổi) · ${tietLyThuyet(form.soTinChi)} tiết · ${soBuoiHoc(form.soTinChi)} buổi`}
+          >
             <input
               className="input"
               type="number"

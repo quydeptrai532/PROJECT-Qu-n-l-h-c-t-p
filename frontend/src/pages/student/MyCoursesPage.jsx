@@ -3,7 +3,7 @@ import { ClipboardList, Trash2 } from "lucide-react";
 import api, { getErrorMessage } from "../../api/client";
 import { useConfirm } from "../../components/ConfirmDialog";
 import { Alert, EmptyState, PageHeader, StatCard, Spinner } from "../../components/ui";
-import { formatDateTime, lichHoc } from "../../lib/format";
+import { formatDateTime, lichHoc, soBuoiHoc, tietLyThuyet } from "../../lib/format";
 import { useApi } from "../../lib/useApi";
 
 export default function MyCoursesPage() {
@@ -129,7 +129,8 @@ export default function MyCoursesPage() {
                     <td className="td">
                       <p className="font-medium text-slate-800">{item.tenMon}</p>
                       <p className="text-xs text-slate-500">
-                        {item.maMon} · {item.soTinChi} tín chỉ
+                        {item.maMon} · {item.soTinChi} tín chỉ · {tietLyThuyet(item.soTinChi)} tiết ·{" "}
+                        {soBuoiHoc(item.soTinChi)} buổi
                       </p>
                     </td>
                     <td className="td">{item.tenGiangVien}</td>
