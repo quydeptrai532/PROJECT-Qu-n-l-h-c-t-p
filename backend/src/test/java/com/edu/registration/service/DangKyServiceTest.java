@@ -315,6 +315,28 @@ class DangKyServiceTest {
         assertTrue(ex.getMessage().contains("tín chỉ tối đa"));
     }
 
+
+    @Test
+    void dangKyThanhCongKhiTongTinChiBangMucToiDa() {
+        hocKy.setSoTinChiToiDa(3);
+        dangNhapVoiSinhVien();
+        stubLopHocPhan();
+
+        when(dangKyHocPhanRepository.findTheoHocKy(1L, 1L, TrangThaiDangKy.DA_DANG_KY))
+                .thenReturn(List.of());
+        when(monTienQuyetRepository.findByMonHocIdOrderByIdAsc(10L))
+                .thenReturn(List.of());
+        when(dangKyHocPhanRepository.findBySinhVienIdAndLopHocPhanId(1L, 100L))
+                .thenReturn(Optional.empty());
+        when(dangKyHocPhanRepository.save(any(DangKyHocPhan.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        dangKyService.dangKy(100L);
+
+        assertEquals(1, lopHocPhan.getSiSoHienTai());
+        verify(dangKyHocPhanRepository).save(any(DangKyHocPhan.class));
+    }
+
     @Test
     void dangKyThatBaiKhiChuaDatMonTienQuyet() {
         dangNhapVoiSinhVien();
