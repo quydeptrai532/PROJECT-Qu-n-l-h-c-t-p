@@ -187,6 +187,64 @@ class DangKyServiceTest {
     }
 
     @Test
+    void dangKyThatBaiKhiKhongTimThayLopHocPhan() {
+        dangNhapVoiSinhVien();
+
+        when(lopHocPhanRepository.findByIdForUpdate(999L))
+                .thenReturn(Optional.empty());
+
+        assertThrows(ApiException.class,
+                () -> dangKyService.dangKy(999L));
+
+        verify(dangKyHocPhanRepository, never()).save(any());
+    }
+
+    @Test
+    void dangKyThatBaiKhiSinhVienChuaCoHoSo() {
+        when(currentUser.get()).thenReturn(user);
+        when(sinhVienRepository.findByUser(user))
+                .thenReturn(Optional.empty());
+
+        assertThrows(ApiException.class,
+                () -> dangKyService.dangKy(100L));
+
+        verify(dangKyHocPhanRepository, never()).save(any());
+    }
+
+    @Test
+    void huyDangKyThatBaiKhiDangKyKhongThuocSinhVien() {
+        dangNhapVoiSinhVien();
+
+        when(dangKyHocPhanRepository.findByIdAndSinhVienId(200L, 1L))
+                .thenReturn(Optional.empty());
+
+        assertThrows(ApiException.class,
+                () -> dangKyService.huyDangKy(200L));
+
+        verify(lopHocPhanRepository, never()).findByIdForUpdate(any());
+    }
+
+    @Test
+    void huyDangKyThatBaiKhiDangKyDaHuy() {
+        dangNhapVoiSinhVien();
+
+        DangKyHocPhan dangKy = new DangKyHocPhan();
+        dangKy.setId(200L);
+        dangKy.setSinhVien(sinhVien);
+        dangKy.setLopHocPhan(lopHocPhan);
+        dangKy.setTrangThai(TrangThaiDangKy.DA_HUY);
+
+        when(dangKyHocPhanRepository.findByIdAndSinhVienId(200L, 1L))
+                .thenReturn(Optional.of(dangKy));
+
+        assertThrows(ApiException.class,
+                () -> dangKyService.huyDangKy(200L));
+
+        assertEquals(TrangThaiDangKy.DA_HUY, dangKy.getTrangThai());
+        verify(lopHocPhanRepository, never()).findByIdForUpdate(any());
+    }
+
+    @Test
     void dangKyThatBaiKhiDaDangKyMonTrongHocKy() {
         dangNhapVoiSinhVien();
         stubLopHocPhan();
