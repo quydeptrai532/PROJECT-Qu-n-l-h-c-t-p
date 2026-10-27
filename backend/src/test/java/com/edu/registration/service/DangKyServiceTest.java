@@ -187,6 +187,64 @@ class DangKyServiceTest {
     }
 
     @Test
+    void dangKyThatBaiKhiKhongTimThayLopHocPhan() {
+        dangNhapVoiSinhVien();
+
+        when(lopHocPhanRepository.findByIdForUpdate(999L))
+                .thenReturn(Optional.empty());
+
+        assertThrows(ApiException.class,
+                () -> dangKyService.dangKy(999L));
+
+        verify(dangKyHocPhanRepository, never()).save(any());
+    }
+
+    @Test
+    void dangKyThatBaiKhiSinhVienChuaCoHoSo() {
+        when(currentUser.get()).thenReturn(user);
+        when(sinhVienRepository.findByUser(user))
+                .thenReturn(Optional.empty());
+
+        assertThrows(ApiException.class,
+                () -> dangKyService.dangKy(100L));
+
+        verify(dangKyHocPhanRepository, never()).save(any());
+    }
+
+    @Test
+    void huyDangKyThatBaiKhiDangKyKhongThuocSinhVien() {
+        dangNhapVoiSinhVien();
+
+        when(dangKyHocPhanRepository.findByIdAndSinhVienId(200L, 1L))
+                .thenReturn(Optional.empty());
+
+        assertThrows(ApiException.class,
+                () -> dangKyService.huyDangKy(200L));
+
+        verify(lopHocPhanRepository, never()).findByIdForUpdate(any());
+    }
+
+    @Test
+    void huyDangKyThatBaiKhiDangKyDaHuy() {
+        dangNhapVoiSinhVien();
+
+        DangKyHocPhan dangKy = new DangKyHocPhan();
+        dangKy.setId(200L);
+        dangKy.setSinhVien(sinhVien);
+        dangKy.setLopHocPhan(lopHocPhan);
+        dangKy.setTrangThai(TrangThaiDangKy.DA_HUY);
+
+        when(dangKyHocPhanRepository.findByIdAndSinhVienId(200L, 1L))
+                .thenReturn(Optional.of(dangKy));
+
+        assertThrows(ApiException.class,
+                () -> dangKyService.huyDangKy(200L));
+
+        assertEquals(TrangThaiDangKy.DA_HUY, dangKy.getTrangThai());
+        verify(lopHocPhanRepository, never()).findByIdForUpdate(any());
+    }
+
+    @Test
     void dangKyThatBaiKhiDaDangKyMonTrongHocKy() {
         dangNhapVoiSinhVien();
         stubLopHocPhan();
@@ -255,6 +313,28 @@ class DangKyServiceTest {
         ApiException ex = assertThrows(ApiException.class, () -> dangKyService.dangKy(100L));
 
         assertTrue(ex.getMessage().contains("tín chỉ tối đa"));
+    }
+
+
+    @Test
+    void dangKyThanhCongKhiTongTinChiBangMucToiDa() {
+        hocKy.setSoTinChiToiDa(3);
+        dangNhapVoiSinhVien();
+        stubLopHocPhan();
+
+        when(dangKyHocPhanRepository.findTheoHocKy(1L, 1L, TrangThaiDangKy.DA_DANG_KY))
+                .thenReturn(List.of());
+        when(monTienQuyetRepository.findByMonHocIdOrderByIdAsc(10L))
+                .thenReturn(List.of());
+        when(dangKyHocPhanRepository.findBySinhVienIdAndLopHocPhanId(1L, 100L))
+                .thenReturn(Optional.empty());
+        when(dangKyHocPhanRepository.save(any(DangKyHocPhan.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        dangKyService.dangKy(100L);
+
+        assertEquals(1, lopHocPhan.getSiSoHienTai());
+        verify(dangKyHocPhanRepository).save(any(DangKyHocPhan.class));
     }
 
     @Test
