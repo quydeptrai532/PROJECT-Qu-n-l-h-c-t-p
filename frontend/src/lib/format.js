@@ -80,6 +80,36 @@ export function formatWeekRange(weekStart) {
   return `${formatDayMonth(start)} - ${formatDayMonth(addDays(start, 6))}`;
 }
 
+export function toDateKey(value) {
+  const date = parseDateOnly(value);
+  if (!date) return "";
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+export function sessionDates(start, end, thu, from = null) {
+  const first = parseDateOnly(start);
+  const last = parseDateOnly(end);
+  if (!first || !last || !thu) return [];
+
+  const target = thu === 8 ? 0 : thu - 1;
+  const minDate = from ? parseDateOnly(from) : null;
+  const cursor = new Date(first);
+  while (cursor <= last && cursor.getDay() !== target) {
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  const dates = [];
+  while (cursor <= last) {
+    if (!minDate || cursor >= minDate) {
+      dates.push(new Date(cursor));
+    }
+    cursor.setDate(cursor.getDate() + 7);
+  }
+  return dates;
+}
+
 export function formatDateTime(value) {
   if (!value) return "—";
   const date = new Date(value);

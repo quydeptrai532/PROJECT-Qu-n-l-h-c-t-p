@@ -5,6 +5,7 @@ import com.edu.registration.dto.RegistrationDtos;
 import com.edu.registration.service.DangKyService;
 import com.edu.registration.service.DiemService;
 import com.edu.registration.service.LopHocPhanService;
+import com.edu.registration.service.ThongBaoNghiService;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -25,12 +26,14 @@ public class SinhVienController {
     private final LopHocPhanService lopHocPhanService;
     private final DangKyService dangKyService;
     private final DiemService diemService;
+    private final ThongBaoNghiService thongBaoNghiService;
 
     public SinhVienController(LopHocPhanService lopHocPhanService, DangKyService dangKyService,
-                              DiemService diemService) {
+                              DiemService diemService, ThongBaoNghiService thongBaoNghiService) {
         this.lopHocPhanService = lopHocPhanService;
         this.dangKyService = dangKyService;
         this.diemService = diemService;
+        this.thongBaoNghiService = thongBaoNghiService;
     }
 
     @GetMapping("/lop-hoc-phan")
@@ -67,6 +70,12 @@ public class SinhVienController {
     @PreAuthorize("hasRole('SINH_VIEN')")
     public List<RegistrationDtos.ThoiKhoaBieuDto> thoiKhoaBieu(@RequestParam(required = false) Long hocKyId) {
         return dangKyService.thoiKhoaBieu(hocKyId);
+    }
+
+    @GetMapping("/sinh-vien/me/thong-bao-nghi")
+    @PreAuthorize("hasRole('SINH_VIEN')")
+    public List<RegistrationDtos.ThongBaoNghiDto> thongBaoNghi(@RequestParam(required = false) Long hocKyId) {
+        return thongBaoNghiService.cuaSinhVien(hocKyId);
     }
 
     @GetMapping("/sinh-vien/me/diem")

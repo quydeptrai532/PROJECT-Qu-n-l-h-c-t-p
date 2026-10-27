@@ -1,5 +1,5 @@
 import { Fragment, useMemo } from "react";
-import { SUBJECT_COLORS, THU_LABEL, addDays, formatDayMonth, isSameDay } from "../lib/format";
+import { SUBJECT_COLORS, THU_LABEL, addDays, formatDayMonth, isSameDay, toDateKey } from "../lib/format";
 
 const DAYS = [2, 3, 4, 5, 6, 7, 8];
 const PERIODS = Array.from({ length: 12 }, (_, index) => index + 1);
@@ -31,11 +31,19 @@ export function TimetableLegend({ items }) {
   );
 }
 
-export default function TimetableGrid({ items, weekStart }) {
+export default function TimetableGrid({ items, weekStart, announcements = [] }) {
   const today = new Date();
   const monHoc = useMemo(() => [...new Set((items || []).map((item) => item.tenMon))], [items]);
   const mauTheoMon = (tenMon) =>
     SUBJECT_COLORS[Math.max(0, monHoc.indexOf(tenMon)) % SUBJECT_COLORS.length];
+
+  const thongBaoTheoBuoi = useMemo(() => {
+    const map = new Map();
+    (announcements || []).forEach((thongBao) => {
+      map.set(`${thongBao.lopHocPhanId}|${String(thongBao.ngayNghi).slice(0, 10)}`, thongBao);
+    });
+    return map;
+  }, [announcements]);
 
   return (
     <div className="overflow-x-auto">
@@ -96,23 +104,42 @@ export default function TimetableGrid({ items, weekStart }) {
             </Fragment>
           ))}
 
-          {(items || []).map((item) => (
-            <div
-              key={item.lopHocPhanId}
-              className={`z-10 m-0.5 overflow-hidden rounded-lg border border-l-4 px-2 py-1.5 text-xs shadow-sm transition-shadow duration-200 hover:shadow-md ${mauTheoMon(item.tenMon)}`}
-              style={{
-                gridColumn: item.thu,
-                gridRow: `${item.tietBatDau + 1} / span ${item.soTiet}`,
-              }}
-            >
-              <p className="line-clamp-2 font-semibold leading-snug">{item.tenMon}</p>
-              <p className="mt-0.5 opacity-80">Phòng {item.phong}</p>
-              <p className="opacity-70">
-                Tiết {item.tietBatDau}-{item.tietBatDau + item.soTiet - 1}
-              </p>
-              <p className="opacity-70">{item.maLop}</p>
-            </div>
-          ))}
+          {(items || []).map((item) => {
+            const ngay = ngayCuaThu(weekStart, item.thu);
+            const nghi = ngay
+              ? thongBaoTheoBuoi.get(`${item.lopHocPhanId}|${toDateKey(ngay)}`)
+              : null;
+            return (
+              <div
+                key={item.lopHocPhanId}
+                className={`z-10 m-0.5 overflow-hidden rounded-lg border border-l-4 px-2 py-1.5 text-xs shadow-sm transition-shadow duration-200 hover:shadow-md ${
+                  nghi ? "border-rose-400 bg-rose-100 text-rose-900" : mauTheoMon(item.tenMon)
+                }`}
+                style={{
+                  gridColumn: item.thu,
+                  gridRow: `${item.tietBatDau + 1} / span ${item.soTiet}`,
+                }}
+              >
+                {nghi ? (
+                  <>
+                    <p className="font-semibold leading-snug">Nghỉ buổi hôm đó</p>
+                    <p className="mt-0.5 line-clamp-2 opacity-80">{item.tenMon}</p>
+                    <p className="opacity-70">Lớp {item.maLop}</p>
+                    {nghi.lyDo && <p className="line-clamp-2 opacity-70">Lý do: {nghi.lyDo}</p>}
+                  </>
+                ) : (
+                  <>
+                    <p className="line-clamp-2 font-semibold leading-snug">{item.tenMon}</p>
+                    <p className="mt-0.5 opacity-80">Phòng {item.phong}</p>
+                    <p className="opacity-70">
+                      Tiết {item.tietBatDau}-{item.tietBatDau + item.soTiet - 1}
+                    </p>
+                    <p className="opacity-70">{item.maLop}</p>
+                  </>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
