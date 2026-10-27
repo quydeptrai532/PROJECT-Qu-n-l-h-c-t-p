@@ -11,6 +11,7 @@ import com.edu.registration.repository.DangKyHocPhanRepository;
 import com.edu.registration.repository.GiangVienRepository;
 import com.edu.registration.repository.LopHocPhanRepository;
 import com.edu.registration.repository.MonHocRepository;
+import com.edu.registration.repository.ThongBaoNghiRepository;
 import com.edu.registration.security.CurrentUser;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +28,7 @@ public class LopHocPhanService {
     private final MonHocRepository monHocRepository;
     private final GiangVienRepository giangVienRepository;
     private final DangKyHocPhanRepository dangKyHocPhanRepository;
+    private final ThongBaoNghiRepository thongBaoNghiRepository;
     private final HocKyService hocKyService;
     private final CurrentUser currentUser;
     private final DtoMapper mapper;
@@ -34,11 +36,13 @@ public class LopHocPhanService {
     public LopHocPhanService(LopHocPhanRepository lopHocPhanRepository, MonHocRepository monHocRepository,
                              GiangVienRepository giangVienRepository,
                              DangKyHocPhanRepository dangKyHocPhanRepository,
+                             ThongBaoNghiRepository thongBaoNghiRepository,
                              HocKyService hocKyService, CurrentUser currentUser, DtoMapper mapper) {
         this.lopHocPhanRepository = lopHocPhanRepository;
         this.monHocRepository = monHocRepository;
         this.giangVienRepository = giangVienRepository;
         this.dangKyHocPhanRepository = dangKyHocPhanRepository;
+        this.thongBaoNghiRepository = thongBaoNghiRepository;
         this.hocKyService = hocKyService;
         this.currentUser = currentUser;
         this.mapper = mapper;
@@ -156,6 +160,7 @@ public class LopHocPhanService {
         if (dangKyHocPhanRepository.existsByLopHocPhanId(id)) {
             throw ApiException.conflict("Lớp đã có sinh viên đăng ký, không thể xóa");
         }
+        thongBaoNghiRepository.deleteByLopHocPhanId(id);
         lopHocPhanRepository.delete(lop);
     }
 

@@ -9,7 +9,7 @@ function clamp(value, min, max) {
   return value;
 }
 
-export default function TimetableBoard({ items, hocKy }) {
+export default function TimetableBoard({ items, hocKy, announcements = [] }) {
   const firstWeek = startOfWeek(hocKy?.ngayBatDau) || startOfWeek(new Date());
   const semesterEndWeek = startOfWeek(hocKy?.ngayKetThuc);
   const lastWeek =
@@ -76,7 +76,7 @@ export default function TimetableBoard({ items, hocKy }) {
       </div>
 
       <div className="mt-4">
-        <TimetableGrid items={items} weekStart={activeWeek} />
+        <TimetableGrid items={items} weekStart={activeWeek} announcements={announcements} />
       </div>
 
       <p className="mt-4 text-xs text-slate-400">

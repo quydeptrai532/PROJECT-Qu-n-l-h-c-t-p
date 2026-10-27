@@ -3,7 +3,9 @@ package com.edu.registration.dto;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -44,5 +46,16 @@ public final class RegistrationDtos {
 
     public record ThoiKhoaBieuDto(Long lopHocPhanId, String maLop, String tenMon, String phong,
                                   int thu, int tietBatDau, int soTiet, String giangVien) {
+    }
+
+    public record ThongBaoNghiRequest(
+            @NotNull(message = "Vui lòng chọn lớp học phần") Long lopHocPhanId,
+            @NotNull(message = "Vui lòng chọn ngày nghỉ") LocalDate ngayNghi,
+            @Size(max = 255, message = "Lý do tối đa 255 ký tự") String lyDo) {
+    }
+
+    public record ThongBaoNghiDto(Long id, Long lopHocPhanId, String maLop, String tenMon,
+                                  LocalDate ngayNghi, String lyDo, String tenGiangVien,
+                                  LocalDateTime thoiGianTao) {
     }
 }

@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { CalendarDays } from "lucide-react";
-import { Alert, EmptyState, PageHeader, Spinner } from "../../components/ui";
+import AnnouncementPanel from "../../components/AnnouncementPanel";
 import TimetableBoard from "../../components/TimetableBoard";
+import { Alert, EmptyState, PageHeader, Spinner } from "../../components/ui";
 import { useApi } from "../../lib/useApi";
 
 export default function TimetablePage() {
@@ -16,6 +17,7 @@ export default function TimetablePage() {
 
   const params = hocKyId ? { hocKyId } : undefined;
   const { data, loading, error } = useApi("/sinh-vien/me/thoi-khoa-bieu", params);
+  const { data: thongBao } = useApi("/sinh-vien/me/thong-bao-nghi", params);
   const hocKy = (hocKyList || []).find((item) => String(item.id) === String(hocKyId));
 
   return (
@@ -23,7 +25,7 @@ export default function TimetablePage() {
       <PageHeader
         icon={CalendarDays}
         title="Thời khóa biểu"
-        description="Thời khóa biểu của các học phần đã đăng ký, theo từng tuần đến hết học kỳ."
+        description="Thời khóa biểu theo từng tuần và các thông báo nghỉ học của giáo viên."
         actions={
           <select
             className="input w-auto min-w-[220px]"
@@ -39,20 +41,32 @@ export default function TimetablePage() {
         }
       />
 
-      {error && <Alert tone="error" className="mb-4">{error}</Alert>}
+      <div className="grid gap-4 xl:grid-cols-[330px_minmax(0,1fr)]">
+        <AnnouncementPanel
+          announcements={thongBao || []}
+          hocKy={hocKy}
+          editable={false}
+        />
 
-      <div className="card p-4">
-        {loading ? (
-          <Spinner />
-        ) : !data?.length ? (
-          <EmptyState
-            icon={CalendarDays}
-            title="Chưa có lịch học"
-            description="Đăng ký học phần để thời khóa biểu hiển thị tại đây."
-          />
-        ) : (
-          <TimetableBoard key={hocKyId} items={data} hocKy={hocKy} />
-        )}
+        <div className="card p-4">
+          {error && <Alert tone="error" className="mb-4">{error}</Alert>}
+          {loading ? (
+            <Spinner />
+          ) : !data?.length ? (
+            <EmptyState
+              icon={CalendarDays}
+              title="Chưa có lịch học"
+              description="Đăng ký học phần để thời khóa biểu hiển thị tại đây."
+            />
+          ) : (
+            <TimetableBoard
+              key={hocKyId}
+              items={data}
+              hocKy={hocKy}
+              announcements={thongBao || []}
+            />
+          )}
+        </div>
       </div>
     </div>
   );
