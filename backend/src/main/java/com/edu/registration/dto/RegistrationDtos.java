@@ -3,6 +3,7 @@ package com.edu.registration.dto;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
@@ -15,6 +16,10 @@ public final class RegistrationDtos {
     }
 
     public record DangKyRequest(@NotNull(message = "Vui lòng chọn lớp học phần") Long lopHocPhanId) {
+    }
+
+    public record XacNhanKeHoachRequest(
+            @NotEmpty(message = "Giỏ học phần đang trống") List<@NotNull Long> lopHocPhanIds) {
     }
 
     public record DangKyDto(Long id, Long lopHocPhanId, String maLop, Long monHocId, String maMon, String tenMon,

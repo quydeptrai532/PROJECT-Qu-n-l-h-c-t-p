@@ -19,9 +19,11 @@ import com.edu.registration.security.CurrentUser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -59,8 +61,32 @@ public class DangKyService {
         this.mapper = mapper;
     }
 
+    // Serialize one student's cross-section checks; READ_COMMITTED refreshes MySQL reads after lock waits.
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public RegistrationDtos.DangKyDto dangKy(Long lopHocPhanId) {
-        SinhVien sinhVien = sinhVienHienTai();
+        SinhVien sinhVien = sinhVienHienTaiForUpdate();
+        return dangKyTrongGiaoDich(sinhVien, lopHocPhanId);
+    }
+
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public List<RegistrationDtos.DangKyDto> xacNhanKeHoach(List<Long> lopHocPhanIds) {
+        if (lopHocPhanIds == null || lopHocPhanIds.isEmpty()) {
+            throw ApiException.badRequest("Giỏ học phần đang trống");
+        }
+        if (new HashSet<>(lopHocPhanIds).size() != lopHocPhanIds.size()) {
+            throw ApiException.badRequest("Giỏ học phần có lớp bị lặp");
+        }
+
+        SinhVien sinhVien = sinhVienHienTaiForUpdate();
+        List<RegistrationDtos.DangKyDto> ketQua = new ArrayList<>();
+        // Lock section rows in a stable order so overlapping multi-class plans do not deadlock.
+        for (Long lopHocPhanId : lopHocPhanIds.stream().sorted().toList()) {
+            ketQua.add(dangKyTrongGiaoDich(sinhVien, lopHocPhanId));
+        }
+        return ketQua;
+    }
+
+    private RegistrationDtos.DangKyDto dangKyTrongGiaoDich(SinhVien sinhVien, Long lopHocPhanId) {
         LopHocPhan lop = lopHocPhanRepository.findByIdForUpdate(lopHocPhanId)
                 .orElseThrow(() -> ApiException.notFound("Lớp học phần không tồn tại"));
         HocKy hocKy = lop.getHocKy();
@@ -118,8 +144,9 @@ public class DangKyService {
         return mapper.dangKy(daLuu, null);
     }
 
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public void huyDangKy(Long dangKyId) {
-        SinhVien sinhVien = sinhVienHienTai();
+        SinhVien sinhVien = sinhVienHienTaiForUpdate();
         DangKyHocPhan dangKy = dangKyHocPhanRepository.findByIdAndSinhVienId(dangKyId, sinhVien.getId())
                 .orElseThrow(() -> ApiException.notFound("Đăng ký không tồn tại"));
         if (dangKy.getTrangThai() == TrangThaiDangKy.DA_HUY) {
@@ -194,6 +221,11 @@ public class DangKyService {
 
     private SinhVien sinhVienHienTai() {
         return sinhVienRepository.findByUser(currentUser.get())
+                .orElseThrow(() -> ApiException.notFound("Không tìm thấy hồ sơ sinh viên"));
+    }
+
+    private SinhVien sinhVienHienTaiForUpdate() {
+        return sinhVienRepository.findByUserIdForUpdate(currentUser.get().getId())
                 .orElseThrow(() -> ApiException.notFound("Không tìm thấy hồ sơ sinh viên"));
     }
 }

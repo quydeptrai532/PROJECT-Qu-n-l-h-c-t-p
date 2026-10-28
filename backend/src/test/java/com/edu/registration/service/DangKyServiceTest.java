@@ -110,7 +110,7 @@ class DangKyServiceTest {
 
     private void dangNhapVoiSinhVien() {
         when(currentUser.get()).thenReturn(user);
-        when(sinhVienRepository.findByUser(user)).thenReturn(Optional.of(sinhVien));
+        when(sinhVienRepository.findByUserIdForUpdate(1L)).thenReturn(Optional.of(sinhVien));
     }
 
     private void stubLopHocPhan() {
@@ -202,7 +202,7 @@ class DangKyServiceTest {
     @Test
     void dangKyThatBaiKhiSinhVienChuaCoHoSo() {
         when(currentUser.get()).thenReturn(user);
-        when(sinhVienRepository.findByUser(user))
+        when(sinhVienRepository.findByUserIdForUpdate(1L))
                 .thenReturn(Optional.empty());
 
         assertThrows(ApiException.class,

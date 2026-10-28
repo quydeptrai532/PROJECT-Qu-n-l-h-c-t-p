@@ -5,6 +5,7 @@ import LoginPage from "./pages/LoginPage";
 import ProfilePage from "./pages/ProfilePage";
 import RoleDashboard from "./pages/RoleDashboard";
 import RegisterPage from "./pages/student/RegisterPage";
+import CoursePlannerPage from "./pages/student/CoursePlannerPage";
 import MyCoursesPage from "./pages/student/MyCoursesPage";
 import TimetablePage from "./pages/student/TimetablePage";
 import GradesPage from "./pages/student/GradesPage";
@@ -46,6 +47,14 @@ export default function App() {
         element={
           <ProtectedRoute roles={["SINH_VIEN"]}>
             <RegisterPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/ke-hoach-hoc-tap"
+        element={
+          <ProtectedRoute roles={["SINH_VIEN"]}>
+            <CoursePlannerPage />
           </ProtectedRoute>
         }
       />
