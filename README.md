@@ -65,7 +65,7 @@ docker compose up --build
 
 - Giao diện: http://localhost:3000
 - API: http://localhost:8080/api
-- MySQL: `localhost:3306`, database `quan_ly_dao_tao`
+- MySQL: `localhost:3307`, database `quan_ly_dao_tao` (port host đổi để tránh đụng MySQL cài sẵn trên máy; trong mạng Docker backend vẫn dùng `mysql:3306`)
 
 Dữ liệu mẫu được tạo tự động khi `SEED_ENABLED=true` và database còn trống.
 
@@ -175,11 +175,11 @@ SV010,Nguyễn Văn A,a@student.edu.vn,1,1,1
 
 ## Kiểm thử và build
 
-### Unit test backend
+### Backend tests
 
 ```bash
 cd backend
-./mvnw test        # 14 unit test: đăng ký, hủy, tiên quyết, sĩ số, tín chỉ, tín chỉ tối thiểu, nhập điểm
+./mvnw test        # 23 test: 19 unit + 4 integration đăng ký đồng thời trên HTTP
 ```
 
 ### E2E với Playwright
@@ -189,7 +189,7 @@ Yêu cầu backend đang chạy và frontend dùng Chrome đã cài trên máy:
 ```bash
 cd frontend
 npm ci
-npx playwright test        # 11 kịch bản trên Chrome
+npx playwright test        # 12 kịch bản trên Chrome
 BROWSER_CHANNEL=msedge npx playwright test   # chạy lại trên Edge
 npx playwright show-report
 ```
@@ -218,6 +218,8 @@ Kết quả chạy trên máy dev (H2 in-memory, Windows, Node 22, có warmup):
 | P50 / P95 / P99 | 141 / 332 / 346 ms |
 
 Kết quả thay đổi theo cấu hình máy và database; khi chạy MySQL/Docker nên đo lại trong môi trường đích.
+
+Kiểm chứng đăng ký tranh chỗ cuối bằng request đồng thời, bao gồm cấu hình sức chứa/số sinh viên/độ đồng thời và report kết quả + latency: [docs/CONCURRENT_REGISTRATION_TEST.md](docs/CONCURRENT_REGISTRATION_TEST.md).
 
 ### Chụp ảnh giao diện
 
