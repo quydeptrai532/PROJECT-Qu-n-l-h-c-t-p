@@ -128,7 +128,7 @@ public class LopHocPhanService {
 
     public LopHocPhanDtos.LopHocPhanResponse sua(Long id, LopHocPhanDtos.LopHocPhanRequest request) {
         kiemTraLich(request);
-        LopHocPhan lop = lopHocPhanRepository.findById(id)
+        LopHocPhan lop = lopHocPhanRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> ApiException.notFound("Lớp học phần không tồn tại"));
         String ma = request.ma().trim();
         if (!lop.getMa().equalsIgnoreCase(ma) && lopHocPhanRepository.existsByMa(ma)) {
@@ -155,7 +155,7 @@ public class LopHocPhanService {
     }
 
     public void xoa(Long id) {
-        LopHocPhan lop = lopHocPhanRepository.findById(id)
+        LopHocPhan lop = lopHocPhanRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> ApiException.notFound("Lớp học phần không tồn tại"));
         if (dangKyHocPhanRepository.existsByLopHocPhanId(id)) {
             throw ApiException.conflict("Lớp đã có sinh viên đăng ký, không thể xóa");

@@ -24,6 +24,7 @@ const NAV = {
   SINH_VIEN: [
     { to: "/tong-quan", label: "Tổng quan", icon: LayoutDashboard },
     { to: "/dang-ky", label: "Đăng ký học phần", icon: BookOpen },
+    { to: "/ke-hoach-hoc-tap", label: "Kế hoạch học tập", icon: CalendarRange },
     { to: "/hoc-phan-cua-toi", label: "Học phần của tôi", icon: ClipboardList },
     { to: "/thoi-khoa-bieu", label: "Thời khóa biểu", icon: CalendarDays },
     { to: "/diem", label: "Điểm & kết quả", icon: GraduationCap },
