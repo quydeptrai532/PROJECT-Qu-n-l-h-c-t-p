@@ -119,6 +119,51 @@ Kết luận: đạt mục tiêu P95 ≤ 500 ms và không có lỗi trong môi 
 | NFR-07 Triển khai | Docker Compose, `docker compose config` hợp lệ | Đạt |
 | NFR-08 Giao diện | Responsive, E2E chạy tự động trên Chrome, Edge, FireFox, Safari | Một phần |
 
+## 6. Kiểm thử hồi quy
+Chạy ngày 28/10/2026 trên nhánh `dev` (đã gộp T40 và tính năng thông báo nghỉ học), backend profile H2 khởi động mới. Mục tiêu: xác nhận các luồng nghiệp vụ chính vẫn hoạt động đúng sau khi gộp code.
+
+### 6.1 Kết quả tự động
+
+| Hạng mục | Cách chạy | Kết quả |
+|---|---|---|
+| Unit test backend | `cd backend && ./mvnw test` | 19/19 pass, 0 lỗi, 0 bỏ qua (DangKyServiceTest 17, DiemServiceTest 2), tổng 8,1 giây, BUILD SUCCESS |
+| E2E Chrome | `cd frontend && npx playwright test` | 11/11 pass, 42,9 giây |
+
+### 6.2 Phạm vi hồi quy
+
+| Luồng nghiệp vụ | Cách kiểm | Kết quả |
+|---|---|---|
+| Đăng nhập, phân quyền, hồ sơ cá nhân | E2E-01 đến E2E-05 | [PASS] |
+| Đăng ký, hủy học phần | E2E-06, E2E-07 và 17 unit test | [PASS] |
+| Thời khóa biểu, điểm, nhập điểm | E2E-08, E2E-09 và 2 unit test | [PASS] |
+| Quản trị: dashboard, môn học, khóa tài khoản | E2E-10 đến E2E-12 | [PASS] |
+| Quản lý khoa, ngành, lớp hành chính, lớp học phần | Thủ công | (điền sau) |
+| Thêm người dùng, nhập CSV, môn tiên quyết | Thủ công | (điền sau) |
+| Thống kê, xuất CSV | Thủ công | (điền sau) |
+| Thông báo nghỉ học và ô nghỉ trong thời khóa biểu | Thủ công | (điền sau) |
+
+### 6.3 Test tải 500 request, 50 đồng thời
+
+Lệnh: `CONCURRENCY=50 REQUESTS=500 WARMUP=40 node tools/load-test.mjs`
+
+| Chỉ số | Lần 1 | Lần 2 | Lần 3 | Ngưỡng |
+|---|---|---|---|---|
+| Số request / đồng thời | 500 / 50 | 500 / 50 | 500 / 50 | - |
+| Thành công / lỗi | 500 / 0 | 500 / 0 | 500 / 0 | 0 lỗi |
+| Tổng thời gian | 1095,98 ms | 607,99 ms | 575,68 ms | - |
+| Throughput | 456,21 req/s | 822,38 req/s | 868,54 req/s | - |
+| Min | 10,18 ms | 12,81 ms | 14,90 ms | - |
+| P50 | 70,76 ms | 49,43 ms | 56,17 ms | - |
+| P95 | 302,55 ms | 129,50 ms | 86,93 ms | <= 500 ms |
+| P99 | 485,40 ms | 153,03 ms | 94,59 ms | - |
+| Max | 694,36 ms | 156,90 ms | 99,11 ms | - |
+| Kết quả | [PASS] | [PASS] | [PASS] | |
+
+Nhận xét:
+- Cả 3 lần đạt: 0 lỗi, P95 từ 87 đến 303 ms (ngưỡng 500 ms), mã trả về 100% là 200.
+- Lần 1 chậm hơn hai lần sau (P95 303 ms, Max 694 ms) vì JVM chưa tối ưu hết; hai lần sau ổn định hơn nhiều.
+- Số liệu tốt hơn đợt 200 request (P95 320 đến 444 ms) nhiều khả năng do máy ít tiến trình chạy kèm và JVM đã nóng, chưa đủ cơ sở để kết luận hiệu năng được cải thiện.
+- Hạn chế như mục 4: chỉ đo endpoint đọc `/api/lop-hoc-phan`, môi trường H2, chưa đo đăng ký đồng thời.
 ## 7. Tư liệu giao diện
 
 Bộ ảnh giao diện phục vụ báo cáo/Figma nằm trong `docs/screenshots/`, tạo lại bằng:
