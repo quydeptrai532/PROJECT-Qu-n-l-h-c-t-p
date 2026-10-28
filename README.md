@@ -14,7 +14,7 @@
 
 ## Chức năng theo vai trò
 
-- **SINH_VIEN**: dashboard tổng quan (tín chỉ, GPA, lịch hôm nay, biểu đồ GPA), cập nhật họ tên/email/SĐT, đổi mật khẩu, tìm lớp đang mở, đăng ký/hủy học phần bằng modal xác nhận, xem thời khóa biểu (highlight hôm nay), xem điểm và GPA.
+- **SINH_VIEN**: dashboard tổng quan (tín chỉ, GPA, lịch hôm nay, biểu đồ GPA), cập nhật họ tên/email/SĐT, đổi mật khẩu, lập kế hoạch học tập bằng giỏ lớp và thời khóa biểu dự kiến, xác nhận đăng ký/hủy học phần, xem thời khóa biểu, điểm và GPA.
 - **GIANG_VIEN**: dashboard tổng quan (lớp phụ trách, sĩ số, biểu đồ lấp đầy, lịch dạy hôm nay), thời khóa biểu giảng dạy, danh sách sinh viên, nhập/cập nhật điểm quá trình và cuối kỳ.
 - **QUAN_TRI**: quản lý khoa/ngành/lớp hành chính/môn học/học kỳ, cấu hình đợt đăng ký, mở lớp học phần, quản lý sinh viên & giảng viên, khóa/mở tài khoản, nhập CSV, dashboard thống kê có biểu đồ và xuất CSV.
 
@@ -47,6 +47,7 @@ frontend/
     pages/        # student / lecturer / admin / RoleDashboard
 docs/
   TEST_PLAN.md    # test case theo FR/NFR và kết quả
+  COURSE_PLANNER_DEMO.md # hướng dẫn demo Course Planner
   PROPOSAL_CHECKLIST.md # góp ý bổ sung báo cáo đề cương
   screenshots/    # ảnh giao diện cho báo cáo/Figma
 tools/
@@ -142,6 +143,7 @@ Dữ liệu mẫu gồm 2 khoa, 3 ngành, 3 lớp hành chính, 8 môn học (c�
 | GET | `/api/hoc-ky` | Danh sách học kỳ |
 | GET | `/api/lop-hoc-phan?hocKyId=&keyword=` | Tìm lớp học phần |
 | POST | `/api/dang-ky` | Sinh viên đăng ký |
+| POST | `/api/dang-ky/xac-nhan-ke-hoach` | Xác nhận nhiều lớp trong một transaction, dùng lại toàn bộ kiểm tra đăng ký |
 | DELETE | `/api/dang-ky/{id}` | Sinh viên hủy đăng ký |
 | GET | `/api/dang-ky/me?hocKyId=` | Học phần đã đăng ký |
 | GET | `/api/sinh-vien/me/thoi-khoa-bieu` | Thời khóa biểu |
@@ -179,7 +181,7 @@ SV010,Nguyễn Văn A,a@student.edu.vn,1,1,1
 
 ```bash
 cd backend
-./mvnw test        # 23 test: 19 unit + 4 integration đăng ký đồng thời trên HTTP
+./mvnw test        # 27 test: 19 unit + 8 integration đăng ký/giỏ kế hoạch trên HTTP
 ```
 
 ### E2E với Playwright
@@ -189,7 +191,7 @@ Yêu cầu backend đang chạy và frontend dùng Chrome đã cài trên máy:
 ```bash
 cd frontend
 npm ci
-npx playwright test        # 12 kịch bản trên Chrome
+npx playwright test        # 15 kịch bản trên Chrome
 BROWSER_CHANNEL=msedge npx playwright test   # chạy lại trên Edge
 npx playwright show-report
 ```

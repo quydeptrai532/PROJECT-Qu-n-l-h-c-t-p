@@ -16,6 +16,7 @@ import com.edu.registration.repository.HocKyRepository;
 import com.edu.registration.repository.KhoaRepository;
 import com.edu.registration.repository.LopHocPhanRepository;
 import com.edu.registration.repository.MonHocRepository;
+import com.edu.registration.repository.MonTienQuyetRepository;
 import com.edu.registration.repository.SinhVienRepository;
 import com.edu.registration.repository.UserRepository;
 import com.edu.registration.security.JwtService;
@@ -81,6 +82,7 @@ class ConcurrentRegistrationIntegrationTest {
     @Autowired private KhoaRepository khoaRepository;
     @Autowired private HocKyRepository hocKyRepository;
     @Autowired private MonHocRepository monHocRepository;
+    @Autowired private MonTienQuyetRepository monTienQuyetRepository;
     @Autowired private GiangVienRepository giangVienRepository;
     @Autowired private LopHocPhanRepository lopHocPhanRepository;
     @Autowired private DangKyHocPhanRepository dangKyRepository;
@@ -232,6 +234,69 @@ class ConcurrentRegistrationIntegrationTest {
         assertEquals(1, lopHocPhanRepository.findById(primarySection.getId()).orElseThrow().getSiSoHienTai());
     }
 
+    @Test
+    void confirmsAValidPlanThroughTheOfficialRegistrationFlow() throws Exception {
+        ResponseEntity<String> response = confirmPlan(students.get(0), List.of(primarySection.getId()));
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(1, dangKyRepository.countByLopHocPhanIdAndTrangThai(
+                primarySection.getId(), TrangThaiDangKy.DA_DANG_KY));
+        entityManager.clear();
+        assertEquals(1, lopHocPhanRepository.findById(primarySection.getId()).orElseThrow().getSiSoHienTai());
+    }
+
+    @Test
+    void invalidCoursePlanRollsBackEarlierItemsAtomically() throws Exception {
+        ResponseEntity<String> response = confirmPlan(students.get(0),
+                List.of(primarySection.getId(), secondSection.getId()));
+
+        assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+        assertTrue(response.getBody().contains("đã đăng ký môn"));
+        assertEquals(0, dangKyRepository.countByLopHocPhanIdAndTrangThai(
+                primarySection.getId(), TrangThaiDangKy.DA_DANG_KY));
+        assertEquals(0, dangKyRepository.countByLopHocPhanIdAndTrangThai(
+                secondSection.getId(), TrangThaiDangKy.DA_DANG_KY));
+        entityManager.clear();
+        assertEquals(0, lopHocPhanRepository.findById(primarySection.getId()).orElseThrow().getSiSoHienTai());
+        assertEquals(0, lopHocPhanRepository.findById(secondSection.getId()).orElseThrow().getSiSoHienTai());
+    }
+
+    @Test
+    void confirmationRechecksPrerequisitesOnTheServer() throws Exception {
+        MonHoc prerequisite = new MonHoc();
+        prerequisite.setMa("P" + runId);
+        prerequisite.setTen("Môn tiên quyết test " + runId);
+        prerequisite.setSoTinChi(3);
+        prerequisite.setKhoa(primarySection.getMonHoc().getKhoa());
+        prerequisite = monHocRepository.saveAndFlush(prerequisite);
+        monTienQuyetRepository.saveAndFlush(new com.edu.registration.entity.MonTienQuyet(
+                primarySection.getMonHoc(), prerequisite));
+
+        ResponseEntity<String> response = confirmPlan(students.get(0), List.of(primarySection.getId()));
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertTrue(response.getBody().contains("tiên quyết"));
+        assertEquals(0, dangKyRepository.countByLopHocPhanIdAndTrangThai(
+                primarySection.getId(), TrangThaiDangKy.DA_DANG_KY));
+        entityManager.clear();
+        assertEquals(0, lopHocPhanRepository.findById(primarySection.getId()).orElseThrow().getSiSoHienTai());
+    }
+
+    @Test
+    void confirmationRejectsASectionThatFilledAfterItWasAddedToThePlan() throws Exception {
+        primarySection.setSiSoHienTai(capacity);
+        lopHocPhanRepository.saveAndFlush(primarySection);
+
+        ResponseEntity<String> response = confirmPlan(students.get(0), List.of(primarySection.getId()));
+
+        assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+        assertTrue(response.getBody().contains("đủ sĩ số"));
+        assertEquals(0, dangKyRepository.countByLopHocPhanIdAndTrangThai(
+                primarySection.getId(), TrangThaiDangKy.DA_DANG_KY));
+        entityManager.clear();
+        assertEquals(capacity, lopHocPhanRepository.findById(primarySection.getId()).orElseThrow().getSiSoHienTai());
+    }
+
     private LopHocPhan saveSection(String suffix, MonHoc mon, HocKy term, GiangVien lecturer,
                                    int max, int weekday) {
         LopHocPhan section = new LopHocPhan();
@@ -283,6 +348,11 @@ class ConcurrentRegistrationIntegrationTest {
     private ResponseEntity<String> postRegistration(User student, Long sectionId) {
         return http.exchange("/api/dang-ky", HttpMethod.POST,
                 new HttpEntity<>(Map.of("lopHocPhanId", sectionId), headersFor(student)), String.class);
+    }
+
+    private ResponseEntity<String> confirmPlan(User student, List<Long> sectionIds) {
+        return http.exchange("/api/dang-ky/xac-nhan-ke-hoach", HttpMethod.POST,
+                new HttpEntity<>(Map.of("lopHocPhanIds", sectionIds), headersFor(student)), String.class);
     }
 
     private HttpHeaders headersFor(User user) {

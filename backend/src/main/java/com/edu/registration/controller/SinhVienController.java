@@ -54,6 +54,13 @@ public class SinhVienController {
         return dangKyService.dangKy(request.lopHocPhanId());
     }
 
+    @PostMapping("/dang-ky/xac-nhan-ke-hoach")
+    @PreAuthorize("hasRole('SINH_VIEN')")
+    public List<RegistrationDtos.DangKyDto> xacNhanKeHoach(
+            @Valid @RequestBody RegistrationDtos.XacNhanKeHoachRequest request) {
+        return dangKyService.xacNhanKeHoach(request.lopHocPhanIds());
+    }
+
     @DeleteMapping("/dang-ky/{id}")
     @PreAuthorize("hasRole('SINH_VIEN')")
     public void huyDangKy(@PathVariable Long id) {

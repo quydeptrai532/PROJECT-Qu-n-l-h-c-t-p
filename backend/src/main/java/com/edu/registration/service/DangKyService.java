@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -65,6 +66,24 @@ public class DangKyService {
     public RegistrationDtos.DangKyDto dangKy(Long lopHocPhanId) {
         SinhVien sinhVien = sinhVienHienTaiForUpdate();
         return dangKyTrongGiaoDich(sinhVien, lopHocPhanId);
+    }
+
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public List<RegistrationDtos.DangKyDto> xacNhanKeHoach(List<Long> lopHocPhanIds) {
+        if (lopHocPhanIds == null || lopHocPhanIds.isEmpty()) {
+            throw ApiException.badRequest("Giỏ học phần đang trống");
+        }
+        if (new HashSet<>(lopHocPhanIds).size() != lopHocPhanIds.size()) {
+            throw ApiException.badRequest("Giỏ học phần có lớp bị lặp");
+        }
+
+        SinhVien sinhVien = sinhVienHienTaiForUpdate();
+        List<RegistrationDtos.DangKyDto> ketQua = new ArrayList<>();
+        // Lock section rows in a stable order so overlapping multi-class plans do not deadlock.
+        for (Long lopHocPhanId : lopHocPhanIds.stream().sorted().toList()) {
+            ketQua.add(dangKyTrongGiaoDich(sinhVien, lopHocPhanId));
+        }
+        return ketQua;
     }
 
     private RegistrationDtos.DangKyDto dangKyTrongGiaoDich(SinhVien sinhVien, Long lopHocPhanId) {

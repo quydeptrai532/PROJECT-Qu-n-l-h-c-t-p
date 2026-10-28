@@ -40,7 +40,7 @@ Chạy: `cd backend && ./mvnw test` — **19 unit test pass**.
 
 Chạy `cd backend && ./mvnw test` để chạy cùng suite hoặc xem cấu hình capacity, student-count, concurrency, MySQL và report tại [docs/CONCURRENT_REGISTRATION_TEST.md](CONCURRENT_REGISTRATION_TEST.md). Suite tạo fixture mới cho mỗi test, gửi HTTP request đồng thời, xác nhận tranh chỗ cuối, hai lớp cùng môn, request trùng và hủy trả chỗ. Kiểm tra cả HTTP status, bản ghi đang hoạt động và sĩ số lưu. Report JSON ghi database, đầu vào, correctness và latency.
 
-Kết quả hiện tại: **4/4 integration test pass trên H2** và **4/4 trên MySQL 8.4**. Bộ test tạo fixture riêng và kiểm tra đăng ký cùng môn đồng thời, yêu cầu trùng, hủy/đăng ký lại, tranh chỗ cuối; đối chiếu sĩ số với số bản ghi đang hoạt động.
+Kết quả hiện tại: **8/8 integration test pass trên H2**. Bổ sung xác nhận giỏ hợp lệ, rollback toàn bộ giỏ khi gặp lớp cùng môn, tiên quyết chưa đạt hoặc lớp đã đầy. Phần QLSV-48 đã chạy **4/4 integration test trên MySQL 8.4**; bộ 8 test hiện tại chưa chạy lại trên MySQL.
 
 ## 4. E2E (Playwright)
 
@@ -60,8 +60,11 @@ Chạy: `cd frontend && npx playwright test`. Có thể chọn trình duyệt b�
 | E2E-10 | Quản trị xem dashboard | Có thống kê, biểu đồ đăng ký và tỷ lệ lấp đầy | Pass | Pass | Pass | Pass |
 | E2E-11 | Quản trị thêm/xóa môn học | Tạo môn thành công, xóa qua modal xác nhận | Pass | Pass | Pass | Pass |
 | E2E-12 | Quản trị khóa/mở khóa tài khoản | Trạng thái đổi và khôi phục đúng | Pass | Pass | Pass | Pass |
+| E2E-13 | Course Planner: giỏ lưu qua tải lại, xung đột lịch/môn và không ghi danh trước xác nhận | Cảnh báo rõ hai lớp; giỏ chỉ là kế hoạch | Pass | Chưa chạy | Chưa chạy | Chưa chạy |
+| E2E-14 | Course Planner: xác nhận rõ ràng, backend từ chối thiếu tiên quyết | HTTP 400, giỏ còn nguyên, không có ghi danh một phần | Pass | Chưa chạy | Chưa chạy | Chưa chạy |
+| E2E-15 | Course Planner: lớp hết chỗ trước khi xác nhận | Cảnh báo hết chỗ và khóa xác nhận | Pass | Chưa chạy | Chưa chạy | Chưa chạy |
 
-Ghi chú: bảng trên gồm 12 kịch bản, trong đó 11 test độc lập (E2E-06 và E2E-07 nằm trong cùng một test đăng ký/hủy).
+Ghi chú: bảng trên gồm 15 kịch bản trong 14 test Playwright; E2E-06 và E2E-07 nằm trong cùng một test đăng ký/hủy. Lần chạy hiện tại: **14/14 test pass trên Chrome**, gồm ba test Course Planner. Ba test mới chưa chạy trên Edge, Firefox và WebKit.
 
 Chạy Firefox và WebKit: `cd frontend && npx playwright install firefox webkit && npx playwright test -c playwright.multi.config.js`.
 
@@ -112,7 +115,7 @@ Kết luận: đạt mục tiêu P95 ≤ 500 ms và không có lỗi trong môi 
 | NFR-03 Bảo mật | JWT, BCrypt, phân quyền theo vai trò, E2E kiểm tra chuyển hướng | Đạt |
 | NFR-04 Kiểm tra đầu vào | Bean Validation ở DTO, xử lý lỗi tập trung | Đạt |
 | NFR-05 Ghi log | SLF4J cho đăng ký/hủy/nhập điểm/lỗi hệ thống | Đạt |
-| NFR-06 Bảo trì | Tách Controller–Service–Repository–DTO, 19 unit test + 4 integration test đăng ký đồng thời | Đạt |
+| NFR-06 Bảo trì | Tách Controller–Service–Repository–DTO, 19 unit test + 8 integration test và E2E Course Planner | Đạt |
 | NFR-07 Triển khai | Docker Compose, `docker compose config` hợp lệ | Đạt |
 | NFR-08 Giao diện | Responsive, E2E chạy tự động trên Chrome, Edge, FireFox, Safari | Một phần |
 
