@@ -60,4 +60,20 @@ test.describe("Quản trị", () => {
     await dialog.getByRole("button", { name: "Mở khóa", exact: true }).click();
     await expect(row.getByText("Hoạt động")).toBeVisible();
   });
+
+  test("tra cứu nhật ký thay đổi tài khoản theo người thực hiện và hành động", async ({ page }) => {
+    await login(page, "admin", "admin123");
+    await page.goto("/quan-tri/nhat-ky-hoat-dong");
+    await expect(page.getByRole("main").getByRole("heading", { name: "Nhật ký hoạt động" })).toBeVisible();
+    await page.getByLabel("Người thực hiện").fill("admin");
+    await page.getByLabel("Hành động").selectOption("COURSE_DELETED");
+    await page.getByRole("button", { name: "Lọc nhật ký" }).click();
+    await expect(page.locator("tbody tr").filter({ hasText: "Xóa môn học" }).first()).toBeVisible();
+
+    await page.getByLabel("Hành động").selectOption("STUDENT_ACCOUNT_STATUS_CHANGED");
+    await page.getByRole("button", { name: "Lọc nhật ký" }).click();
+    const row = page.locator("tbody tr").filter({ hasText: "Đổi trạng thái tài khoản sinh viên" });
+    await expect(row.first()).toBeVisible();
+    await expect(row.first()).toContainText("Thành công");
+  });
 });

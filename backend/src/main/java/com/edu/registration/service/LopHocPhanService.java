@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 @Service
 @Transactional
@@ -30,6 +31,7 @@ public class LopHocPhanService {
     private final DangKyHocPhanRepository dangKyHocPhanRepository;
     private final ThongBaoNghiRepository thongBaoNghiRepository;
     private final HocKyService hocKyService;
+    private final AuditLogService auditLogService;
     private final CurrentUser currentUser;
     private final DtoMapper mapper;
 
@@ -37,13 +39,15 @@ public class LopHocPhanService {
                              GiangVienRepository giangVienRepository,
                              DangKyHocPhanRepository dangKyHocPhanRepository,
                              ThongBaoNghiRepository thongBaoNghiRepository,
-                             HocKyService hocKyService, CurrentUser currentUser, DtoMapper mapper) {
+                             HocKyService hocKyService, AuditLogService auditLogService,
+                             CurrentUser currentUser, DtoMapper mapper) {
         this.lopHocPhanRepository = lopHocPhanRepository;
         this.monHocRepository = monHocRepository;
         this.giangVienRepository = giangVienRepository;
         this.dangKyHocPhanRepository = dangKyHocPhanRepository;
         this.thongBaoNghiRepository = thongBaoNghiRepository;
         this.hocKyService = hocKyService;
+        this.auditLogService = auditLogService;
         this.currentUser = currentUser;
         this.mapper = mapper;
     }
@@ -102,66 +106,94 @@ public class LopHocPhanService {
     }
 
     public LopHocPhanDtos.LopHocPhanResponse tao(LopHocPhanDtos.LopHocPhanRequest request) {
-        kiemTraLich(request);
-        String ma = request.ma().trim();
-        if (lopHocPhanRepository.existsByMa(ma)) {
-            throw ApiException.conflict("Mã lớp học phần đã tồn tại");
-        }
-        MonHoc monHoc = monHocRepository.findById(request.monHocId())
-                .orElseThrow(() -> ApiException.notFound("Môn học không tồn tại"));
-        GiangVien giangVien = giangVienRepository.findById(request.giangVienId())
-                .orElseThrow(() -> ApiException.notFound("Giảng viên không tồn tại"));
-        HocKy hocKy = hocKyService.lay(request.hocKyId());
+        return auditLogService.execute("COURSE_SECTION_CREATED", "COURSE_SECTION", null, audit -> {
+            kiemTraLich(request);
+            String ma = request.ma().trim();
+            if (lopHocPhanRepository.existsByMa(ma)) {
+                throw ApiException.conflict("Mã lớp học phần đã tồn tại");
+            }
+            MonHoc monHoc = monHocRepository.findById(request.monHocId())
+                    .orElseThrow(() -> ApiException.notFound("Môn học không tồn tại"));
+            GiangVien giangVien = giangVienRepository.findById(request.giangVienId())
+                    .orElseThrow(() -> ApiException.notFound("Giảng viên không tồn tại"));
+            HocKy hocKy = hocKyService.lay(request.hocKyId());
 
-        List<String> canhBao = kiemTraCanhBao(request, null);
+            List<String> canhBao = kiemTraCanhBao(request, null);
 
-        LopHocPhan lop = new LopHocPhan();
-        lop.setMa(ma);
-        lop.setMonHoc(monHoc);
-        lop.setHocKy(hocKy);
-        lop.setGiangVien(giangVien);
-        apDung(lop, request);
-        lop.setSiSoHienTai(0);
+            LopHocPhan lop = new LopHocPhan();
+            lop.setMa(ma);
+            lop.setMonHoc(monHoc);
+            lop.setHocKy(hocKy);
+            lop.setGiangVien(giangVien);
+            apDung(lop, request);
+            lop.setSiSoHienTai(0);
 
-        return new LopHocPhanDtos.LopHocPhanResponse(mapper.lopHocPhan(lopHocPhanRepository.save(lop)), canhBao);
+            LopHocPhan saved = lopHocPhanRepository.save(lop);
+            audit.entityId(saved.getId());
+            audit.changes(Map.of(), auditSnapshot(saved));
+            return new LopHocPhanDtos.LopHocPhanResponse(mapper.lopHocPhan(saved), canhBao);
+        });
     }
 
     public LopHocPhanDtos.LopHocPhanResponse sua(Long id, LopHocPhanDtos.LopHocPhanRequest request) {
-        kiemTraLich(request);
-        LopHocPhan lop = lopHocPhanRepository.findByIdForUpdate(id)
-                .orElseThrow(() -> ApiException.notFound("Lớp học phần không tồn tại"));
-        String ma = request.ma().trim();
-        if (!lop.getMa().equalsIgnoreCase(ma) && lopHocPhanRepository.existsByMa(ma)) {
-            throw ApiException.conflict("Mã lớp học phần đã tồn tại");
-        }
-        if (request.siSoToiDa() < lop.getSiSoHienTai()) {
-            throw ApiException.badRequest("Sĩ số tối đa không được nhỏ hơn số sinh viên đã đăng ký ("
-                    + lop.getSiSoHienTai() + ")");
-        }
-        MonHoc monHoc = monHocRepository.findById(request.monHocId())
-                .orElseThrow(() -> ApiException.notFound("Môn học không tồn tại"));
-        GiangVien giangVien = giangVienRepository.findById(request.giangVienId())
-                .orElseThrow(() -> ApiException.notFound("Giảng viên không tồn tại"));
-        HocKy hocKy = hocKyService.lay(request.hocKyId());
+        return auditLogService.execute("COURSE_SECTION_UPDATED", "COURSE_SECTION", id, audit -> {
+            kiemTraLich(request);
+            LopHocPhan lop = lopHocPhanRepository.findByIdForUpdate(id)
+                    .orElseThrow(() -> ApiException.notFound("Lớp học phần không tồn tại"));
+            Map<String, Object> before = auditSnapshot(lop);
+            String ma = request.ma().trim();
+            if (!lop.getMa().equalsIgnoreCase(ma) && lopHocPhanRepository.existsByMa(ma)) {
+                throw ApiException.conflict("Mã lớp học phần đã tồn tại");
+            }
+            if (request.siSoToiDa() < lop.getSiSoHienTai()) {
+                throw ApiException.badRequest("Sĩ số tối đa không được nhỏ hơn số sinh viên đã đăng ký ("
+                        + lop.getSiSoHienTai() + ")");
+            }
+            MonHoc monHoc = monHocRepository.findById(request.monHocId())
+                    .orElseThrow(() -> ApiException.notFound("Môn học không tồn tại"));
+            GiangVien giangVien = giangVienRepository.findById(request.giangVienId())
+                    .orElseThrow(() -> ApiException.notFound("Giảng viên không tồn tại"));
+            HocKy hocKy = hocKyService.lay(request.hocKyId());
 
-        List<String> canhBao = kiemTraCanhBao(request, id);
+            List<String> canhBao = kiemTraCanhBao(request, id);
 
-        lop.setMa(ma);
-        lop.setMonHoc(monHoc);
-        lop.setHocKy(hocKy);
-        lop.setGiangVien(giangVien);
-        apDung(lop, request);
-        return new LopHocPhanDtos.LopHocPhanResponse(mapper.lopHocPhan(lop), canhBao);
+            lop.setMa(ma);
+            lop.setMonHoc(monHoc);
+            lop.setHocKy(hocKy);
+            lop.setGiangVien(giangVien);
+            apDung(lop, request);
+            audit.changes(before, auditSnapshot(lop));
+            return new LopHocPhanDtos.LopHocPhanResponse(mapper.lopHocPhan(lop), canhBao);
+        });
     }
 
     public void xoa(Long id) {
-        LopHocPhan lop = lopHocPhanRepository.findByIdForUpdate(id)
-                .orElseThrow(() -> ApiException.notFound("Lớp học phần không tồn tại"));
-        if (dangKyHocPhanRepository.existsByLopHocPhanId(id)) {
-            throw ApiException.conflict("Lớp đã có sinh viên đăng ký, không thể xóa");
-        }
-        thongBaoNghiRepository.deleteByLopHocPhanId(id);
-        lopHocPhanRepository.delete(lop);
+        auditLogService.execute("COURSE_SECTION_DELETED", "COURSE_SECTION", id, audit -> {
+            LopHocPhan lop = lopHocPhanRepository.findByIdForUpdate(id)
+                    .orElseThrow(() -> ApiException.notFound("Lớp học phần không tồn tại"));
+            audit.changes(auditSnapshot(lop), Map.of("trangThai", "DELETED"));
+            if (dangKyHocPhanRepository.existsByLopHocPhanId(id)) {
+                throw ApiException.conflict("Lớp đã có sinh viên đăng ký, không thể xóa");
+            }
+            thongBaoNghiRepository.deleteByLopHocPhanId(id);
+            lopHocPhanRepository.delete(lop);
+            return null;
+        });
+    }
+
+    private Map<String, Object> auditSnapshot(LopHocPhan lop) {
+        return Map.ofEntries(
+                Map.entry("maLop", lop.getMa()),
+                Map.entry("monHocId", lop.getMonHoc().getId()),
+                Map.entry("hocKyId", lop.getHocKy().getId()),
+                Map.entry("giangVienId", lop.getGiangVien().getId()),
+                Map.entry("phong", lop.getPhong()),
+                Map.entry("thu", lop.getThu()),
+                Map.entry("tietBatDau", lop.getTietBatDau()),
+                Map.entry("soTiet", lop.getSoTiet()),
+                Map.entry("siSoToiDa", lop.getSiSoToiDa()),
+                Map.entry("siSoHienTai", lop.getSiSoHienTai()),
+                Map.entry("conLai", lop.getConLai()));
     }
 
     private void kiemTraLich(LopHocPhanDtos.LopHocPhanRequest request) {

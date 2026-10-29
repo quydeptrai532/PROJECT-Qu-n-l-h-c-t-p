@@ -46,11 +46,13 @@ public class DangKyService {
     private final CurrentUser currentUser;
     private final HocKyService hocKyService;
     private final DtoMapper mapper;
+    private final AuditLogService auditLogService;
 
     public DangKyService(DangKyHocPhanRepository dangKyHocPhanRepository,
                          LopHocPhanRepository lopHocPhanRepository, DiemRepository diemRepository,
                          MonTienQuyetRepository monTienQuyetRepository, SinhVienRepository sinhVienRepository,
-                         CurrentUser currentUser, HocKyService hocKyService, DtoMapper mapper) {
+                         CurrentUser currentUser, HocKyService hocKyService, DtoMapper mapper,
+                         AuditLogService auditLogService) {
         this.dangKyHocPhanRepository = dangKyHocPhanRepository;
         this.lopHocPhanRepository = lopHocPhanRepository;
         this.diemRepository = diemRepository;
@@ -59,6 +61,7 @@ public class DangKyService {
         this.currentUser = currentUser;
         this.hocKyService = hocKyService;
         this.mapper = mapper;
+        this.auditLogService = auditLogService;
     }
 
     // Serialize one student's cross-section checks; READ_COMMITTED refreshes MySQL reads after lock waits.
@@ -71,10 +74,14 @@ public class DangKyService {
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public List<RegistrationDtos.DangKyDto> xacNhanKeHoach(List<Long> lopHocPhanIds) {
         if (lopHocPhanIds == null || lopHocPhanIds.isEmpty()) {
-            throw ApiException.badRequest("Giỏ học phần đang trống");
+            return auditLogService.execute("COURSE_REGISTRATION", "COURSE_SECTION", null,
+                    audit -> { throw ApiException.badRequest("Giỏ học phần đang trống"); });
         }
         if (new HashSet<>(lopHocPhanIds).size() != lopHocPhanIds.size()) {
-            throw ApiException.badRequest("Giỏ học phần có lớp bị lặp");
+            Long duplicateId = lopHocPhanIds.stream().filter(id -> java.util.Collections.frequency(lopHocPhanIds, id) > 1)
+                    .findFirst().orElse(null);
+            return auditLogService.execute("COURSE_REGISTRATION", "COURSE_SECTION", duplicateId,
+                    audit -> { throw ApiException.badRequest("Giỏ học phần có lớp bị lặp"); });
         }
 
         SinhVien sinhVien = sinhVienHienTaiForUpdate();
@@ -87,6 +94,7 @@ public class DangKyService {
     }
 
     private RegistrationDtos.DangKyDto dangKyTrongGiaoDich(SinhVien sinhVien, Long lopHocPhanId) {
+        return auditLogService.execute("COURSE_REGISTRATION", "COURSE_SECTION", lopHocPhanId, audit -> {
         LopHocPhan lop = lopHocPhanRepository.findByIdForUpdate(lopHocPhanId)
                 .orElseThrow(() -> ApiException.notFound("Lớp học phần không tồn tại"));
         HocKy hocKy = lop.getHocKy();
@@ -140,12 +148,19 @@ public class DangKyService {
         lop.setSiSoHienTai(lop.getSiSoHienTai() + 1);
 
         DangKyHocPhan daLuu = dangKyHocPhanRepository.save(dangKy);
+        Map<String, Object> before = Map.of("maLop", lop.getMa(), "siSoToiDa", lop.getSiSoToiDa(),
+                "siSoHienTai", lop.getSiSoHienTai() - 1);
+        audit.changes(before, Map.of("maLop", lop.getMa(), "siSoToiDa", lop.getSiSoToiDa(),
+                "siSoHienTai", lop.getSiSoHienTai(), "trangThai", dangKy.getTrangThai().name(),
+                "dangKyId", daLuu.getId()));
         log.info("Sinh viên {} đăng ký lớp {} (môn {})", sinhVien.getMa(), lop.getMa(), monHoc.getMa());
         return mapper.dangKy(daLuu, null);
+        });
     }
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public void huyDangKy(Long dangKyId) {
+        auditLogService.execute("COURSE_REGISTRATION_CANCELLED", "COURSE_REGISTRATION", dangKyId, audit -> {
         SinhVien sinhVien = sinhVienHienTaiForUpdate();
         DangKyHocPhan dangKy = dangKyHocPhanRepository.findByIdAndSinhVienId(dangKyId, sinhVien.getId())
                 .orElseThrow(() -> ApiException.notFound("Đăng ký không tồn tại"));
@@ -168,9 +183,17 @@ public class DangKyService {
                     + ". Hãy đăng ký thêm học phần hoặc hủy toàn bộ học phần của học kỳ.");
         }
 
+        Map<String, Object> before = Map.of("dangKyId", dangKy.getId(), "lopHocPhanId", lop.getId(),
+                "maLop", lop.getMa(), "trangThai", dangKy.getTrangThai().name(),
+                "siSoHienTai", lop.getSiSoHienTai());
         dangKy.setTrangThai(TrangThaiDangKy.DA_HUY);
         lop.setSiSoHienTai(Math.max(0, lop.getSiSoHienTai() - 1));
+        audit.changes(before, Map.of("dangKyId", dangKy.getId(), "lopHocPhanId", lop.getId(),
+                "maLop", lop.getMa(), "trangThai", dangKy.getTrangThai().name(),
+                "siSoHienTai", lop.getSiSoHienTai()));
         log.info("Sinh viên {} hủy đăng ký lớp {}", sinhVien.getMa(), lop.getMa());
+        return null;
+        });
     }
 
     @Transactional(readOnly = true)

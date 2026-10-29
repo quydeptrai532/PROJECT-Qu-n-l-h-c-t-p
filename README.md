@@ -48,6 +48,7 @@ frontend/
 docs/
   TEST_PLAN.md    # test case theo FR/NFR và kết quả
   COURSE_PLANNER_DEMO.md # hướng dẫn demo Course Planner
+  AUDIT_LOG_DEMO.md # hướng dẫn tra cứu nhật ký kiểm toán
   PROPOSAL_CHECKLIST.md # góp ý bổ sung báo cáo đề cương
   screenshots/    # ảnh giao diện cho báo cáo/Figma
 tools/
@@ -159,6 +160,7 @@ Dữ liệu mẫu gồm 2 khoa, 3 ngành, 3 lớp hành chính, 8 môn học (c�
 | POST | `/api/admin/sinh-vien/import` | Nhập sinh viên từ CSV |
 | GET | `/api/admin/thong-ke/tong-quan`, `/theo-mon` | Thống kê |
 | GET | `/api/admin/lop-hoc-phan/{id}/csv` | Xuất danh sách lớp CSV |
+| GET | `/api/admin/audit-logs` | Tra cứu nhật ký (lọc thời gian, người dùng, hành động, đối tượng; phân trang; chỉ quản trị viên) |
 
 Swagger/OpenAPI chưa tích hợp; có thể bổ sung `springdoc-openapi` nếu cần.
 
@@ -181,7 +183,7 @@ SV010,Nguyễn Văn A,a@student.edu.vn,1,1,1
 
 ```bash
 cd backend
-./mvnw test        # 27 test: 19 unit + 8 integration đăng ký/giỏ kế hoạch trên HTTP
+./mvnw test        # 35 test: 22 unit + 13 integration trên HTTP
 ```
 
 ### E2E với Playwright
@@ -191,7 +193,7 @@ Yêu cầu backend đang chạy và frontend dùng Chrome đã cài trên máy:
 ```bash
 cd frontend
 npm ci
-npx playwright test        # 15 kịch bản trên Chrome
+npx playwright test        # 16 kịch bản trên Chrome
 BROWSER_CHANNEL=msedge npx playwright test   # chạy lại trên Edge
 npx playwright show-report
 ```
