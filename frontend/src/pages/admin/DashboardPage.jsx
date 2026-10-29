@@ -90,27 +90,27 @@ export default function DashboardPage() {
         }
       />
 
-      <div className="page-enter relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-r from-slate-950 via-indigo-950 to-violet-900 p-6 text-white shadow-xl shadow-indigo-950/10">
+      <div className="dashboard-hero page-enter relative mb-6 overflow-hidden rounded-[24px] border border-[#dce6d5] p-6 sm:p-8">
         <div className="pointer-events-none absolute -right-10 -top-16 h-56 w-56 rounded-full bg-indigo-500/25 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-20 right-32 h-48 w-48 rounded-full bg-cyan-400/10 blur-3xl" />
         <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-indigo-300">
+            <p className="hero-muted text-[11px] font-semibold uppercase tracking-[0.2em]">
               Bảng điều khiển học vụ
             </p>
             <h2 className="mt-2 text-2xl font-semibold tracking-tight">
               Xin chào, {user?.hoTen || user?.username}
             </h2>
-            <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-slate-300">
+            <p className="hero-muted mt-1.5 max-w-xl text-sm leading-relaxed">
               Theo dõi tình hình mở lớp, đăng ký học phần và kết quả vận hành trong học kỳ hiện tại.
             </p>
           </div>
-          <div className="flex items-center gap-3 rounded-xl bg-white/10 px-4 py-3 ring-1 ring-white/15 backdrop-blur">
-            <span className="grid h-10 w-10 place-items-center rounded-lg bg-white/10 text-indigo-200">
+          <div className="flex items-center gap-3 rounded-xl border border-white/80 bg-white/70 px-4 py-3">
+            <span className="grid h-10 w-10 place-items-center rounded-lg bg-[#edf3e4] text-[#58734f]">
               <CalendarRange size={20} />
             </span>
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-indigo-200">
+              <p className="hero-muted text-[10px] font-semibold uppercase tracking-wider">
                 Học kỳ hiện tại
               </p>
               <p className="text-sm font-medium">{tongQuan?.hocKyHienTai || "—"}</p>
