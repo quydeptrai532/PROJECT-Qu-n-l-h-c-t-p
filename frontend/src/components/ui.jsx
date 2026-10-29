@@ -74,7 +74,7 @@ export function Alert({ tone = "info", children, onClose, className = "" }) {
 export function Spinner({ label = "Đang tải dữ liệu..." }) {
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-16 text-sm text-slate-500">
-      <span className="grid h-10 w-10 place-items-center rounded-full bg-indigo-50 text-indigo-600">
+      <span className="grid h-10 w-10 place-items-center rounded-full bg-[#edf3e4] text-[#58734f]">
         <Loader2 size={20} className="animate-spin" />
       </span>
       {label}
@@ -86,7 +86,7 @@ export function EmptyState({ icon: Icon, title, description, action }) {
   return (
     <div className="flex flex-col items-center justify-center gap-4 px-6 py-14 text-center">
       {Icon && (
-        <span className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-indigo-50 to-violet-100 text-indigo-500 ring-1 ring-indigo-100">
+        <span className="grid h-14 w-14 place-items-center rounded-2xl bg-[#edf3e4] text-[#58734f] ring-1 ring-[#dfe8d4]">
           <Icon size={26} />
         </span>
       )}
@@ -131,7 +131,7 @@ export function Modal({ open, onClose, title, description, children, footer, siz
         aria-label={title}
         className={`modal-panel relative mx-auto my-8 w-full ${sizes[size]} overflow-hidden rounded-2xl border border-white/60 bg-white shadow-2xl`}
       >
-        <div className="h-1 w-full bg-gradient-to-r from-indigo-500 via-violet-500 to-fuchsia-500" />
+        <div className="h-1 w-full bg-[#d9ed8a]" />
         <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-4">
           <div>
             <h2 className="text-base font-semibold text-slate-900">{title}</h2>
@@ -161,7 +161,7 @@ export function PageHeader({ title, description, actions, icon: Icon, eyebrow })
     <div className="page-enter mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
       <div className="flex items-start gap-3.5">
         {Icon ? (
-          <span className="mt-0.5 grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-600/25">
+          <span className="mt-0.5 grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#e8efe0] text-[#54734d] ring-1 ring-[#dce7d4]">
             <Icon size={22} />
           </span>
         ) : (
@@ -169,9 +169,9 @@ export function PageHeader({ title, description, actions, icon: Icon, eyebrow })
         )}
         <div>
           {eyebrow && (
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-indigo-600">{eyebrow}</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#718c68]">{eyebrow}</p>
           )}
-          <h1 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">{title}</h1>
+          <h1 className="page-heading text-xl font-semibold tracking-tight sm:text-2xl">{title}</h1>
           {description && (
             <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-500">{description}</p>
           )}
@@ -183,28 +183,28 @@ export function PageHeader({ title, description, actions, icon: Icon, eyebrow })
 }
 
 const STAT_TONES = {
-  indigo: "from-indigo-600 via-indigo-500 to-violet-500 shadow-indigo-600/25",
-  emerald: "from-emerald-600 via-emerald-500 to-teal-500 shadow-emerald-600/25",
-  amber: "from-amber-500 via-orange-500 to-rose-400 shadow-amber-500/25",
-  sky: "from-sky-600 via-sky-500 to-cyan-400 shadow-sky-600/25",
-  rose: "from-rose-600 via-rose-500 to-pink-500 shadow-rose-600/25",
+  indigo: "text-[#52704d] bg-[#edf3e4]",
+  emerald: "text-[#43766a] bg-[#e9f2eb]",
+  amber: "text-[#9a7048] bg-[#f7eee2]",
+  sky: "text-[#567b89] bg-[#eaf1f2]",
+  rose: "text-[#a4675c] bg-[#f7eae5]",
 };
 
 export function StatCard({ label, value, hint, icon: Icon, tone = "indigo" }) {
   return (
     <div
-      className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${STAT_TONES[tone] || STAT_TONES.indigo} p-5 text-white shadow-lg`}
+      className="stat-card relative overflow-hidden rounded-[20px] p-5"
     >
       <div className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full bg-white/10" />
       <div className="pointer-events-none absolute -bottom-12 -right-2 h-28 w-28 rounded-full bg-white/5" />
       <div className="relative flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-white/70">{label}</p>
+          <p className="stat-label text-[11px] font-semibold uppercase tracking-wider">{label}</p>
           <p className="mt-2 truncate text-3xl font-semibold tracking-tight">{value}</p>
-          {hint && <p className="mt-1.5 text-xs leading-snug text-white/70">{hint}</p>}
+          {hint && <p className="mt-1.5 text-xs leading-snug text-slate-500">{hint}</p>}
         </div>
         {Icon && (
-          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-white/15 ring-1 ring-white/20 backdrop-blur">
+          <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl ${STAT_TONES[tone] || STAT_TONES.indigo}`}>
             <Icon size={22} />
           </span>
         )}

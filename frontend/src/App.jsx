@@ -21,6 +21,7 @@ import SubjectPage from "./pages/admin/SubjectPage";
 import CourseClassPage from "./pages/admin/CourseClassPage";
 import StudentPage from "./pages/admin/StudentPage";
 import LecturerPage from "./pages/admin/LecturerPage";
+import AuditLogPage from "./pages/admin/AuditLogPage";
 
 function RootRedirect() {
   const { user } = useAuth();
@@ -177,6 +178,14 @@ export default function App() {
         element={
           <ProtectedRoute roles={["QUAN_TRI"]}>
             <LecturerPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/quan-tri/nhat-ky-hoat-dong"
+        element={
+          <ProtectedRoute roles={["QUAN_TRI"]}>
+            <AuditLogPage />
           </ProtectedRoute>
         }
       />

@@ -31,6 +31,7 @@ import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class UserService {
@@ -47,12 +48,13 @@ public class UserService {
     private final DtoMapper mapper;
     private final TransactionTemplate transactionTemplate;
     private final UserAuthCache userAuthCache;
+    private final AuditLogService auditLogService;
 
     public UserService(UserRepository userRepository, SinhVienRepository sinhVienRepository,
                        GiangVienRepository giangVienRepository, KhoaRepository khoaRepository,
                        NganhRepository nganhRepository, LopHanhChinhRepository lopHanhChinhRepository,
                        PasswordEncoder passwordEncoder, DtoMapper mapper, TransactionTemplate transactionTemplate,
-                       UserAuthCache userAuthCache) {
+                       UserAuthCache userAuthCache, AuditLogService auditLogService) {
         this.userRepository = userRepository;
         this.sinhVienRepository = sinhVienRepository;
         this.giangVienRepository = giangVienRepository;
@@ -63,6 +65,7 @@ public class UserService {
         this.mapper = mapper;
         this.transactionTemplate = transactionTemplate;
         this.userAuthCache = userAuthCache;
+        this.auditLogService = auditLogService;
     }
 
     @Transactional(readOnly = true)
@@ -82,32 +85,38 @@ public class UserService {
 
     @Transactional
     public UserDtos.SinhVienDto suaSinhVien(Long id, UserDtos.SinhVienRequest request) {
-        SinhVien sinhVien = sinhVienRepository.findById(id)
-                .orElseThrow(() -> ApiException.notFound("Sinh viên không tồn tại"));
-        String ma = request.ma().trim();
-        if (!sinhVien.getMa().equalsIgnoreCase(ma) && sinhVienRepository.existsByMa(ma)) {
-            throw ApiException.conflict("Mã sinh viên đã tồn tại");
-        }
-        sinhVien.setMa(ma);
-        sinhVien.setHoTen(request.hoTen().trim());
-        sinhVien.setEmail(request.email());
-        sinhVien.setSoDienThoai(request.soDienThoai());
-        sinhVien.setKhoa(request.khoaId() != null ? timKhoa(request.khoaId()) : null);
-        sinhVien.setNganh(request.nganhId() != null ? timNganh(request.nganhId()) : null);
-        sinhVien.setLopHanhChinh(request.lopId() != null ? timLop(request.lopId()) : null);
-        if (request.matKhau() != null && !request.matKhau().isBlank()) {
-            sinhVien.getUser().setPassword(passwordEncoder.encode(request.matKhau()));
-        }
-        return mapper.sinhVien(sinhVien);
+        return auditLogService.execute("STUDENT_ACCOUNT_UPDATED", "STUDENT_ACCOUNT", id, audit -> {
+            SinhVien sinhVien = sinhVienRepository.findById(id)
+                    .orElseThrow(() -> ApiException.notFound("Sinh viên không tồn tại"));
+            String ma = request.ma().trim();
+            if (!sinhVien.getMa().equalsIgnoreCase(ma) && sinhVienRepository.existsByMa(ma)) {
+                throw ApiException.conflict("Mã sinh viên đã tồn tại");
+            }
+            sinhVien.setMa(ma);
+            sinhVien.setHoTen(request.hoTen().trim());
+            sinhVien.setEmail(request.email());
+            sinhVien.setSoDienThoai(request.soDienThoai());
+            sinhVien.setKhoa(request.khoaId() != null ? timKhoa(request.khoaId()) : null);
+            sinhVien.setNganh(request.nganhId() != null ? timNganh(request.nganhId()) : null);
+            sinhVien.setLopHanhChinh(request.lopId() != null ? timLop(request.lopId()) : null);
+            if (request.matKhau() != null && !request.matKhau().isBlank()) {
+                sinhVien.getUser().setPassword(passwordEncoder.encode(request.matKhau()));
+            }
+            return mapper.sinhVien(sinhVien);
+        });
     }
 
     @Transactional
     public UserDtos.SinhVienDto doiTrangThaiSinhVien(Long id, boolean trangThai) {
-        SinhVien sinhVien = sinhVienRepository.findById(id)
-                .orElseThrow(() -> ApiException.notFound("Sinh viên không tồn tại"));
-        sinhVien.getUser().setTrangThai(trangThai);
-        userAuthCache.evict(sinhVien.getUser().getUsername());
-        return mapper.sinhVien(sinhVien);
+        return auditLogService.execute("STUDENT_ACCOUNT_STATUS_CHANGED", "STUDENT_ACCOUNT", id, audit -> {
+            SinhVien sinhVien = sinhVienRepository.findById(id)
+                    .orElseThrow(() -> ApiException.notFound("Sinh viên không tồn tại"));
+            boolean before = sinhVien.getUser().isTrangThai();
+            sinhVien.getUser().setTrangThai(trangThai);
+            userAuthCache.evict(sinhVien.getUser().getUsername());
+            audit.changes(Map.of("active", before), Map.of("active", trangThai));
+            return mapper.sinhVien(sinhVien);
+        });
     }
 
     @Transactional(readOnly = true)
@@ -121,47 +130,57 @@ public class UserService {
 
     @Transactional
     public UserDtos.GiangVienDto taoGiangVien(UserDtos.GiangVienRequest request) {
-        String ma = request.ma().trim();
-        if (giangVienRepository.existsByMa(ma)) {
-            throw ApiException.conflict("Mã giảng viên đã tồn tại");
-        }
-        User user = taoUser(request.username(), request.matKhau(), Role.GIANG_VIEN);
-        GiangVien giangVien = new GiangVien();
-        giangVien.setUser(user);
-        giangVien.setMa(ma);
-        giangVien.setHoTen(request.hoTen().trim());
-        giangVien.setEmail(request.email());
-        giangVien.setSoDienThoai(request.soDienThoai());
-        giangVien.setKhoa(request.khoaId() != null ? timKhoa(request.khoaId()) : null);
-        return mapper.giangVien(giangVienRepository.save(giangVien));
+        return auditLogService.execute("LECTURER_ACCOUNT_CREATED", "LECTURER_ACCOUNT", null, audit -> {
+            String ma = request.ma().trim();
+            if (giangVienRepository.existsByMa(ma)) {
+                throw ApiException.conflict("Mã giảng viên đã tồn tại");
+            }
+            User user = taoUser(request.username(), request.matKhau(), Role.GIANG_VIEN);
+            GiangVien giangVien = new GiangVien();
+            giangVien.setUser(user);
+            giangVien.setMa(ma);
+            giangVien.setHoTen(request.hoTen().trim());
+            giangVien.setEmail(request.email());
+            giangVien.setSoDienThoai(request.soDienThoai());
+            giangVien.setKhoa(request.khoaId() != null ? timKhoa(request.khoaId()) : null);
+            GiangVien saved = giangVienRepository.save(giangVien);
+            audit.entityId(saved.getId());
+            return mapper.giangVien(saved);
+        });
     }
 
     @Transactional
     public UserDtos.GiangVienDto suaGiangVien(Long id, UserDtos.GiangVienRequest request) {
-        GiangVien giangVien = giangVienRepository.findById(id)
-                .orElseThrow(() -> ApiException.notFound("Giảng viên không tồn tại"));
-        String ma = request.ma().trim();
-        if (!giangVien.getMa().equalsIgnoreCase(ma) && giangVienRepository.existsByMa(ma)) {
-            throw ApiException.conflict("Mã giảng viên đã tồn tại");
-        }
-        giangVien.setMa(ma);
-        giangVien.setHoTen(request.hoTen().trim());
-        giangVien.setEmail(request.email());
-        giangVien.setSoDienThoai(request.soDienThoai());
-        giangVien.setKhoa(request.khoaId() != null ? timKhoa(request.khoaId()) : null);
-        if (request.matKhau() != null && !request.matKhau().isBlank()) {
-            giangVien.getUser().setPassword(passwordEncoder.encode(request.matKhau()));
-        }
-        return mapper.giangVien(giangVien);
+        return auditLogService.execute("LECTURER_ACCOUNT_UPDATED", "LECTURER_ACCOUNT", id, audit -> {
+            GiangVien giangVien = giangVienRepository.findById(id)
+                    .orElseThrow(() -> ApiException.notFound("Giảng viên không tồn tại"));
+            String ma = request.ma().trim();
+            if (!giangVien.getMa().equalsIgnoreCase(ma) && giangVienRepository.existsByMa(ma)) {
+                throw ApiException.conflict("Mã giảng viên đã tồn tại");
+            }
+            giangVien.setMa(ma);
+            giangVien.setHoTen(request.hoTen().trim());
+            giangVien.setEmail(request.email());
+            giangVien.setSoDienThoai(request.soDienThoai());
+            giangVien.setKhoa(request.khoaId() != null ? timKhoa(request.khoaId()) : null);
+            if (request.matKhau() != null && !request.matKhau().isBlank()) {
+                giangVien.getUser().setPassword(passwordEncoder.encode(request.matKhau()));
+            }
+            return mapper.giangVien(giangVien);
+        });
     }
 
     @Transactional
     public UserDtos.GiangVienDto doiTrangThaiGiangVien(Long id, boolean trangThai) {
-        GiangVien giangVien = giangVienRepository.findById(id)
-                .orElseThrow(() -> ApiException.notFound("Giảng viên không tồn tại"));
-        giangVien.getUser().setTrangThai(trangThai);
-        userAuthCache.evict(giangVien.getUser().getUsername());
-        return mapper.giangVien(giangVien);
+        return auditLogService.execute("LECTURER_ACCOUNT_STATUS_CHANGED", "LECTURER_ACCOUNT", id, audit -> {
+            GiangVien giangVien = giangVienRepository.findById(id)
+                    .orElseThrow(() -> ApiException.notFound("Giảng viên không tồn tại"));
+            boolean before = giangVien.getUser().isTrangThai();
+            giangVien.getUser().setTrangThai(trangThai);
+            userAuthCache.evict(giangVien.getUser().getUsername());
+            audit.changes(Map.of("active", before), Map.of("active", trangThai));
+            return mapper.giangVien(giangVien);
+        });
     }
 
     public UserDtos.ImportResultDto importSinhVien(MultipartFile file) {
@@ -208,31 +227,35 @@ public class UserService {
     private UserDtos.SinhVienDto taoSinhVienTuRecord(String ma, String hoTen, String email, String soDienThoai,
                                                      Long khoaId, Long nganhId, Long lopId,
                                                      String username, String matKhau) {
-        if (ma == null || ma.isBlank()) {
-            throw ApiException.badRequest("Mã sinh viên không được để trống");
-        }
-        if (hoTen == null || hoTen.isBlank()) {
-            throw ApiException.badRequest("Họ tên không được để trống");
-        }
-        if (username == null || username.isBlank()) {
-            throw ApiException.badRequest("Tên đăng nhập không được để trống");
-        }
-        String maChuan = ma.trim();
-        if (sinhVienRepository.existsByMa(maChuan)) {
-            throw ApiException.conflict("Mã sinh viên đã tồn tại: " + maChuan);
-        }
+        return auditLogService.execute("STUDENT_ACCOUNT_CREATED", "STUDENT_ACCOUNT", null, audit -> {
+            if (ma == null || ma.isBlank()) {
+                throw ApiException.badRequest("Mã sinh viên không được để trống");
+            }
+            if (hoTen == null || hoTen.isBlank()) {
+                throw ApiException.badRequest("Họ tên không được để trống");
+            }
+            if (username == null || username.isBlank()) {
+                throw ApiException.badRequest("Tên đăng nhập không được để trống");
+            }
+            String maChuan = ma.trim();
+            if (sinhVienRepository.existsByMa(maChuan)) {
+                throw ApiException.conflict("Mã sinh viên đã tồn tại: " + maChuan);
+            }
 
-        User user = taoUser(username, matKhau, Role.SINH_VIEN);
-        SinhVien sinhVien = new SinhVien();
-        sinhVien.setUser(user);
-        sinhVien.setMa(maChuan);
-        sinhVien.setHoTen(hoTen.trim());
-        sinhVien.setEmail(email);
-        sinhVien.setSoDienThoai(soDienThoai);
-        sinhVien.setKhoa(khoaId != null ? timKhoa(khoaId) : null);
-        sinhVien.setNganh(nganhId != null ? timNganh(nganhId) : null);
-        sinhVien.setLopHanhChinh(lopId != null ? timLop(lopId) : null);
-        return mapper.sinhVien(sinhVienRepository.save(sinhVien));
+            User user = taoUser(username, matKhau, Role.SINH_VIEN);
+            SinhVien sinhVien = new SinhVien();
+            sinhVien.setUser(user);
+            sinhVien.setMa(maChuan);
+            sinhVien.setHoTen(hoTen.trim());
+            sinhVien.setEmail(email);
+            sinhVien.setSoDienThoai(soDienThoai);
+            sinhVien.setKhoa(khoaId != null ? timKhoa(khoaId) : null);
+            sinhVien.setNganh(nganhId != null ? timNganh(nganhId) : null);
+            sinhVien.setLopHanhChinh(lopId != null ? timLop(lopId) : null);
+            SinhVien saved = sinhVienRepository.save(sinhVien);
+            audit.entityId(saved.getId());
+            return mapper.sinhVien(saved);
+        });
     }
 
     private User taoUser(String username, String matKhau, Role role) {

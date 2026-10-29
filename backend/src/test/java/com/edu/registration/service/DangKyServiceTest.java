@@ -16,6 +16,7 @@ import com.edu.registration.repository.LopHocPhanRepository;
 import com.edu.registration.repository.MonTienQuyetRepository;
 import com.edu.registration.repository.SinhVienRepository;
 import com.edu.registration.security.CurrentUser;
+import com.edu.registration.service.AuditLogService.AuditContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,12 +28,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -55,6 +58,8 @@ class DangKyServiceTest {
     private HocKyService hocKyService;
     @Mock
     private DtoMapper mapper;
+    @Mock
+    private AuditLogService auditLogService;
 
     @InjectMocks
     private DangKyService dangKyService;
@@ -67,6 +72,10 @@ class DangKyServiceTest {
 
     @BeforeEach
     void setUp() {
+        lenient().when(auditLogService.execute(any(), any(), any(), any())).thenAnswer(invocation -> {
+            Function<AuditContext, Object> operation = invocation.getArgument(3);
+            return operation.apply(new AuditContext(null));
+        });
         user = new User();
         user.setId(1L);
         user.setUsername("sv01");
@@ -140,7 +149,11 @@ class DangKyServiceTest {
         when(monTienQuyetRepository.findByMonHocIdOrderByIdAsc(10L)).thenReturn(List.of());
         when(dangKyHocPhanRepository.findBySinhVienIdAndLopHocPhanId(1L, 100L)).thenReturn(Optional.empty());
         when(dangKyHocPhanRepository.save(any(DangKyHocPhan.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+                .thenAnswer(invocation -> {
+                    DangKyHocPhan saved = invocation.getArgument(0);
+                    saved.setId(501L);
+                    return saved;
+                });
 
         dangKyService.dangKy(100L);
 
@@ -329,7 +342,11 @@ class DangKyServiceTest {
         when(dangKyHocPhanRepository.findBySinhVienIdAndLopHocPhanId(1L, 100L))
                 .thenReturn(Optional.empty());
         when(dangKyHocPhanRepository.save(any(DangKyHocPhan.class)))
-                .thenAnswer(inv -> inv.getArgument(0));
+                .thenAnswer(inv -> {
+                    DangKyHocPhan saved = inv.getArgument(0);
+                    saved.setId(501L);
+                    return saved;
+                });
 
         dangKyService.dangKy(100L);
 
@@ -371,7 +388,11 @@ class DangKyServiceTest {
                 .thenReturn(List.of(new MonTienQuyet(monHoc, tienQuyet)));
         when(diemRepository.findMonDaDat(1L, 5.0)).thenReturn(List.of(9L));
         when(dangKyHocPhanRepository.findBySinhVienIdAndLopHocPhanId(1L, 100L)).thenReturn(Optional.empty());
-        when(dangKyHocPhanRepository.save(any(DangKyHocPhan.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(dangKyHocPhanRepository.save(any(DangKyHocPhan.class))).thenAnswer(inv -> {
+            DangKyHocPhan saved = inv.getArgument(0);
+            saved.setId(501L);
+            return saved;
+        });
 
         dangKyService.dangKy(100L);
 

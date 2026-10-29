@@ -64,45 +64,45 @@ export default function LecturerDashboard() {
 
   return (
     <div>
-      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-600 p-6 text-white shadow-xl shadow-emerald-600/20 sm:p-7">
+      <section className="dashboard-hero relative overflow-hidden rounded-[24px] border border-[#dce6d5] p-6 sm:p-8">
         <div className="pointer-events-none absolute -right-10 -top-20 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-24 left-24 h-56 w-56 rounded-full bg-emerald-300/10 blur-3xl" />
         <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-100">
+            <p className="hero-muted text-[11px] font-semibold uppercase tracking-[0.2em]">
               Không gian giảng dạy
             </p>
             <h2 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
               Xin chào, {user?.hoTen || user?.username}
             </h2>
-            <p className="mt-2 max-w-xl text-sm leading-relaxed text-emerald-100">
+            <p className="hero-muted mt-2 max-w-xl text-sm leading-relaxed">
               Bạn đang phụ trách {lopHienTai.length} lớp học phần với {tongSinhVien} sinh viên trong{" "}
               {hocKy?.ten || "học kỳ hiện tại"}.
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
               <Link
                 to="/lop-cua-toi"
-                className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-emerald-700 shadow-sm transition hover:bg-emerald-50"
+                className="hero-action inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold shadow-sm transition"
               >
                 <Layers size={16} /> Lớp học phần
               </Link>
               <Link
                 to="/lop-cua-toi/thoi-khoa-bieu"
-                className="inline-flex items-center gap-2 rounded-xl border border-white/30 bg-white/10 px-4 py-2.5 text-sm font-medium text-white backdrop-blur transition hover:bg-white/20"
+                className="inline-flex items-center gap-2 rounded-xl border border-[#cbd8c5] bg-white/60 px-4 py-2.5 text-sm font-medium text-[#34564c] transition hover:bg-white"
               >
                 <CalendarDays size={16} /> Lịch giảng dạy
               </Link>
             </div>
           </div>
 
-          <div className="w-full max-w-xs rounded-xl bg-white/10 p-4 ring-1 ring-white/20 backdrop-blur">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-100">
+          <div className="w-full max-w-xs rounded-xl border border-white/80 bg-white/70 p-4">
+            <p className="hero-muted text-[10px] font-semibold uppercase tracking-wider">
               Lịch dạy hôm nay
             </p>
             <p className="mt-1 text-lg font-semibold">
               {lichHomNay.length > 0 ? `${lichHomNay.length} buổi dạy` : "Không có lịch"}
             </p>
-            <p className="mt-2 text-[11px] text-emerald-100">{THU_LABEL[homNay] || "Hôm nay"}</p>
+            <p className="hero-muted mt-2 text-[11px]">{THU_LABEL[homNay] || "Hôm nay"}</p>
           </div>
         </div>
       </section>
