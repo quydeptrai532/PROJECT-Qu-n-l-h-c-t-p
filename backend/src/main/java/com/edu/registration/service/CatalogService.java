@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Transactional
@@ -32,11 +33,13 @@ public class CatalogService {
     private final HocKyRepository hocKyRepository;
     private final LopHocPhanRepository lopHocPhanRepository;
     private final DtoMapper mapper;
+    private final AuditLogService auditLogService;
 
     public CatalogService(KhoaRepository khoaRepository, NganhRepository nganhRepository,
                           LopHanhChinhRepository lopHanhChinhRepository, MonHocRepository monHocRepository,
                           MonTienQuyetRepository monTienQuyetRepository, HocKyRepository hocKyRepository,
-                          LopHocPhanRepository lopHocPhanRepository, DtoMapper mapper) {
+                          LopHocPhanRepository lopHocPhanRepository, DtoMapper mapper,
+                          AuditLogService auditLogService) {
         this.khoaRepository = khoaRepository;
         this.nganhRepository = nganhRepository;
         this.lopHanhChinhRepository = lopHanhChinhRepository;
@@ -45,6 +48,7 @@ public class CatalogService {
         this.hocKyRepository = hocKyRepository;
         this.lopHocPhanRepository = lopHocPhanRepository;
         this.mapper = mapper;
+        this.auditLogService = auditLogService;
     }
 
     @Transactional(readOnly = true)
@@ -156,35 +160,54 @@ public class CatalogService {
     }
 
     public CatalogDtos.MonHocDto taoMonHoc(CatalogDtos.MonHocRequest request) {
-        String ma = request.ma().trim();
-        if (monHocRepository.existsByMa(ma)) {
-            throw ApiException.conflict("Mã môn học đã tồn tại");
-        }
-        MonHoc monHoc = new MonHoc();
-        monHoc.setMa(ma);
-        monHoc.setTen(request.ten().trim());
-        monHoc.setSoTinChi(request.soTinChi());
-        monHoc.setKhoa(layKhoa(request.khoaId()));
-        return mapper.monHoc(monHocRepository.save(monHoc));
+        return auditLogService.execute("COURSE_CREATED", "COURSE", null, audit -> {
+            String ma = request.ma().trim();
+            if (monHocRepository.existsByMa(ma)) {
+                throw ApiException.conflict("Mã môn học đã tồn tại");
+            }
+            MonHoc monHoc = new MonHoc();
+            monHoc.setMa(ma);
+            monHoc.setTen(request.ten().trim());
+            monHoc.setSoTinChi(request.soTinChi());
+            monHoc.setKhoa(layKhoa(request.khoaId()));
+            MonHoc saved = monHocRepository.save(monHoc);
+            audit.entityId(saved.getId());
+            audit.changes(Map.of(), auditSnapshot(saved));
+            return mapper.monHoc(saved);
+        });
     }
 
     public CatalogDtos.MonHocDto suaMonHoc(Long id, CatalogDtos.MonHocRequest request) {
-        MonHoc monHoc = monHocRepository.findById(id)
-                .orElseThrow(() -> ApiException.notFound("Môn học không tồn tại"));
-        String ma = request.ma().trim();
-        if (!monHoc.getMa().equalsIgnoreCase(ma) && monHocRepository.existsByMa(ma)) {
-            throw ApiException.conflict("Mã môn học đã tồn tại");
-        }
-        monHoc.setMa(ma);
-        monHoc.setTen(request.ten().trim());
-        monHoc.setSoTinChi(request.soTinChi());
-        monHoc.setKhoa(layKhoa(request.khoaId()));
-        return mapper.monHoc(monHoc);
+        return auditLogService.execute("COURSE_UPDATED", "COURSE", id, audit -> {
+            MonHoc monHoc = monHocRepository.findById(id)
+                    .orElseThrow(() -> ApiException.notFound("Môn học không tồn tại"));
+            Map<String, Object> before = auditSnapshot(monHoc);
+            String ma = request.ma().trim();
+            if (!monHoc.getMa().equalsIgnoreCase(ma) && monHocRepository.existsByMa(ma)) {
+                throw ApiException.conflict("Mã môn học đã tồn tại");
+            }
+            monHoc.setMa(ma);
+            monHoc.setTen(request.ten().trim());
+            monHoc.setSoTinChi(request.soTinChi());
+            monHoc.setKhoa(layKhoa(request.khoaId()));
+            audit.changes(before, auditSnapshot(monHoc));
+            return mapper.monHoc(monHoc);
+        });
     }
 
     public void xoaMonHoc(Long id) {
-        monHocRepository.delete(monHocRepository.findById(id)
-                .orElseThrow(() -> ApiException.notFound("Môn học không tồn tại")));
+        auditLogService.execute("COURSE_DELETED", "COURSE", id, audit -> {
+            MonHoc monHoc = monHocRepository.findById(id)
+                    .orElseThrow(() -> ApiException.notFound("Môn học không tồn tại"));
+            audit.changes(auditSnapshot(monHoc), Map.of("trangThai", "DELETED"));
+            monHocRepository.delete(monHoc);
+            return null;
+        });
+    }
+
+    private Map<String, Object> auditSnapshot(MonHoc monHoc) {
+        return Map.of("maMon", monHoc.getMa(), "tenMon", monHoc.getTen(), "soTinChi", monHoc.getSoTinChi(),
+                "khoaId", monHoc.getKhoa().getId());
     }
 
     @Transactional(readOnly = true)
@@ -195,28 +218,37 @@ public class CatalogService {
     }
 
     public CatalogDtos.MonTienQuyetDto themTienQuyet(Long monHocId, CatalogDtos.MonTienQuyetRequest request) {
-        MonHoc monHoc = layMonHoc(monHocId);
-        MonHoc tienQuyet = layMonHoc(request.monTienQuyetId());
-        if (monHoc.getId().equals(tienQuyet.getId())) {
-            throw ApiException.badRequest("Môn học không thể là tiên quyết của chính nó");
-        }
-        if (monTienQuyetRepository.existsByMonHocIdAndMonTienQuyetId(monHocId, tienQuyet.getId())) {
-            throw ApiException.conflict("Môn tiên quyết đã tồn tại");
-        }
-        if (monTienQuyetRepository.existsByMonHocIdAndMonTienQuyetId(tienQuyet.getId(), monHocId)) {
-            throw ApiException.badRequest("Tạo thành vòng lặp tiên quyết giữa hai môn học");
-        }
-        MonTienQuyet lienKet = monTienQuyetRepository.save(new MonTienQuyet(monHoc, tienQuyet));
-        return mapper.monTienQuyet(lienKet);
+        return auditLogService.execute("PREREQUISITE_ADDED", "COURSE_PREREQUISITE", monHocId, audit -> {
+            MonHoc monHoc = layMonHoc(monHocId);
+            MonHoc tienQuyet = layMonHoc(request.monTienQuyetId());
+            if (monHoc.getId().equals(tienQuyet.getId())) {
+                throw ApiException.badRequest("Môn học không thể là tiên quyết của chính nó");
+            }
+            if (monTienQuyetRepository.existsByMonHocIdAndMonTienQuyetId(monHocId, tienQuyet.getId())) {
+                throw ApiException.conflict("Môn tiên quyết đã tồn tại");
+            }
+            if (monTienQuyetRepository.existsByMonHocIdAndMonTienQuyetId(tienQuyet.getId(), monHocId)) {
+                throw ApiException.badRequest("Tạo thành vòng lặp tiên quyết giữa hai môn học");
+            }
+            MonTienQuyet lienKet = monTienQuyetRepository.save(new MonTienQuyet(monHoc, tienQuyet));
+            audit.entityId(lienKet.getId());
+            audit.changes(Map.of(), Map.of("monHocId", monHocId, "monTienQuyetId", tienQuyet.getId()));
+            return mapper.monTienQuyet(lienKet);
+        });
     }
 
     public void xoaTienQuyet(Long monHocId, Long lienKetId) {
-        MonTienQuyet lienKet = monTienQuyetRepository.findById(lienKetId)
-                .orElseThrow(() -> ApiException.notFound("Liên kết môn tiên quyết không tồn tại"));
-        if (!lienKet.getMonHoc().getId().equals(monHocId)) {
-            throw ApiException.badRequest("Liên kết không thuộc môn học này");
-        }
-        monTienQuyetRepository.delete(lienKet);
+        auditLogService.execute("PREREQUISITE_REMOVED", "COURSE_PREREQUISITE", lienKetId, audit -> {
+            MonTienQuyet lienKet = monTienQuyetRepository.findById(lienKetId)
+                    .orElseThrow(() -> ApiException.notFound("Liên kết môn tiên quyết không tồn tại"));
+            if (!lienKet.getMonHoc().getId().equals(monHocId)) {
+                throw ApiException.badRequest("Liên kết không thuộc môn học này");
+            }
+            audit.changes(Map.of("monHocId", monHocId, "monTienQuyetId", lienKet.getMonTienQuyet().getId()),
+                    Map.of("trangThai", "DELETED"));
+            monTienQuyetRepository.delete(lienKet);
+            return null;
+        });
     }
 
     @Transactional(readOnly = true)
@@ -225,30 +257,53 @@ public class CatalogService {
     }
 
     public CatalogDtos.HocKyDto taoHocKy(CatalogDtos.HocKyRequest request) {
-        kiemTraHocKy(request);
-        if (hocKyRepository.existsByTenAndNamHoc(request.ten().trim(), request.namHoc().trim())) {
-            throw ApiException.conflict("Học kỳ đã tồn tại trong năm học này");
-        }
-        HocKy hocKy = new HocKy();
-        apDungHocKy(hocKy, request);
-        return mapper.hocKy(hocKyRepository.save(hocKy));
+        return auditLogService.execute("REGISTRATION_WINDOW_CREATED", "SEMESTER", null, audit -> {
+            kiemTraHocKy(request);
+            if (hocKyRepository.existsByTenAndNamHoc(request.ten().trim(), request.namHoc().trim())) {
+                throw ApiException.conflict("Học kỳ đã tồn tại trong năm học này");
+            }
+            HocKy hocKy = new HocKy();
+            apDungHocKy(hocKy, request);
+            HocKy saved = hocKyRepository.save(hocKy);
+            audit.entityId(saved.getId());
+            audit.changes(Map.of(), auditSnapshot(saved));
+            return mapper.hocKy(saved);
+        });
     }
 
     public CatalogDtos.HocKyDto suaHocKy(Long id, CatalogDtos.HocKyRequest request) {
-        HocKy hocKy = hocKyRepository.findById(id)
-                .orElseThrow(() -> ApiException.notFound("Học kỳ không tồn tại"));
-        kiemTraHocKy(request);
-        apDungHocKy(hocKy, request);
-        return mapper.hocKy(hocKy);
+        return auditLogService.execute("REGISTRATION_WINDOW_UPDATED", "SEMESTER", id, audit -> {
+            HocKy hocKy = hocKyRepository.findById(id)
+                    .orElseThrow(() -> ApiException.notFound("Học kỳ không tồn tại"));
+            Map<String, Object> before = auditSnapshot(hocKy);
+            kiemTraHocKy(request);
+            apDungHocKy(hocKy, request);
+            audit.changes(before, auditSnapshot(hocKy));
+            return mapper.hocKy(hocKy);
+        });
     }
 
     public void xoaHocKy(Long id) {
-        HocKy hocKy = hocKyRepository.findById(id)
-                .orElseThrow(() -> ApiException.notFound("Học kỳ không tồn tại"));
-        if (lopHocPhanRepository.countByHocKyId(id) > 0) {
-            throw ApiException.conflict("Học kỳ đã có lớp học phần, không thể xóa");
-        }
-        hocKyRepository.delete(hocKy);
+        auditLogService.execute("REGISTRATION_WINDOW_DELETED", "SEMESTER", id, audit -> {
+            HocKy hocKy = hocKyRepository.findById(id)
+                    .orElseThrow(() -> ApiException.notFound("Học kỳ không tồn tại"));
+            audit.changes(auditSnapshot(hocKy), Map.of("trangThai", "DELETED"));
+            if (lopHocPhanRepository.countByHocKyId(id) > 0) {
+                throw ApiException.conflict("Học kỳ đã có lớp học phần, không thể xóa");
+            }
+            hocKyRepository.delete(hocKy);
+            return null;
+        });
+    }
+
+    private Map<String, Object> auditSnapshot(HocKy hocKy) {
+        return Map.of(
+                "tenHocKy", hocKy.getTen(),
+                "namHoc", hocKy.getNamHoc(),
+                "dangKyTu", hocKy.getDangKyTu().toString(),
+                "dangKyDen", hocKy.getDangKyDen().toString(),
+                "soTinChiToiThieu", hocKy.getSoTinChiToiThieu(),
+                "soTinChiToiDa", hocKy.getSoTinChiToiDa());
     }
 
     private void kiemTraHocKy(CatalogDtos.HocKyRequest request) {

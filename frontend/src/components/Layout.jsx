@@ -8,6 +8,7 @@ import {
   CalendarRange,
   ClipboardList,
   GraduationCap,
+  History,
   Layers,
   LayoutDashboard,
   LogOut,
@@ -44,6 +45,7 @@ const NAV = {
     { to: "/quan-tri/lop-hoc-phan", label: "Lớp học phần", icon: Layers },
     { to: "/quan-tri/sinh-vien", label: "Sinh viên", icon: UserRound },
     { to: "/quan-tri/giang-vien", label: "Giảng viên", icon: UserCog },
+    { to: "/quan-tri/nhat-ky-hoat-dong", label: "Nhật ký hoạt động", icon: History },
   ],
 };
 

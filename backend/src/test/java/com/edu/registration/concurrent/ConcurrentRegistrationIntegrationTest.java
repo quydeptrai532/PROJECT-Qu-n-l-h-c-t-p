@@ -1,6 +1,7 @@
 package com.edu.registration.concurrent;
 
 import com.edu.registration.entity.DangKyHocPhan;
+import com.edu.registration.entity.AuditLog;
 import com.edu.registration.entity.GiangVien;
 import com.edu.registration.entity.HocKy;
 import com.edu.registration.entity.Khoa;
@@ -11,6 +12,7 @@ import com.edu.registration.entity.SinhVien;
 import com.edu.registration.entity.TrangThaiDangKy;
 import com.edu.registration.entity.User;
 import com.edu.registration.repository.DangKyHocPhanRepository;
+import com.edu.registration.repository.AuditLogRepository;
 import com.edu.registration.repository.GiangVienRepository;
 import com.edu.registration.repository.HocKyRepository;
 import com.edu.registration.repository.KhoaRepository;
@@ -30,6 +32,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -55,6 +58,10 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
+import org.springframework.dao.DataAccessResourceFailureException;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class ConcurrentRegistrationIntegrationTest {
@@ -86,6 +93,8 @@ class ConcurrentRegistrationIntegrationTest {
     @Autowired private GiangVienRepository giangVienRepository;
     @Autowired private LopHocPhanRepository lopHocPhanRepository;
     @Autowired private DangKyHocPhanRepository dangKyRepository;
+    @Autowired private AuditLogRepository auditLogRepository;
+    @SpyBean private AuditLogRepository auditLogRepositorySpy;
     @Autowired private JwtService jwtService;
     @Autowired private DataSource dataSource;
     @Autowired private EntityManager entityManager;
@@ -295,6 +304,98 @@ class ConcurrentRegistrationIntegrationTest {
                 primarySection.getId(), TrangThaiDangKy.DA_DANG_KY));
         entityManager.clear();
         assertEquals(capacity, lopHocPhanRepository.findById(primarySection.getId()).orElseThrow().getSiSoHienTai());
+    }
+
+    @Test
+    void successfulRegistrationAuditsTheServerActorTargetAndCorrelationId() {
+        HttpHeaders headers = headersFor(students.get(0));
+        headers.set("X-Correlation-ID", "registration-audit-test");
+        ResponseEntity<String> response = http.exchange("/api/dang-ky", HttpMethod.POST,
+                new HttpEntity<>(Map.of("lopHocPhanId", primarySection.getId()), headers), String.class);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        AuditLog event = auditLogRepository.findAll().stream()
+                .filter(row -> "COURSE_REGISTRATION".equals(row.getAction()))
+                .filter(row -> students.get(0).getUsername().equals(row.getActorUsername()))
+                .findFirst().orElseThrow();
+        assertEquals(students.get(0).getId(), event.getActorUserId());
+        assertEquals("SINH_VIEN", event.getActorRole());
+        assertEquals("COURSE_SECTION", event.getEntityType());
+        assertEquals(primarySection.getId().toString(), event.getEntityId());
+        assertEquals("SUCCESS", event.getResult());
+        assertEquals("registration-audit-test", event.getCorrelationId());
+        assertTrue(event.getDetailsJson().contains("DA_DANG_KY"));
+        assertFalse(event.getDetailsJson().contains("password"));
+        assertFalse(event.getDetailsJson().contains("token"));
+    }
+
+    @Test
+    void failedRegistrationWritesFailureOutcomeAndSafeCode() {
+        Long missingSectionId = Long.MAX_VALUE;
+        ResponseEntity<String> response = postRegistration(students.get(0), missingSectionId);
+
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+        AuditLog event = auditLogRepository.findAll().stream()
+                .filter(row -> "COURSE_REGISTRATION".equals(row.getAction()))
+                .filter(row -> students.get(0).getUsername().equals(row.getActorUsername()))
+                .findFirst().orElseThrow();
+        assertEquals("FAILURE", event.getResult());
+        assertEquals(missingSectionId.toString(), event.getEntityId());
+        assertTrue(event.getDetailsJson().contains("HTTP_404"));
+        assertFalse(event.getDetailsJson().contains("Lớp học phần không tồn tại"));
+    }
+
+    @Test
+    void studentCannotReadAdminAuditLogsAndAnonymousRequestIsRejected() {
+        ResponseEntity<String> studentResponse = http.exchange("/api/admin/audit-logs", HttpMethod.GET,
+                new HttpEntity<>(headersFor(students.get(0))), String.class);
+        ResponseEntity<String> anonymousResponse = http.getForEntity("/api/admin/audit-logs", String.class);
+
+        assertEquals(HttpStatus.FORBIDDEN, studentResponse.getStatusCode());
+        assertEquals(HttpStatus.UNAUTHORIZED, anonymousResponse.getStatusCode());
+    }
+
+    @Test
+    void adminAccountStatusChangeAuditsOnlyMinimalStatusValues() throws Exception {
+        User admin = userRepository.findByUsername("admin").orElseThrow();
+        SinhVien target = sinhVienRepository.findByUser(students.get(0)).orElseThrow();
+        HttpEntity<Map<String, Boolean>> request = new HttpEntity<>(Map.of("trangThai", false), headersFor(admin));
+
+        ResponseEntity<String> response = http.exchange("/api/admin/sinh-vien/" + target.getId() + "/trang-thai",
+                HttpMethod.PATCH, request, String.class);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        AuditLog event = auditLogRepository.findAll().stream()
+                .filter(row -> "STUDENT_ACCOUNT_STATUS_CHANGED".equals(row.getAction()))
+                .filter(row -> admin.getUsername().equals(row.getActorUsername()))
+                .findFirst().orElseThrow();
+        assertEquals(target.getId().toString(), event.getEntityId());
+        assertEquals("SUCCESS", event.getResult());
+        assertTrue(event.getDetailsJson().contains("\"active\":true"));
+        assertTrue(event.getDetailsJson().contains("\"active\":false"));
+        assertFalse(event.getDetailsJson().contains("email"));
+        assertFalse(event.getDetailsJson().contains("password"));
+
+        ResponseEntity<String> filtered = http.exchange(
+                "/api/admin/audit-logs?action=STUDENT_ACCOUNT_STATUS_CHANGED&actor=admin&entityType=STUDENT_ACCOUNT&page=0&size=10",
+                HttpMethod.GET, new HttpEntity<>(headersFor(admin)), String.class);
+        assertEquals(HttpStatus.OK, filtered.getStatusCode());
+        assertTrue(filtered.getBody().contains("STUDENT_ACCOUNT_STATUS_CHANGED"));
+        assertTrue(filtered.getBody().contains(target.getId().toString()));
+    }
+
+    @Test
+    void auditWriteFailureRollsBackRegistrationInsteadOfReturningSuccess() {
+        doThrow(new DataAccessResourceFailureException("audit storage unavailable"))
+                .when(auditLogRepositorySpy).saveAndFlush(any(AuditLog.class));
+
+        ResponseEntity<String> response = postRegistration(students.get(0), primarySection.getId());
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+        assertEquals(0, dangKyRepository.countByLopHocPhanIdAndTrangThai(
+                primarySection.getId(), TrangThaiDangKy.DA_DANG_KY));
+        entityManager.clear();
+        assertEquals(0, lopHocPhanRepository.findById(primarySection.getId()).orElseThrow().getSiSoHienTai());
     }
 
     private LopHocPhan saveSection(String suffix, MonHoc mon, HocKy term, GiangVien lecturer,
