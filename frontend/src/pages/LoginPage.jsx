@@ -41,29 +41,29 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="grid min-h-screen bg-slate-50 lg:grid-cols-2">
-      <div className="relative hidden overflow-hidden bg-slate-900 p-12 text-white lg:flex lg:flex-col lg:justify-between">
+    <div className="grid min-h-screen bg-[#f3f5f0] lg:grid-cols-2">
+      <div className="relative hidden overflow-hidden bg-[#173f3a] p-12 text-white lg:flex lg:flex-col lg:justify-between">
         <div
           className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full opacity-30 blur-3xl"
-          style={{ background: "radial-gradient(circle, #6366f1 0%, transparent 70%)" }}
+          style={{ background: "radial-gradient(circle, #d9ed8a 0%, transparent 70%)" }}
         />
         <div
           className="pointer-events-none absolute -bottom-32 -left-20 h-96 w-96 rounded-full opacity-20 blur-3xl"
-          style={{ background: "radial-gradient(circle, #22d3ee 0%, transparent 70%)" }}
+          style={{ background: "radial-gradient(circle, #8fb69b 0%, transparent 70%)" }}
         />
 
         <div className="relative flex items-center gap-3">
-          <span className="grid h-11 w-11 place-items-center rounded-xl bg-indigo-500">
+          <span className="grid h-11 w-11 place-items-center rounded-full bg-[#d9ed8a] text-[#173f3a]">
             <GraduationCap size={24} />
           </span>
           <div>
-            <p className="text-lg font-semibold">EduReg</p>
-            <p className="text-xs text-slate-400">Hệ thống quản lý đào tạo</p>
+            <p className="text-lg font-semibold">MỘC · CAMPUS</p>
+            <p className="text-xs text-[#b4c9bd]">Hệ thống quản lý đào tạo</p>
           </div>
         </div>
 
         <div className="relative max-w-md">
-          <p className="text-sm font-medium uppercase tracking-widest text-indigo-300">Học kỳ mới</p>
+          <p className="text-sm font-medium uppercase tracking-widest text-[#d9ed8a]">Học kỳ mới</p>
           <h1 className="mt-3 text-3xl font-semibold leading-tight">
             Đăng ký học phần nhanh chóng, quản lý kết quả học tập minh bạch.
           </h1>
@@ -73,15 +73,15 @@ export default function LoginPage() {
           </p>
           <ul className="mt-8 space-y-4 text-sm text-slate-200">
             <li className="flex items-start gap-3">
-              <BookOpen size={18} className="mt-0.5 text-indigo-300" />
+              <BookOpen size={18} className="mt-0.5 text-[#d9ed8a]" />
               Kiểm tra tự động môn tiên quyết, trùng lịch và sĩ số lớp.
             </li>
             <li className="flex items-start gap-3">
-              <ShieldCheck size={18} className="mt-0.5 text-indigo-300" />
+              <ShieldCheck size={18} className="mt-0.5 text-[#d9ed8a]" />
               Phân quyền theo vai trò, xác thực bằng JWT an toàn.
             </li>
             <li className="flex items-start gap-3">
-              <GraduationCap size={18} className="mt-0.5 text-indigo-300" />
+              <GraduationCap size={18} className="mt-0.5 text-[#d9ed8a]" />
               Xem điểm, GPA học kỳ và điểm tích lũy tức thời.
             </li>
           </ul>
@@ -111,10 +111,10 @@ export default function LoginPage() {
       <div className="flex items-center justify-center px-5 py-12">
         <div className="w-full max-w-md">
           <div className="mb-8 lg:hidden">
-            <span className="grid h-11 w-11 place-items-center rounded-xl bg-indigo-600 text-white">
+            <span className="grid h-11 w-11 place-items-center rounded-full bg-[#d9ed8a] text-[#173f3a]">
               <GraduationCap size={24} />
             </span>
-            <h1 className="mt-4 text-xl font-semibold text-slate-900">EduReg</h1>
+            <h1 className="mt-4 text-xl font-semibold text-slate-900">Mộc · Campus</h1>
             <p className="text-sm text-slate-500">Hệ thống quản lý đào tạo và đăng ký học phần</p>
           </div>
 
