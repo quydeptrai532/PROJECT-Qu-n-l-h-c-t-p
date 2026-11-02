@@ -30,6 +30,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -88,6 +89,10 @@ public class UserService {
         return auditLogService.execute("STUDENT_ACCOUNT_UPDATED", "STUDENT_ACCOUNT", id, audit -> {
             SinhVien sinhVien = sinhVienRepository.findById(id)
                     .orElseThrow(() -> ApiException.notFound("Sinh viên không tồn tại"));
+            Map<String, Object> before = accountSnapshot(
+                    sinhVien.getKhoa() == null ? null : sinhVien.getKhoa().getId(),
+                    sinhVien.getNganh() == null ? null : sinhVien.getNganh().getId(),
+                    sinhVien.getLopHanhChinh() == null ? null : sinhVien.getLopHanhChinh().getId());
             String ma = request.ma().trim();
             if (!sinhVien.getMa().equalsIgnoreCase(ma) && sinhVienRepository.existsByMa(ma)) {
                 throw ApiException.conflict("Mã sinh viên đã tồn tại");
@@ -102,6 +107,10 @@ public class UserService {
             if (request.matKhau() != null && !request.matKhau().isBlank()) {
                 sinhVien.getUser().setPassword(passwordEncoder.encode(request.matKhau()));
             }
+            audit.changes(before, accountSnapshot(
+                    sinhVien.getKhoa() == null ? null : sinhVien.getKhoa().getId(),
+                    sinhVien.getNganh() == null ? null : sinhVien.getNganh().getId(),
+                    sinhVien.getLopHanhChinh() == null ? null : sinhVien.getLopHanhChinh().getId()));
             return mapper.sinhVien(sinhVien);
         });
     }
@@ -145,6 +154,7 @@ public class UserService {
             giangVien.setKhoa(request.khoaId() != null ? timKhoa(request.khoaId()) : null);
             GiangVien saved = giangVienRepository.save(giangVien);
             audit.entityId(saved.getId());
+            audit.changes(Map.of(), lecturerSnapshot(saved.getKhoa() == null ? null : saved.getKhoa().getId()));
             return mapper.giangVien(saved);
         });
     }
@@ -154,6 +164,8 @@ public class UserService {
         return auditLogService.execute("LECTURER_ACCOUNT_UPDATED", "LECTURER_ACCOUNT", id, audit -> {
             GiangVien giangVien = giangVienRepository.findById(id)
                     .orElseThrow(() -> ApiException.notFound("Giảng viên không tồn tại"));
+            Map<String, Object> before = lecturerSnapshot(
+                    giangVien.getKhoa() == null ? null : giangVien.getKhoa().getId());
             String ma = request.ma().trim();
             if (!giangVien.getMa().equalsIgnoreCase(ma) && giangVienRepository.existsByMa(ma)) {
                 throw ApiException.conflict("Mã giảng viên đã tồn tại");
@@ -166,6 +178,8 @@ public class UserService {
             if (request.matKhau() != null && !request.matKhau().isBlank()) {
                 giangVien.getUser().setPassword(passwordEncoder.encode(request.matKhau()));
             }
+            audit.changes(before, lecturerSnapshot(
+                    giangVien.getKhoa() == null ? null : giangVien.getKhoa().getId()));
             return mapper.giangVien(giangVien);
         });
     }
@@ -254,6 +268,10 @@ public class UserService {
             sinhVien.setLopHanhChinh(lopId != null ? timLop(lopId) : null);
             SinhVien saved = sinhVienRepository.save(sinhVien);
             audit.entityId(saved.getId());
+            audit.changes(Map.of(), accountSnapshot(
+                    saved.getKhoa() == null ? null : saved.getKhoa().getId(),
+                    saved.getNganh() == null ? null : saved.getNganh().getId(),
+                    saved.getLopHanhChinh() == null ? null : saved.getLopHanhChinh().getId()));
             return mapper.sinhVien(saved);
         });
     }
@@ -298,5 +316,19 @@ public class UserService {
     private LopHanhChinh timLop(Long id) {
         return lopHanhChinhRepository.findById(id)
                 .orElseThrow(() -> ApiException.notFound("Lớp hành chính không tồn tại"));
+    }
+
+    private Map<String, Object> accountSnapshot(Long khoaId, Long nganhId, Long lopId) {
+        Map<String, Object> snapshot = new LinkedHashMap<>();
+        snapshot.put("khoaId", khoaId);
+        snapshot.put("nganhId", nganhId);
+        snapshot.put("lopId", lopId);
+        return snapshot;
+    }
+
+    private Map<String, Object> lecturerSnapshot(Long khoaId) {
+        Map<String, Object> snapshot = new LinkedHashMap<>();
+        snapshot.put("khoaId", khoaId);
+        return snapshot;
     }
 }
