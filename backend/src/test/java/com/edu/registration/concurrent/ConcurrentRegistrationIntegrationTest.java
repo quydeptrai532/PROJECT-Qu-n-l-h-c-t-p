@@ -434,6 +434,82 @@ class ConcurrentRegistrationIntegrationTest {
                 primarySection.getGiangVien().getUser().getId()));
     }
 
+    @Test
+    void adminActionAnalyticsUsesActiveRegistrationsAndSupportsSemesterAndFacultyFilters() {
+        MonHoc lowEnrollmentSubject = new MonHoc();
+        lowEnrollmentSubject.setMa("L" + runId);
+        lowEnrollmentSubject.setTen("Môn ít đăng ký " + runId);
+        lowEnrollmentSubject.setSoTinChi(3);
+        lowEnrollmentSubject.setKhoa(primarySection.getMonHoc().getKhoa());
+        lowEnrollmentSubject = monHocRepository.saveAndFlush(lowEnrollmentSubject);
+        secondSection.setMonHoc(lowEnrollmentSubject);
+        lopHocPhanRepository.saveAndFlush(secondSection);
+
+        Long registrationId = null;
+        for (int i = 0; i < capacity; i++) {
+            ResponseEntity<String> registered = postRegistration(students.get(i), primarySection.getId());
+            assertEquals(HttpStatus.OK, registered.getStatusCode());
+            if (i == 0) registrationId = readId(registered.getBody());
+        }
+        User admin = userRepository.findByUsername("admin").orElseThrow();
+        String endpoint = "/api/admin/thong-ke/hanh-dong?hocKyId=" + primarySection.getHocKy().getId();
+        HttpEntity<Void> adminRequest = new HttpEntity<>(headersFor(admin));
+        ResponseEntity<String> response = http.exchange(endpoint, HttpMethod.GET, adminRequest, String.class);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertTrue(response.getBody().contains("LOP_GAN_DAY"));
+        assertTrue(response.getBody().contains("MON_HET_CHO"));
+        assertTrue(response.getBody().contains("LOP_IT_DANG_KY"));
+        assertTrue(response.getBody().contains("\"daDangKy\":" + capacity));
+        assertTrue(response.getBody().contains("\"tongChiTieu\":" + capacity));
+        assertTrue(response.getBody().contains("/quan-tri/lop-hoc-phan?hocKyId="));
+
+        assertEquals(HttpStatus.OK, http.exchange("/api/dang-ky/" + registrationId, HttpMethod.DELETE,
+                new HttpEntity<>(headersFor(students.get(0))), String.class).getStatusCode());
+        ResponseEntity<String> afterCancel = http.exchange(endpoint, HttpMethod.GET, adminRequest, String.class);
+        assertFalse(afterCancel.getBody().contains("\"loai\":\"LOP_GAN_DAY\""));
+        assertFalse(afterCancel.getBody().contains("\"loai\":\"MON_HET_CHO\""));
+        assertTrue(afterCancel.getBody().contains("LOP_IT_DANG_KY"));
+
+        Khoa otherFaculty = new Khoa();
+        otherFaculty.setMa("F" + runId);
+        otherFaculty.setTen("Khoa không có lớp " + runId);
+        otherFaculty = khoaRepository.saveAndFlush(otherFaculty);
+        ResponseEntity<String> filtered = http.exchange(endpoint + "&khoaId=" + otherFaculty.getId(),
+                HttpMethod.GET, adminRequest, String.class);
+        assertEquals(HttpStatus.OK, filtered.getStatusCode());
+        assertTrue(filtered.getBody().contains("Khoa không có lớp"));
+        assertTrue(filtered.getBody().contains("\"canhBao\":[]"));
+        ResponseEntity<String> filteredSubjectStats = http.exchange(
+                "/api/admin/thong-ke/theo-mon?hocKyId=" + primarySection.getHocKy().getId()
+                        + "&khoaId=" + otherFaculty.getId(), HttpMethod.GET, adminRequest, String.class);
+        assertEquals(HttpStatus.OK, filteredSubjectStats.getStatusCode());
+        assertEquals("[]", filteredSubjectStats.getBody());
+        ResponseEntity<String> invalidFaculty = http.exchange(endpoint + "&khoaId=999999999", HttpMethod.GET,
+                adminRequest, String.class);
+        assertEquals(HttpStatus.NOT_FOUND, invalidFaculty.getStatusCode());
+
+        ResponseEntity<String> studentResponse = http.exchange(endpoint, HttpMethod.GET,
+                new HttpEntity<>(headersFor(students.get(0))), String.class);
+        ResponseEntity<String> anonymousResponse = http.getForEntity(endpoint, String.class);
+        assertEquals(HttpStatus.FORBIDDEN, studentResponse.getStatusCode());
+        assertEquals(HttpStatus.UNAUTHORIZED, anonymousResponse.getStatusCode());
+    }
+
+    @Test
+    void adminActionAnalyticsReportsRegistrationWindowClosingOnlyWhenOpenAndWithinSevenDays() {
+        primarySection.getHocKy().setDangKyDen(LocalDate.now().plusDays(3));
+        hocKyRepository.saveAndFlush(primarySection.getHocKy());
+        User admin = userRepository.findByUsername("admin").orElseThrow();
+        String endpoint = "/api/admin/thong-ke/hanh-dong?hocKyId=" + primarySection.getHocKy().getId();
+        ResponseEntity<String> response = http.exchange(endpoint, HttpMethod.GET,
+                new HttpEntity<>(headersFor(admin)), String.class);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertTrue(response.getBody().contains("DOT_DANG_KY_SAP_DONG"));
+        assertTrue(response.getBody().contains("Còn 3 ngày"));
+        assertTrue(response.getBody().contains("/quan-tri/hoc-ky"));
+    }
+
     private ThongBao saveNotice(User recipient, String title) {
         ThongBao notice = new ThongBao();
         notice.setRecipient(recipient);

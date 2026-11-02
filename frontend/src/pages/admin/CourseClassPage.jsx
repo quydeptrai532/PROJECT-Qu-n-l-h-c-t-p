@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Download, Layers, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import api, { getErrorMessage } from "../../api/client";
 import { useConfirm } from "../../components/ConfirmDialog";
@@ -19,13 +20,14 @@ const EMPTY_FORM = {
 };
 
 export default function CourseClassPage() {
+  const [searchParams] = useSearchParams();
   const confirm = useConfirm();
   const { data: hocKyList } = useApi("/admin/hoc-ky");
   const { data: monHocList } = useApi("/admin/mon-hoc");
   const { data: giangVienList } = useApi("/admin/giang-vien");
 
-  const [hocKyId, setHocKyId] = useState("");
-  const [keyword, setKeyword] = useState("");
+  const [hocKyId, setHocKyId] = useState(() => searchParams.get("hocKyId") || "");
+  const [keyword, setKeyword] = useState(() => searchParams.get("keyword") || "");
   const [message, setMessage] = useState("");
   const [warning, setWarning] = useState("");
   const [actionError, setActionError] = useState("");

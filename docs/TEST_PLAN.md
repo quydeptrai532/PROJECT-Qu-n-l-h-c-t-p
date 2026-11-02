@@ -192,3 +192,11 @@ Gồm: đăng nhập, dashboard sinh viên, đăng ký học phần, điểm & G
 - Safari mới được kiểm thử bằng WebKit của Playwright; chưa kiểm thử trên thiết bị Apple thật (macOS/iOS).
 - Load test mới đo endpoint danh sách lớp; nên bổ sung kịch bản đăng ký đồng thời để kiểm chứng khóa bi quan dưới tải.
 - E2E dùng dữ liệu seed và có thao tác tạo/xóa/lock/unlock; các test đã được viết để chạy lại an toàn trên database mới.
+
+## 12. QLSV-52: Admin Analytics thành danh sách hành động
+
+- Dữ liệu cảnh báo được đếm từ các đăng ký `DA_DANG_KY`; trạng thái `DA_HUY` không được tính. Bộ lọc học kỳ/khoa chạy ở backend.
+- Integration coverage: cảnh báo lớp gần đầy, lớp ít đăng ký, môn đạt tổng chỉ tiêu; sau khi hủy đăng ký cảnh báo được tính lại; lọc khoa không có lớp trả danh sách trống; khoa không tồn tại trả 404; sinh viên bị 403 và request không xác thực bị 401; kỳ đăng ký đang mở và còn 3 ngày sinh cảnh báo sắp đóng.
+- Lệnh `cd backend && ./mvnw test`: 42/42 tests đạt (23 unit + 19 integration, H2).
+- Lệnh `cd frontend && npm run build`: đạt.
+- Chưa chạy E2E Playwright cho thay đổi Analytics hoặc database MySQL; E2E tập trung UI và MySQL không được cấu hình trong lần kiểm tra này.

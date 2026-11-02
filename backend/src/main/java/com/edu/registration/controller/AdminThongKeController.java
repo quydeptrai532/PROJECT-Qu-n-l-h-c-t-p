@@ -33,8 +33,15 @@ public class AdminThongKeController {
     }
 
     @GetMapping("/thong-ke/theo-mon")
-    public List<StatDtos.ThongKeMonDto> theoMon(@RequestParam(required = false) Long hocKyId) {
-        return thongKeService.theoMon(hocKyId);
+    public List<StatDtos.ThongKeMonDto> theoMon(@RequestParam(required = false) Long hocKyId,
+                                                @RequestParam(required = false) Long khoaId) {
+        return thongKeService.theoMon(hocKyId, khoaId);
+    }
+
+    @GetMapping("/thong-ke/hanh-dong")
+    public StatDtos.HanhDongHocVuDto hanhDong(@RequestParam(required = false) Long hocKyId,
+                                              @RequestParam(required = false) Long khoaId) {
+        return thongKeService.hanhDong(hocKyId, khoaId);
     }
 
     @GetMapping("/lop-hoc-phan/{id}/csv")

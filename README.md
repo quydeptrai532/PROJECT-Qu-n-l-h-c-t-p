@@ -158,7 +158,7 @@ Dữ liệu mẫu gồm 2 khoa, 3 ngành, 3 lớp hành chính, 8 môn học (c�
 | CRUD | `/api/admin/lop-hoc-phan` | Mở lớp học phần |
 | CRUD | `/api/admin/sinh-vien`, `/giang-vien` | Quản lý người dùng |
 | POST | `/api/admin/sinh-vien/import` | Nhập sinh viên từ CSV |
-| GET | `/api/admin/thong-ke/tong-quan`, `/theo-mon` | Thống kê |
+| GET | `/api/admin/thong-ke/tong-quan`, `/theo-mon`, `/hanh-dong?hocKyId=&khoaId=` | Thống kê và danh sách việc giáo vụ cần chú ý; chỉ quản trị viên |
 | GET | `/api/admin/lop-hoc-phan/{id}/csv` | Xuất danh sách lớp CSV |
 | GET | `/api/admin/audit-logs` | Tra cứu nhật ký (lọc thời gian, người dùng, hành động, đối tượng; phân trang; chỉ quản trị viên) |
 | GET | `/api/notifications?unreadOnly=&page=&size=` | Danh sách thông báo của người đăng nhập (sinh viên/giảng viên), có lọc chưa đọc và phân trang |
@@ -186,7 +186,7 @@ SV010,Nguyễn Văn A,a@student.edu.vn,1,1,1
 
 ```bash
 cd backend
-./mvnw test        # 40 test: 23 unit + 17 integration trên HTTP
+./mvnw test        # 42 test: 23 unit + 19 integration trên HTTP
 ```
 
 ### E2E với Playwright
