@@ -37,7 +37,7 @@ public class AuditLogService {
             "maLop", "monHocId", "hocKyId", "giangVienId", "phong", "thu", "tietBatDau", "soTiet",
             "siSoToiDa", "siSoHienTai", "conLai", "tenHocKy", "namHoc", "dangKyTu", "dangKyDen", "soTinChiToiThieu",
             "soTinChiToiDa", "trangThai", "dangKyId", "lopHocPhanId", "active", "maMon", "tenMon", "soTinChi",
-            "khoaId", "monTienQuyetId"
+            "khoaId", "nganhId", "lopId", "monTienQuyetId"
     );
 
     private final AuditLogRepository repository;
@@ -128,8 +128,8 @@ public class AuditLogService {
     private static Map<String, Object> safeSnapshot(Map<String, ?> input) {
         Map<String, Object> safe = new LinkedHashMap<>();
         input.forEach((key, value) -> {
-            if (SAFE_DETAIL_FIELDS.contains(key) && value != null
-                    && (value instanceof Number || value instanceof Boolean || value instanceof String)) {
+            if (SAFE_DETAIL_FIELDS.contains(key) && (value == null
+                    || value instanceof Number || value instanceof Boolean || value instanceof String)) {
                 String safeValue = value instanceof String string ? string.substring(0, Math.min(string.length(), 160)) : null;
                 safe.put(key, safeValue == null ? value : safeValue);
             }

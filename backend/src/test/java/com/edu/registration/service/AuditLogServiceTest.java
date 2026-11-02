@@ -23,6 +23,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.mock.web.MockHttpServletRequest;
 
 import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -108,6 +109,29 @@ class AuditLogServiceTest {
         assertEquals("88", event.getEntityId());
         assertTrue(event.getDetailsJson().contains("HTTP_409"));
         assertFalse(event.getDetailsJson().contains("private value"));
+    }
+
+    @Test
+    void safeSnapshotsCanShowRemovedAcademicAssignmentsWithoutCapturingPersonalData() {
+        auditLogService.execute("STUDENT_ACCOUNT_UPDATED", "STUDENT_ACCOUNT", 19L, audit -> {
+            Map<String, Object> before = new LinkedHashMap<>();
+            before.put("khoaId", 3L);
+            before.put("nganhId", 7L);
+            Map<String, Object> after = new LinkedHashMap<>();
+            after.put("khoaId", 3L);
+            after.put("nganhId", null);
+            after.put("email", "private@example.test");
+            after.put("name", "Private Name");
+            audit.changes(before, after);
+            return null;
+        });
+
+        ArgumentCaptor<AuditLog> captor = ArgumentCaptor.forClass(AuditLog.class);
+        verify(repository).saveAndFlush(captor.capture());
+        String details = captor.getValue().getDetailsJson();
+        assertTrue(details.contains("\"nganhId\":null"));
+        assertFalse(details.contains("private@example.test"));
+        assertFalse(details.contains("Private Name"));
     }
 
     @Test
