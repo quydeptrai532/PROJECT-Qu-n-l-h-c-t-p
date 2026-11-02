@@ -8,11 +8,11 @@
 
 1. Tạo, sửa hoặc xóa môn học trong danh mục môn. Nhật ký ghi `COURSE_CREATED`, `COURSE_UPDATED` hoặc `COURSE_DELETED`; thay đổi môn tiên quyết ghi `PREREQUISITE_ADDED`/`PREREQUISITE_REMOVED` cùng ID các môn liên quan. Tạo hoặc sửa lớp học phần trong phần quản lý lớp ghi `COURSE_SECTION_CREATED` hoặc `COURSE_SECTION_UPDATED` cùng ID lớp và các trường lịch/phòng/sĩ số liên quan.
 2. Thay đổi thời gian mở/đóng đăng ký hoặc giới hạn tín chỉ của học kỳ. Lọc `REGISTRATION_WINDOW_UPDATED` để xem giá trị trước và sau.
-3. Khóa hoặc mở khóa tài khoản sinh viên/giảng viên. Lọc theo người thao tác và loại đối tượng; chi tiết chỉ có trạng thái hoạt động trước/sau.
+3. Tạo/cập nhật hồ sơ sinh viên hoặc giảng viên, rồi khóa/mở khóa tài khoản. Lọc theo người thao tác và loại đối tượng; chi tiết hồ sơ chỉ có ID khoa/ngành/lớp hành chính trước/sau, còn khóa/mở khóa chỉ ghi trạng thái hoạt động trước/sau.
 4. Đăng ký hoặc hủy đăng ký lớp học phần. Sự kiện có kết quả, ID đăng ký/lớp và sĩ số trước/sau. Thử đăng ký lớp không hợp lệ để xem mã kết quả thất bại.
 5. Lọc theo ngày và ID đối tượng, chuyển trang để kiểm tra truy vấn.
 
-Các sự kiện ghi nhận gồm tạo/cập nhật/xóa môn học và lớp học phần; thêm/xóa môn tiên quyết; tạo/cập nhật/xóa cấu hình học kỳ có lịch đăng ký; tạo/cập nhật/khóa/mở khóa tài khoản sinh viên/giảng viên; đăng ký và hủy đăng ký học phần. Khoa, ngành, lớp hành chính chưa được ghi audit; ứng dụng hiện không có luồng quản trị đổi quyền/vai trò riêng. Thông tin hồ sơ cá nhân, mật khẩu, email và số điện thoại không được đưa vào chi tiết audit. Thao tác chỉ đọc, đăng nhập, xem Course Planner và thao tác chưa có trong danh sách trên hiện chưa phát sinh audit event.
+Các sự kiện ghi nhận gồm tạo/cập nhật/xóa môn học và lớp học phần; thêm/xóa môn tiên quyết; tạo/cập nhật/xóa cấu hình học kỳ có lịch đăng ký; tạo/cập nhật/khóa/mở khóa tài khoản sinh viên/giảng viên; đăng ký và hủy đăng ký học phần. Khoa, ngành, lớp hành chính chưa được ghi audit; ứng dụng hiện không có luồng quản trị đổi quyền/vai trò riêng. Chi tiết hồ sơ tài khoản chỉ ghi ID phân loại học vụ cần thiết; họ tên, mã cá nhân, mật khẩu, email và số điện thoại không được đưa vào chi tiết audit. Thao tác chỉ đọc, đăng nhập, xem Course Planner và thao tác chưa có trong danh sách trên hiện chưa phát sinh audit event.
 
 ## Tính toàn vẹn và riêng tư
 
