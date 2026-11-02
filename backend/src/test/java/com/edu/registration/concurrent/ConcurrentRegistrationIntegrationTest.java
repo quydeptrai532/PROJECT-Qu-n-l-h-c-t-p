@@ -2,6 +2,7 @@ package com.edu.registration.concurrent;
 
 import com.edu.registration.entity.DangKyHocPhan;
 import com.edu.registration.entity.AuditLog;
+import com.edu.registration.entity.ThongBao;
 import com.edu.registration.entity.GiangVien;
 import com.edu.registration.entity.HocKy;
 import com.edu.registration.entity.Khoa;
@@ -13,6 +14,7 @@ import com.edu.registration.entity.TrangThaiDangKy;
 import com.edu.registration.entity.User;
 import com.edu.registration.repository.DangKyHocPhanRepository;
 import com.edu.registration.repository.AuditLogRepository;
+import com.edu.registration.repository.ThongBaoRepository;
 import com.edu.registration.repository.GiangVienRepository;
 import com.edu.registration.repository.HocKyRepository;
 import com.edu.registration.repository.KhoaRepository;
@@ -22,6 +24,7 @@ import com.edu.registration.repository.MonTienQuyetRepository;
 import com.edu.registration.repository.SinhVienRepository;
 import com.edu.registration.repository.UserRepository;
 import com.edu.registration.security.JwtService;
+import com.edu.registration.service.ThongBaoService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,6 +48,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -94,6 +98,8 @@ class ConcurrentRegistrationIntegrationTest {
     @Autowired private LopHocPhanRepository lopHocPhanRepository;
     @Autowired private DangKyHocPhanRepository dangKyRepository;
     @Autowired private AuditLogRepository auditLogRepository;
+    @Autowired private ThongBaoRepository thongBaoRepository;
+    @Autowired private ThongBaoService thongBaoService;
     @SpyBean private AuditLogRepository auditLogRepositorySpy;
     @Autowired private JwtService jwtService;
     @Autowired private DataSource dataSource;
@@ -287,6 +293,7 @@ class ConcurrentRegistrationIntegrationTest {
         assertTrue(response.getBody().contains("tiên quyết"));
         assertEquals(0, dangKyRepository.countByLopHocPhanIdAndTrangThai(
                 primarySection.getId(), TrangThaiDangKy.DA_DANG_KY));
+        assertEquals(0, thongBaoRepository.countByRecipientIdAndReadAtIsNull(students.get(0).getId()));
         entityManager.clear();
         assertEquals(0, lopHocPhanRepository.findById(primarySection.getId()).orElseThrow().getSiSoHienTai());
     }
@@ -327,6 +334,117 @@ class ConcurrentRegistrationIntegrationTest {
         assertTrue(event.getDetailsJson().contains("DA_DANG_KY"));
         assertFalse(event.getDetailsJson().contains("password"));
         assertFalse(event.getDetailsJson().contains("token"));
+    }
+
+    @Test
+    void registrationCreatesIdempotentNoticesForTheStudentAndResponsibleLecturer() {
+        assertEquals(HttpStatus.OK, postRegistration(students.get(0), primarySection.getId()).getStatusCode());
+
+        List<ThongBao> studentNotices = thongBaoRepository.findByRecipientId(students.get(0).getId(),
+                org.springframework.data.domain.PageRequest.of(0, 20)).getContent();
+        List<ThongBao> lecturerNotices = thongBaoRepository.findByRecipientId(
+                primarySection.getGiangVien().getUser().getId(),
+                org.springframework.data.domain.PageRequest.of(0, 20)).getContent();
+        assertEquals(1, studentNotices.stream().filter(n -> n.getEventType().equals("COURSE_REGISTRATION_CONFIRMED")).count());
+        assertEquals(1, lecturerNotices.stream().filter(n -> n.getEventType().equals("COURSE_REGISTRATION_CONFIRMED")).count());
+        assertTrue(studentNotices.get(0).getTargetUrl().startsWith("/"));
+        assertFalse(studentNotices.get(0).getMessage().contains(students.get(0).getUsername()));
+        assertEquals(0, thongBaoRepository.countByRecipientIdAndReadAtIsNull(students.get(1).getId()));
+
+        assertEquals(HttpStatus.CONFLICT, postRegistration(students.get(0), primarySection.getId()).getStatusCode());
+        assertEquals(1, thongBaoRepository.findByRecipientId(students.get(0).getId(),
+                org.springframework.data.domain.PageRequest.of(0, 20)).getContent().stream()
+                .filter(n -> n.getEventType().equals("COURSE_REGISTRATION_CONFIRMED")).count());
+    }
+
+    @Test
+    void scheduleChangeNotifiesOnlyCurrentEnrolledStudentsAndInstructorAndNoOpDoesNotRepeat() {
+        assertEquals(HttpStatus.OK, postRegistration(students.get(0), primarySection.getId()).getStatusCode());
+        User admin = userRepository.findByUsername("admin").orElseThrow();
+        Map<String, Object> edit = Map.of(
+                "ma", primarySection.getMa(),
+                "monHocId", primarySection.getMonHoc().getId(),
+                "hocKyId", primarySection.getHocKy().getId(),
+                "giangVienId", primarySection.getGiangVien().getId(),
+                "phong", "N" + runId,
+                "thu", primarySection.getThu(),
+                "tietBatDau", primarySection.getTietBatDau(),
+                "soTiet", primarySection.getSoTiet(),
+                "siSoToiDa", primarySection.getSiSoToiDa());
+        HttpHeaders headers = headersFor(admin);
+        String endpoint = "/api/admin/lop-hoc-phan/" + primarySection.getId();
+
+        assertEquals(HttpStatus.OK, http.exchange(endpoint, HttpMethod.PUT,
+                new HttpEntity<>(edit, headers), String.class).getStatusCode());
+        assertEquals(HttpStatus.OK, http.exchange(endpoint, HttpMethod.PUT,
+                new HttpEntity<>(edit, headers), String.class).getStatusCode());
+
+        assertEquals(1, thongBaoRepository.findByRecipientId(students.get(0).getId(),
+                org.springframework.data.domain.PageRequest.of(0, 50)).getContent().stream()
+                .filter(n -> n.getEventType().equals("COURSE_SECTION_SCHEDULE_CHANGED")).count());
+        assertEquals(1, thongBaoRepository.findByRecipientId(primarySection.getGiangVien().getUser().getId(),
+                org.springframework.data.domain.PageRequest.of(0, 50)).getContent().stream()
+                .filter(n -> n.getEventType().equals("COURSE_SECTION_SCHEDULE_CHANGED")).count());
+        assertEquals(0, thongBaoRepository.countByRecipientIdAndReadAtIsNull(students.get(1).getId()));
+    }
+
+    @Test
+    void notificationReadsAndUpdatesAreRestrictedToTheAuthenticatedRecipient() {
+        ThongBao own = saveNotice(students.get(0), "own-notice");
+        ThongBao other = saveNotice(students.get(1), "other-notice");
+        HttpEntity<Void> ownRequest = new HttpEntity<>(headersFor(students.get(0)));
+        HttpEntity<Void> otherRequest = new HttpEntity<>(headersFor(students.get(1)));
+
+        ResponseEntity<String> ownList = http.exchange("/api/notifications?unreadOnly=true", HttpMethod.GET,
+                ownRequest, String.class);
+        ResponseEntity<String> otherList = http.exchange("/api/notifications", HttpMethod.GET,
+                otherRequest, String.class);
+        assertEquals(HttpStatus.OK, ownList.getStatusCode());
+        assertTrue(ownList.getBody().contains("own-notice"));
+        assertFalse(ownList.getBody().contains("other-notice"));
+        assertTrue(otherList.getBody().contains("other-notice"));
+        assertFalse(otherList.getBody().contains("own-notice"));
+
+        ResponseEntity<String> forbiddenUpdate = http.exchange("/api/notifications/" + other.getId() + "/read",
+                HttpMethod.PATCH, ownRequest, String.class);
+        assertEquals(HttpStatus.NOT_FOUND, forbiddenUpdate.getStatusCode());
+        ResponseEntity<String> markRead = http.exchange("/api/notifications/" + own.getId() + "/read",
+                HttpMethod.PATCH, ownRequest, String.class);
+        assertEquals(HttpStatus.OK, markRead.getStatusCode());
+        assertTrue(markRead.getBody().contains("\"read\":true"));
+        assertEquals(0, thongBaoRepository.countByRecipientIdAndReadAtIsNull(students.get(0).getId()));
+
+        assertEquals(HttpStatus.FORBIDDEN, http.exchange("/api/notifications", HttpMethod.GET,
+                new HttpEntity<>(headersFor(userRepository.findByUsername("admin").orElseThrow())), String.class).getStatusCode());
+        assertEquals(HttpStatus.UNAUTHORIZED, http.getForEntity("/api/notifications", String.class).getStatusCode());
+    }
+
+    @Test
+    void registrationWindowReminderIsOnlyForActiveStudentsAndIsIdempotent() {
+        primarySection.getHocKy().setDangKyDen(LocalDate.now().plusDays(1));
+        hocKyRepository.saveAndFlush(primarySection.getHocKy());
+
+        int created = thongBaoService.remindClosingRegistrationWindow(primarySection.getHocKy().getId(), LocalDate.now());
+        int repeated = thongBaoService.remindClosingRegistrationWindow(primarySection.getHocKy().getId(), LocalDate.now());
+
+        assertEquals(sinhVienRepository.findAllActiveWithUser().size(), created);
+        assertEquals(0, repeated);
+        assertEquals(1, thongBaoRepository.countByRecipientIdAndReadAtIsNull(students.get(0).getId()));
+        assertEquals(0, thongBaoRepository.countByRecipientIdAndReadAtIsNull(
+                primarySection.getGiangVien().getUser().getId()));
+    }
+
+    private ThongBao saveNotice(User recipient, String title) {
+        ThongBao notice = new ThongBao();
+        notice.setRecipient(recipient);
+        notice.setEventType("TEST_EVENT");
+        notice.setIdempotencyKey(title);
+        notice.setTitle(title);
+        notice.setMessage("Nội dung kiểm thử");
+        notice.setPriority("NORMAL");
+        notice.setTargetUrl("/thong-bao");
+        notice.setCreatedAt(LocalDateTime.now());
+        return thongBaoRepository.saveAndFlush(notice);
     }
 
     @Test
@@ -394,6 +512,7 @@ class ConcurrentRegistrationIntegrationTest {
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
         assertEquals(0, dangKyRepository.countByLopHocPhanIdAndTrangThai(
                 primarySection.getId(), TrangThaiDangKy.DA_DANG_KY));
+        assertEquals(0, thongBaoRepository.countByRecipientIdAndReadAtIsNull(students.get(0).getId()));
         entityManager.clear();
         assertEquals(0, lopHocPhanRepository.findById(primarySection.getId()).orElseThrow().getSiSoHienTai());
     }
