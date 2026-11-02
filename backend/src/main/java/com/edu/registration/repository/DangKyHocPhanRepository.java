@@ -40,7 +40,7 @@ public interface DangKyHocPhanRepository extends JpaRepository<DangKyHocPhan, Lo
 
     Optional<DangKyHocPhan> findByIdAndSinhVienId(Long id, Long sinhVienId);
 
-    @EntityGraph(attributePaths = {"sinhVien", "lopHocPhan", "lopHocPhan.monHoc",
+    @EntityGraph(attributePaths = {"sinhVien", "sinhVien.user", "lopHocPhan", "lopHocPhan.monHoc",
             "lopHocPhan.giangVien", "lopHocPhan.hocKy"})
     @Query("""
             select d from DangKyHocPhan d

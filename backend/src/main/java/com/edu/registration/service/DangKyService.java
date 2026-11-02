@@ -47,12 +47,13 @@ public class DangKyService {
     private final HocKyService hocKyService;
     private final DtoMapper mapper;
     private final AuditLogService auditLogService;
+    private final ThongBaoService thongBaoService;
 
     public DangKyService(DangKyHocPhanRepository dangKyHocPhanRepository,
                          LopHocPhanRepository lopHocPhanRepository, DiemRepository diemRepository,
                          MonTienQuyetRepository monTienQuyetRepository, SinhVienRepository sinhVienRepository,
                          CurrentUser currentUser, HocKyService hocKyService, DtoMapper mapper,
-                         AuditLogService auditLogService) {
+                         AuditLogService auditLogService, ThongBaoService thongBaoService) {
         this.dangKyHocPhanRepository = dangKyHocPhanRepository;
         this.lopHocPhanRepository = lopHocPhanRepository;
         this.diemRepository = diemRepository;
@@ -62,6 +63,7 @@ public class DangKyService {
         this.hocKyService = hocKyService;
         this.mapper = mapper;
         this.auditLogService = auditLogService;
+        this.thongBaoService = thongBaoService;
     }
 
     // Serialize one student's cross-section checks; READ_COMMITTED refreshes MySQL reads after lock waits.
@@ -148,6 +150,7 @@ public class DangKyService {
         lop.setSiSoHienTai(lop.getSiSoHienTai() + 1);
 
         DangKyHocPhan daLuu = dangKyHocPhanRepository.save(dangKy);
+        thongBaoService.registrationChanged(daLuu, true);
         Map<String, Object> before = Map.of("maLop", lop.getMa(), "siSoToiDa", lop.getSiSoToiDa(),
                 "siSoHienTai", lop.getSiSoHienTai() - 1);
         audit.changes(before, Map.of("maLop", lop.getMa(), "siSoToiDa", lop.getSiSoToiDa(),
@@ -188,6 +191,7 @@ public class DangKyService {
                 "siSoHienTai", lop.getSiSoHienTai());
         dangKy.setTrangThai(TrangThaiDangKy.DA_HUY);
         lop.setSiSoHienTai(Math.max(0, lop.getSiSoHienTai() - 1));
+        thongBaoService.registrationChanged(dangKy, false);
         audit.changes(before, Map.of("dangKyId", dangKy.getId(), "lopHocPhanId", lop.getId(),
                 "maLop", lop.getMa(), "trangThai", dangKy.getTrangThai().name(),
                 "siSoHienTai", lop.getSiSoHienTai()));

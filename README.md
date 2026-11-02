@@ -14,8 +14,8 @@
 
 ## Chức năng theo vai trò
 
-- **SINH_VIEN**: dashboard tổng quan (tín chỉ, GPA, lịch hôm nay, biểu đồ GPA), cập nhật họ tên/email/SĐT, đổi mật khẩu, lập kế hoạch học tập bằng giỏ lớp và thời khóa biểu dự kiến, xác nhận đăng ký/hủy học phần, xem thời khóa biểu, điểm và GPA.
-- **GIANG_VIEN**: dashboard tổng quan (lớp phụ trách, sĩ số, biểu đồ lấp đầy, lịch dạy hôm nay), thời khóa biểu giảng dạy, danh sách sinh viên, nhập/cập nhật điểm quá trình và cuối kỳ.
+- **SINH_VIEN**: dashboard tổng quan (tín chỉ, GPA, lịch hôm nay, biểu đồ GPA), cập nhật họ tên/email/SĐT, đổi mật khẩu, lập kế hoạch học tập bằng giỏ lớp và thời khóa biểu dự kiến, xác nhận đăng ký/hủy học phần, xem thời khóa biểu, điểm/GPA và trung tâm thông báo.
+- **GIANG_VIEN**: dashboard tổng quan (lớp phụ trách, sĩ số, biểu đồ lấp đầy, lịch dạy hôm nay), thời khóa biểu giảng dạy, danh sách sinh viên, nhập/cập nhật điểm quá trình và cuối kỳ, cùng trung tâm thông báo cho lớp phụ trách.
 - **QUAN_TRI**: quản lý khoa/ngành/lớp hành chính/môn học/học kỳ, cấu hình đợt đăng ký, mở lớp học phần, quản lý sinh viên & giảng viên, khóa/mở tài khoản, nhập CSV, dashboard thống kê có biểu đồ và xuất CSV.
 
 Sinh viên và giảng viên đăng nhập vào `/tong-quan`; quản trị vào `/quan-tri`.
@@ -161,6 +161,9 @@ Dữ liệu mẫu gồm 2 khoa, 3 ngành, 3 lớp hành chính, 8 môn học (c�
 | GET | `/api/admin/thong-ke/tong-quan`, `/theo-mon` | Thống kê |
 | GET | `/api/admin/lop-hoc-phan/{id}/csv` | Xuất danh sách lớp CSV |
 | GET | `/api/admin/audit-logs` | Tra cứu nhật ký (lọc thời gian, người dùng, hành động, đối tượng; phân trang; chỉ quản trị viên) |
+| GET | `/api/notifications?unreadOnly=&page=&size=` | Danh sách thông báo của người đăng nhập (sinh viên/giảng viên), có lọc chưa đọc và phân trang |
+| PATCH | `/api/notifications/{id}/read` | Đánh dấu một thông báo của chính người đăng nhập đã đọc |
+| PATCH | `/api/notifications/read-all` | Đánh dấu tất cả thông báo của chính người đăng nhập đã đọc |
 
 Swagger/OpenAPI chưa tích hợp; có thể bổ sung `springdoc-openapi` nếu cần.
 
@@ -183,7 +186,7 @@ SV010,Nguyễn Văn A,a@student.edu.vn,1,1,1
 
 ```bash
 cd backend
-./mvnw test        # 35 test: 22 unit + 13 integration trên HTTP
+./mvnw test        # 40 test: 23 unit + 17 integration trên HTTP
 ```
 
 ### E2E với Playwright
@@ -193,7 +196,7 @@ Yêu cầu backend đang chạy và frontend dùng Chrome đã cài trên máy:
 ```bash
 cd frontend
 npm ci
-npx playwright test        # 16 kịch bản trên Chrome
+npx playwright test        # 17 kịch bản trên Chrome
 BROWSER_CHANNEL=msedge npx playwright test   # chạy lại trên Edge
 npx playwright show-report
 ```

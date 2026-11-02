@@ -60,6 +60,8 @@ class DangKyServiceTest {
     private DtoMapper mapper;
     @Mock
     private AuditLogService auditLogService;
+    @Mock
+    private ThongBaoService thongBaoService;
 
     @InjectMocks
     private DangKyService dangKyService;

@@ -16,6 +16,9 @@ public interface SinhVienRepository extends JpaRepository<SinhVien, Long> {
 
     Optional<SinhVien> findByUser(User user);
 
+    @Query("select sv from SinhVien sv join fetch sv.user u where u.trangThai = true")
+    List<SinhVien> findAllActiveWithUser();
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select sv from SinhVien sv where sv.user.id = :userId")
     Optional<SinhVien> findByUserIdForUpdate(@Param("userId") Long userId);
