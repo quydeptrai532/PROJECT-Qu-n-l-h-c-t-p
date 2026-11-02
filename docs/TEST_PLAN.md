@@ -17,7 +17,7 @@ Tài liệu này tổng hợp test case theo FR/NFR, cách chạy và kết qu�
 - Backend: Spring Boot, profile h2 (database trong bộ nhớ), chạy cùng máy với công cụ test và IntelliJ.
 ## 2. Unit test backend
 
-Chạy: `cd backend && ./mvnw test` — **22/22 unit test pass** (19 nghiệp vụ hiện có, 3 audit log).
+Chạy: `cd backend && ./mvnw test` — **23/23 unit test pass** (19 nghiệp vụ hiện có, 4 audit log).
 
 | Nhóm | Nội dung kiểm thử | Kết quả |
 |---|---|---|
@@ -40,7 +40,7 @@ Chạy: `cd backend && ./mvnw test` — **22/22 unit test pass** (19 nghiệp v�
 
 Chạy `cd backend && ./mvnw test` để chạy cùng suite hoặc xem cấu hình capacity, student-count, concurrency, MySQL và report tại [docs/CONCURRENT_REGISTRATION_TEST.md](CONCURRENT_REGISTRATION_TEST.md). Suite tạo fixture mới cho mỗi test, gửi HTTP request đồng thời, xác nhận tranh chỗ cuối, hai lớp cùng môn, request trùng và hủy trả chỗ. Kiểm tra cả HTTP status, bản ghi đang hoạt động và sĩ số lưu. Report JSON ghi database, đầu vào, correctness và latency.
 
-Kết quả sau QLSV-50: **13/13 integration test pass trên H2**. Phần QLSV-48 đã chạy **4/4 integration test trên MySQL 8.4**; suite mới chưa được chạy lại trên MySQL.
+Kết quả suite hiện tại: **17/17 integration test pass trên H2**. Phần QLSV-48 đã chạy **4/4 integration test trên MySQL 8.4** trước khi thêm thông báo; suite mới chưa được chạy lại trên MySQL.
 
 ## 4. Audit log (QLSV-50)
 
@@ -48,7 +48,13 @@ Unit và HTTP integration test bao phủ actor/đối tượng/kết quả, corr
 
 Các thao tác được audit và kịch bản demo được liệt kê tại [docs/AUDIT_LOG_DEMO.md](AUDIT_LOG_DEMO.md).
 
-## 4. E2E (Playwright)
+## 5. Trung tâm thông báo (QLSV-51)
+
+HTTP integration test bao phủ thông báo phát sinh khi đăng ký/đổi lịch, không phát sinh cho sinh viên khác, lọc danh sách và cập nhật trạng thái chỉ trong phạm vi người nhận, từ chối admin/anonymous, cùng nhắc hạn idempotent cho sinh viên đang hoạt động. Kết quả lần chạy: **40/40 backend test pass trên H2**. Build giao diện bằng `cd frontend && npm run build` (**pass**); E2E `npx playwright test e2e/notifications.spec.js` (**1/1 pass trên Chrome**).
+
+Sự kiện, người nhận và kịch bản demo xem tại [docs/NOTIFICATION_DEMO.md](NOTIFICATION_DEMO.md).
+
+## 6. E2E (Playwright)
 
 Chạy: `cd frontend && npx playwright test`. Có thể chọn trình duyệt bằng biến `BROWSER_CHANNEL` (`chrome` mặc định, `msedge` cho Edge).
 
@@ -71,7 +77,7 @@ Chạy: `cd frontend && npx playwright test`. Có thể chọn trình duyệt b�
 | E2E-15 | Course Planner: lớp hết chỗ trước khi xác nhận | Cảnh báo hết chỗ và khóa xác nhận | Pass | Chưa chạy | Chưa chạy | Chưa chạy |
 | E2E-16 | Quản trị lọc audit theo người thực hiện và hành động | Hiển thị sự kiện khóa/mở tài khoản thành công | Pass | Chưa chạy | Chưa chạy | Chưa chạy |
 
-Ghi chú: bảng trên gồm 16 kịch bản trong 15 test Playwright; E2E-06 và E2E-07 nằm trong cùng một test đăng ký/hủy. Lần chạy đầy đủ gần nhất: **15/15 test pass trên Chrome**, gồm Course Planner và tra cứu Audit Log. E2E mới chưa chạy trên Edge, Firefox và WebKit.
+Ghi chú: bảng trên hiện gồm 17 kịch bản trong 16 test Playwright; E2E-06 và E2E-07 nằm trong cùng một test đăng ký/hủy. Lần chạy đầy đủ trước QLSV-51: **15/15 test pass trên Chrome**; test trung tâm thông báo mới chạy riêng **1/1 pass trên Chrome**. E2E mới chưa chạy trên Edge, Firefox và WebKit.
 
 Chạy Firefox và WebKit: `cd frontend && npx playwright install firefox webkit && npx playwright test -c playwright.multi.config.js`.
 
@@ -85,7 +91,7 @@ Kết quả chạy ngày 28/10/2026, backend profile H2 khởi động mới:
 | Safari (WebKit) | Playwright (Desktop Safari) | 11/11 | 3,9 phút (chạy chung với Firefox) | Không |
 
 Cả bốn trình duyệt đạt 100%, vượt mục tiêu T42 (từ 80% trở lên). Safari được kiểm thử bằng engine WebKit của Playwright, chưa chạy trên thiết bị Apple thật.
-## 5. Kiểm thử tải (NFR-01)
+## 7. Kiểm thử tải (NFR-01)
 
 Công cụ: `tools/load-test.mjs` (Node.js, không phụ thuộc thư viện ngoài).
 
@@ -113,7 +119,7 @@ Kết luận: đạt mục tiêu P95 ≤ 500 ms và không có lỗi trong môi 
 - Máy chạy cả backend, client test và IntelliJ cùng lúc nên số liệu có thể thấp hơn môi trường thật.
 - Công cụ chỉ đo một endpoint đọc (/api/lop-hoc-phan), chưa đo đăng ký đồng thời. Kết quả chỉ chứng minh hiệu năng đọc với 50 người dùng cùng lúc.
 - Môi trường là H2 trong bộ nhớ, cần đo lại trên MySQL/Docker nếu có điều kiện.
-## 6. Truy vết NFR
+## 8. Truy vết NFR
 
 | NFR | Cách kiểm chứng | Trạng thái |
 |---|-----------------|---|
@@ -126,7 +132,7 @@ Kết luận: đạt mục tiêu P95 ≤ 500 ms và không có lỗi trong môi 
 | NFR-07 Triển khai | Docker Compose, `docker compose config` hợp lệ | Đạt |
 | NFR-08 Giao diện | Responsive, E2E chạy tự động trên Chrome, Edge, FireFox, Safari | Một phần |
 
-## 6. Kiểm thử hồi quy
+## 9. Kiểm thử hồi quy
 Chạy ngày 28/10/2026 trên nhánh `dev` (đã gộp T40 và tính năng thông báo nghỉ học), backend profile H2 khởi động mới. Mục tiêu: xác nhận các luồng nghiệp vụ chính vẫn hoạt động đúng sau khi gộp code.
 
 ### 6.1 Kết quả tự động
@@ -171,7 +177,7 @@ Nhận xét:
 - Lần 1 chậm hơn hai lần sau (P95 303 ms, Max 694 ms) vì JVM chưa tối ưu hết; hai lần sau ổn định hơn nhiều.
 - Số liệu tốt hơn đợt 200 request (P95 320 đến 444 ms) nhiều khả năng do máy ít tiến trình chạy kèm và JVM đã nóng, chưa đủ cơ sở để kết luận hiệu năng được cải thiện.
 - Hạn chế như mục 4: chỉ đo endpoint đọc `/api/lop-hoc-phan`, môi trường H2, chưa đo đăng ký đồng thời.
-## 7. Tư liệu giao diện
+## 10. Tư liệu giao diện
 
 Bộ ảnh giao diện phục vụ báo cáo/Figma nằm trong `docs/screenshots/`, tạo lại bằng:
 
@@ -182,7 +188,7 @@ npm run screenshots
 
 Gồm: đăng nhập, dashboard sinh viên, đăng ký học phần, điểm & GPA, dashboard giảng viên, lớp phụ trách, dashboard quản trị, lớp học phần, modal thêm môn học.
 
-## 8. Hạn chế và việc cần làm
+## 11. Hạn chế và việc cần làm
 - Safari mới được kiểm thử bằng WebKit của Playwright; chưa kiểm thử trên thiết bị Apple thật (macOS/iOS).
 - Load test mới đo endpoint danh sách lớp; nên bổ sung kịch bản đăng ký đồng thời để kiểm chứng khóa bi quan dưới tải.
 - E2E dùng dữ liệu seed và có thao tác tạo/xóa/lock/unlock; các test đã được viết để chạy lại an toàn trên database mới.

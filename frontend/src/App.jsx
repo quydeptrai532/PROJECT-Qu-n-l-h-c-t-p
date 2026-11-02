@@ -22,6 +22,7 @@ import CourseClassPage from "./pages/admin/CourseClassPage";
 import StudentPage from "./pages/admin/StudentPage";
 import LecturerPage from "./pages/admin/LecturerPage";
 import AuditLogPage from "./pages/admin/AuditLogPage";
+import NotificationsPage from "./pages/NotificationsPage";
 
 function RootRedirect() {
   const { user } = useAuth();
@@ -80,6 +81,14 @@ export default function App() {
         element={
           <ProtectedRoute roles={["SINH_VIEN"]}>
             <GradesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/thong-bao"
+        element={
+          <ProtectedRoute roles={["SINH_VIEN", "GIANG_VIEN"]}>
+            <NotificationsPage />
           </ProtectedRoute>
         }
       />

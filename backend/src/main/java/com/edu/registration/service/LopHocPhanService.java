@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 @Transactional
@@ -34,13 +35,14 @@ public class LopHocPhanService {
     private final AuditLogService auditLogService;
     private final CurrentUser currentUser;
     private final DtoMapper mapper;
+    private final ThongBaoService thongBaoService;
 
     public LopHocPhanService(LopHocPhanRepository lopHocPhanRepository, MonHocRepository monHocRepository,
                              GiangVienRepository giangVienRepository,
                              DangKyHocPhanRepository dangKyHocPhanRepository,
                              ThongBaoNghiRepository thongBaoNghiRepository,
                              HocKyService hocKyService, AuditLogService auditLogService,
-                             CurrentUser currentUser, DtoMapper mapper) {
+                             CurrentUser currentUser, DtoMapper mapper, ThongBaoService thongBaoService) {
         this.lopHocPhanRepository = lopHocPhanRepository;
         this.monHocRepository = monHocRepository;
         this.giangVienRepository = giangVienRepository;
@@ -50,6 +52,7 @@ public class LopHocPhanService {
         this.auditLogService = auditLogService;
         this.currentUser = currentUser;
         this.mapper = mapper;
+        this.thongBaoService = thongBaoService;
     }
 
     @Transactional(readOnly = true)
@@ -136,6 +139,7 @@ public class LopHocPhanService {
     }
 
     public LopHocPhanDtos.LopHocPhanResponse sua(Long id, LopHocPhanDtos.LopHocPhanRequest request) {
+        String notificationKey = "section-update:" + id + ":" + UUID.randomUUID();
         return auditLogService.execute("COURSE_SECTION_UPDATED", "COURSE_SECTION", id, audit -> {
             kiemTraLich(request);
             LopHocPhan lop = lopHocPhanRepository.findByIdForUpdate(id)
@@ -162,7 +166,9 @@ public class LopHocPhanService {
             lop.setHocKy(hocKy);
             lop.setGiangVien(giangVien);
             apDung(lop, request);
-            audit.changes(before, auditSnapshot(lop));
+            Map<String, Object> after = auditSnapshot(lop);
+            audit.changes(before, after);
+            thongBaoService.sectionChanged(lop, before, after, notificationKey);
             return new LopHocPhanDtos.LopHocPhanResponse(mapper.lopHocPhan(lop), canhBao);
         });
     }

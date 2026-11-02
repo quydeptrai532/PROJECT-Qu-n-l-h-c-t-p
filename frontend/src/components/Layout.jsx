@@ -3,6 +3,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import {
   BookMarked,
   BookOpen,
+  Bell,
   Building2,
   CalendarDays,
   CalendarRange,
@@ -20,6 +21,7 @@ import {
   X,
 } from "lucide-react";
 import { ROLE_LABEL, useAuth } from "../context/AuthContext";
+import api from "../api/client";
 
 const NAV = {
   SINH_VIEN: [
@@ -29,11 +31,13 @@ const NAV = {
     { to: "/hoc-phan-cua-toi", label: "Học phần của tôi", icon: ClipboardList },
     { to: "/thoi-khoa-bieu", label: "Thời khóa biểu", icon: CalendarDays },
     { to: "/diem", label: "Điểm & kết quả", icon: GraduationCap },
+    { to: "/thong-bao", label: "Thông báo", icon: Bell },
   ],
   GIANG_VIEN: [
     { to: "/tong-quan", label: "Tổng quan", icon: LayoutDashboard },
     { to: "/lop-cua-toi", label: "Lớp học phần", icon: Layers },
     { to: "/lop-cua-toi/thoi-khoa-bieu", label: "Thời khóa biểu", icon: CalendarDays },
+    { to: "/thong-bao", label: "Thông báo", icon: Bell },
   ],
   QUAN_TRI: [
     { to: "/quan-tri", label: "Tổng quan", icon: LayoutDashboard },
@@ -59,10 +63,26 @@ export default function Layout({ children }) {
   const { user, logout } = useAuth();
   const location = useLocation();
   const [open, setOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     setOpen(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    if (!["SINH_VIEN", "GIANG_VIEN"].includes(user?.role)) {
+      setUnreadCount(0);
+      return undefined;
+    }
+    const loadUnreadCount = () => {
+      api.get("/notifications", { params: { unreadOnly: true, page: 0, size: 1 } })
+        .then(({ data }) => setUnreadCount(data.unreadCount || 0))
+        .catch(() => setUnreadCount(0));
+    };
+    loadUnreadCount();
+    window.addEventListener("notifications:updated", loadUnreadCount);
+    return () => window.removeEventListener("notifications:updated", loadUnreadCount);
+  }, [user?.role, location.pathname]);
 
   const items = NAV[user?.role] || [];
   const allItems = Object.values(NAV).flat();
@@ -131,6 +151,11 @@ export default function Layout({ children }) {
             >
               <item.icon size={18} className="shrink-0" />
               <span className="truncate">{item.label}</span>
+              {item.to === "/thong-bao" && unreadCount > 0 && (
+                <span className="ml-auto rounded-full bg-[#d9ed8a] px-2 py-0.5 text-[10px] font-bold text-[#173f3a]">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
             </NavLink>
           ))}
         </nav>
