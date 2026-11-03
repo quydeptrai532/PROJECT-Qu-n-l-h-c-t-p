@@ -47,6 +47,10 @@ public class SinhVien {
     @JoinColumn(name = "lop_id")
     private LopHanhChinh lopHanhChinh;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "chuong_trinh_id")
+    private ChuongTrinhDaoTao chuongTrinh;
+
     public Long getId() {
         return id;
     }
@@ -118,4 +122,7 @@ public class SinhVien {
     public void setLopHanhChinh(LopHanhChinh lopHanhChinh) {
         this.lopHanhChinh = lopHanhChinh;
     }
+
+    public ChuongTrinhDaoTao getChuongTrinh() { return chuongTrinh; }
+    public void setChuongTrinh(ChuongTrinhDaoTao chuongTrinh) { this.chuongTrinh = chuongTrinh; }
 }
