@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
+import java.time.LocalDate;
 
 public interface LopHocPhanRepository extends JpaRepository<LopHocPhan, Long> {
 
@@ -52,6 +53,10 @@ public interface LopHocPhanRepository extends JpaRepository<LopHocPhan, Long> {
     Optional<LopHocPhan> findByIdForUpdate(@Param("id") Long id);
 
     boolean existsByMa(String ma);
+
+    @EntityGraph(attributePaths = {"monHoc", "monHoc.khoa", "hocKy", "giangVien"})
+    @Query("select l from LopHocPhan l where l.hocKy.dangKyTu <= :ngay and l.hocKy.dangKyDen >= :ngay and l.hocKy.ngayKetThuc >= :ngay and l.siSoHienTai < l.siSoToiDa")
+    List<LopHocPhan> findOpenForRegistration(@Param("ngay") LocalDate ngay);
 
     long countByHocKyId(Long hocKyId);
 }
