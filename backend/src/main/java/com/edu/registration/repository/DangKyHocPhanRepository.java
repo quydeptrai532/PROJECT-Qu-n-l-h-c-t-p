@@ -51,6 +51,17 @@ public interface DangKyHocPhanRepository extends JpaRepository<DangKyHocPhan, Lo
     List<DangKyHocPhan> findByLopHocPhan(@Param("lopHocPhanId") Long lopHocPhanId,
                                          @Param("trangThai") TrangThaiDangKy trangThai);
 
+    @Query("""
+            select d from DangKyHocPhan d
+            join fetch d.sinhVien s
+            left join fetch s.lopHanhChinh
+            where d.lopHocPhan.id = :lopHocPhanId
+              and d.trangThai = :trangThai
+            order by s.ma
+            """)
+    List<DangKyHocPhan> findDanhSachXuat(@Param("lopHocPhanId") Long lopHocPhanId,
+                                         @Param("trangThai") TrangThaiDangKy trangThai);
+
     long countByLopHocPhanIdAndTrangThai(Long lopHocPhanId, TrangThaiDangKy trangThai);
 
     boolean existsByLopHocPhanId(Long lopHocPhanId);
