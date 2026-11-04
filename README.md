@@ -151,6 +151,7 @@ Dữ liệu mẫu gồm 2 khoa, 3 ngành, 3 lớp hành chính, 8 môn học (c�
 | GET | `/api/dang-ky/me?hocKyId=` | Học phần đã đăng ký |
 | GET | `/api/sinh-vien/me/thoi-khoa-bieu` | Thời khóa biểu |
 | GET | `/api/sinh-vien/me/diem` | Điểm, GPA học kỳ và tích lũy |
+| GET | `/api/sinh-vien/me/ho-so-dao-tao` | Hồ sơ học vụ của sinh viên đăng nhập (khoa, ngành, khóa, lớp, chương trình, trạng thái); trường chưa được gán trả `Chưa cập nhật`, không nhận ID sinh viên |
 | GET | `/api/giang-vien/me/lop-hoc-phan` | Lớp giảng viên phụ trách |
 | GET | `/api/giang-vien/me/thoi-khoa-bieu` | Thời khóa biểu giảng dạy |
 | GET | `/api/giang-vien/lop-hoc-phan/{id}/sinh-vien` | Danh sách sinh viên của lớp |

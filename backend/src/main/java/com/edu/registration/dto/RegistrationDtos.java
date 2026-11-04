@@ -28,6 +28,10 @@ public final class RegistrationDtos {
                             Double diemQuaTrinh, Double diemCuoiKy, Double diemTongKet) {
     }
 
+    public record LichSuDangKyDto(Long id, Long dangKyId, Long hocKyId, String maLop, String maMon,
+                                  String tenMon, LocalDateTime thoiGianDangKy, String trangThai,
+                                  LocalDateTime thoiDiem, LocalDateTime thoiGianHuy, String lyDoHuy) { }
+
     public record NhapDiemRequest(
             @NotNull(message = "Vui lòng nhập điểm quá trình")
             @DecimalMin(value = "0", message = "Điểm phải từ 0 đến 10")

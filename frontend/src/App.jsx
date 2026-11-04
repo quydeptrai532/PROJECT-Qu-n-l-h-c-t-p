@@ -7,6 +7,7 @@ import RoleDashboard from "./pages/RoleDashboard";
 import RegisterPage from "./pages/student/RegisterPage";
 import CoursePlannerPage from "./pages/student/CoursePlannerPage";
 import MyCoursesPage from "./pages/student/MyCoursesPage";
+import RegistrationHistoryPage from "./pages/student/RegistrationHistoryPage";
 import TimetablePage from "./pages/student/TimetablePage";
 import GradesPage from "./pages/student/GradesPage";
 import LecturerClassesPage from "./pages/lecturer/LecturerClassesPage";
@@ -70,6 +71,7 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+      <Route path="/lich-su-dang-ky" element={<ProtectedRoute roles={["SINH_VIEN"]}><RegistrationHistoryPage /></ProtectedRoute>} />
       <Route
         path="/thoi-khoa-bieu"
         element={

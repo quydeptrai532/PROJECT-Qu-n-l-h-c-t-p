@@ -2,10 +2,12 @@ package com.edu.registration.controller;
 
 import com.edu.registration.dto.LopHocPhanDtos;
 import com.edu.registration.dto.RegistrationDtos;
+import com.edu.registration.dto.StudentAcademicProfileDto;
 import com.edu.registration.service.DangKyService;
 import com.edu.registration.service.DiemService;
 import com.edu.registration.service.LopHocPhanService;
 import com.edu.registration.service.ThongBaoNghiService;
+import com.edu.registration.service.StudentAcademicProfileService;
 import com.edu.registration.service.SinhVienDashboardService;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -17,6 +19,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.data.domain.Page;
+import jakarta.validation.constraints.Size;
 
 import java.util.List;
 
@@ -28,15 +32,18 @@ public class SinhVienController {
     private final DangKyService dangKyService;
     private final DiemService diemService;
     private final ThongBaoNghiService thongBaoNghiService;
+    private final StudentAcademicProfileService studentAcademicProfileService;
     private final SinhVienDashboardService sinhVienDashboardService;
 
     public SinhVienController(LopHocPhanService lopHocPhanService, DangKyService dangKyService,
                               DiemService diemService, ThongBaoNghiService thongBaoNghiService,
+                              StudentAcademicProfileService studentAcademicProfileService,
                               SinhVienDashboardService sinhVienDashboardService) {
         this.lopHocPhanService = lopHocPhanService;
         this.dangKyService = dangKyService;
         this.diemService = diemService;
         this.thongBaoNghiService = thongBaoNghiService;
+        this.studentAcademicProfileService = studentAcademicProfileService;
         this.sinhVienDashboardService = sinhVienDashboardService;
     }
 
@@ -67,14 +74,24 @@ public class SinhVienController {
 
     @DeleteMapping("/dang-ky/{id}")
     @PreAuthorize("hasRole('SINH_VIEN')")
-    public void huyDangKy(@PathVariable Long id) {
-        dangKyService.huyDangKy(id);
+    public void huyDangKy(@PathVariable Long id,
+                          @RequestParam(required = false) @Size(max = 255) String lyDo) {
+        dangKyService.huyDangKy(id, lyDo);
     }
 
     @GetMapping("/dang-ky/me")
     @PreAuthorize("hasRole('SINH_VIEN')")
     public List<RegistrationDtos.DangKyDto> dangKyCuaToi(@RequestParam(required = false) Long hocKyId) {
         return dangKyService.danhSachCuaToi(hocKyId);
+    }
+
+    @GetMapping("/dang-ky/me/lich-su")
+    @PreAuthorize("hasRole('SINH_VIEN')")
+    public Page<RegistrationDtos.LichSuDangKyDto> lichSuDangKyCuaToi(
+            @RequestParam Long hocKyId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return dangKyService.lichSuCuaToi(hocKyId, page, size);
     }
 
     @GetMapping("/sinh-vien/me/thoi-khoa-bieu")
@@ -93,6 +110,12 @@ public class SinhVienController {
     @PreAuthorize("hasRole('SINH_VIEN')")
     public RegistrationDtos.KetQuaHocTapDto ketQuaHocTap() {
         return diemService.ketQuaHocTap();
+    }
+
+    @GetMapping("/sinh-vien/me/ho-so-dao-tao")
+    @PreAuthorize("hasRole('SINH_VIEN')")
+    public StudentAcademicProfileDto hoSoDaoTao() {
+        return studentAcademicProfileService.getMyProfile();
     }
 
     @GetMapping("/sinh-vien/me/canh-bao-dashboard")
