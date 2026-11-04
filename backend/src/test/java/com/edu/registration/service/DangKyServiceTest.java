@@ -13,6 +13,7 @@ import com.edu.registration.exception.ApiException;
 import com.edu.registration.repository.DangKyHocPhanRepository;
 import com.edu.registration.repository.DiemRepository;
 import com.edu.registration.repository.LopHocPhanRepository;
+import com.edu.registration.repository.LichSuDangKyRepository;
 import com.edu.registration.repository.MonTienQuyetRepository;
 import com.edu.registration.repository.SinhVienRepository;
 import com.edu.registration.security.CurrentUser;
@@ -44,6 +45,8 @@ class DangKyServiceTest {
 
     @Mock
     private DangKyHocPhanRepository dangKyHocPhanRepository;
+    @Mock
+    private LichSuDangKyRepository lichSuDangKyRepository;
     @Mock
     private LopHocPhanRepository lopHocPhanRepository;
     @Mock
