@@ -14,7 +14,7 @@
 
 ## Chức năng theo vai trò
 
-- **SINH_VIEN**: dashboard tổng quan (tín chỉ, GPA, lịch hôm nay, biểu đồ GPA), cập nhật họ tên/email/SĐT, đổi mật khẩu, lập kế hoạch học tập bằng giỏ lớp và thời khóa biểu dự kiến, xác nhận đăng ký/hủy học phần, xem thời khóa biểu, điểm/GPA và trung tâm thông báo.
+- **SINH_VIEN**: dashboard tổng quan (tín chỉ, GPA, lịch hôm nay, biểu đồ GPA), cập nhật họ tên/email/SĐT, đổi mật khẩu, lập kế hoạch học tập bằng giỏ lớp và thời khóa biểu dự kiến, xác nhận đăng ký/hủy học phần, xem thời khóa biểu, điểm/GPA, lịch sử học tập & môn chưa đạt và trung tâm thông báo.
 - **GIANG_VIEN**: dashboard tổng quan (lớp phụ trách, sĩ số, biểu đồ lấp đầy, lịch dạy hôm nay), thời khóa biểu giảng dạy, danh sách sinh viên, nhập/cập nhật điểm quá trình và cuối kỳ, cùng trung tâm thông báo cho lớp phụ trách.
 - **QUAN_TRI**: quản lý khoa/ngành/lớp hành chính/môn học/học kỳ, cấu hình đợt đăng ký, mở lớp học phần, quản lý sinh viên & giảng viên, khóa/mở tài khoản, nhập CSV, dashboard thống kê có biểu đồ và xuất CSV.
 
@@ -151,6 +151,7 @@ Dữ liệu mẫu gồm 2 khoa, 3 ngành, 3 lớp hành chính, 8 môn học (c�
 | GET | `/api/dang-ky/me?hocKyId=` | Học phần đã đăng ký |
 | GET | `/api/sinh-vien/me/thoi-khoa-bieu` | Thời khóa biểu |
 | GET | `/api/sinh-vien/me/diem` | Điểm, GPA học kỳ và tích lũy |
+| GET | `/api/sinh-vien/me/lich-su-hoc-tap?hocKyId=&trangThai=` | Lịch sử học tập theo học kỳ, môn chưa đạt và số lần học của sinh viên đang đăng nhập |
 | GET | `/api/sinh-vien/me/ho-so-dao-tao` | Hồ sơ học vụ của sinh viên đăng nhập (khoa, ngành, khóa, lớp, chương trình, trạng thái); trường chưa được gán trả `Chưa cập nhật`, không nhận ID sinh viên |
 | GET | `/api/giang-vien/me/lop-hoc-phan` | Lớp giảng viên phụ trách |
 | GET | `/api/giang-vien/me/thoi-khoa-bieu` | Thời khóa biểu giảng dạy |
