@@ -35,9 +35,10 @@ export default function StudentDashboard() {
   const { data: hocKyList } = useApi("/hoc-ky");
   const { data: dangKy, loading: loadingDangKy } = useApi("/dang-ky/me");
   const { data: ketQua, loading: loadingDiem } = useApi("/sinh-vien/me/diem");
+  const { data: canhBao, loading: loadingCanhBao, error: loiCanhBao } = useApi("/sinh-vien/me/canh-bao-dashboard");
   const { data: thoiKhoaBieu, loading: loadingTkb } = useApi("/sinh-vien/me/thoi-khoa-bieu");
 
-  const hocKy = hocKyList?.[0];
+  const hocKy = hocKyList?.find((item) => item.dangMoDangKy) || hocKyList?.[0];
   const hocPhan = dangKy || [];
   const tongTinChi = hocPhan.reduce((sum, item) => sum + item.soTinChi, 0);
 
@@ -58,13 +59,17 @@ export default function StudentDashboard() {
     () =>
       [...(ketQua?.hocKy || [])]
         .filter((item) => item.tinChiCoDiem > 0)
-        .reverse()
+        .sort((a, b) => {
+          const dateFor = (id) => hocKyList?.find((ky) => ky.id === id)?.ngayBatDau || "";
+          return dateFor(a.hocKyId).localeCompare(dateFor(b.hocKyId));
+        })
         .map((item) => ({
+          hocKyId: item.hocKyId,
           name: `${item.tenHocKy} ${item.namHoc}`,
           gpa10: item.gpa10,
           gpa4: item.gpa4,
         })),
-    [ketQua]
+    [ketQua, hocKyList]
   );
 
   const monDaCoDiem = useMemo(
@@ -157,6 +162,36 @@ export default function StudentDashboard() {
           tone="sky"
         />
       </div>
+
+      <section className="card mt-6 p-5" aria-labelledby="academic-alerts-heading">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 id="academic-alerts-heading" className="text-sm font-semibold text-slate-800">Cảnh báo học vụ</h2>
+            <p className="mt-0.5 text-xs text-slate-500">Điểm đã có và các mốc đăng ký sắp mở hoặc sắp đóng</p>
+          </div>
+          {!loadingCanhBao && !loiCanhBao && <Badge tone="amber">{canhBao?.length || 0} cảnh báo</Badge>}
+        </div>
+        {loadingCanhBao ? (
+          <Spinner />
+        ) : loiCanhBao ? (
+          <Alert tone="error" className="mt-4">Không thể tải cảnh báo học vụ. Vui lòng thử tải lại trang.</Alert>
+        ) : canhBao?.length ? (
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            {canhBao.map((item, index) => (
+              <article key={`${item.loai}-${item.hocKyId}-${index}`} className="rounded-xl border border-amber-200/80 bg-amber-50/60 p-4">
+                <h3 className="text-sm font-semibold text-slate-800">{item.tieuDe}</h3>
+                <p className="mt-1 text-sm text-slate-600">{item.lyDo}</p>
+                <p className="mt-2 text-xs text-slate-500">Học kỳ: {item.tenHocKy} {item.namHoc}</p>
+                <Link to={item.lienKet} className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-700">
+                  Xem chi tiết <ArrowRight size={13} />
+                </Link>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-4 rounded-xl bg-slate-50 px-4 py-5 text-center text-sm text-slate-500">Hiện không có cảnh báo học vụ.</p>
+        )}
+      </section>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-3">
         <section className="card p-5 xl:col-span-2">

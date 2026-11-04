@@ -25,6 +25,9 @@ spring:
       max-request-size: 5MB
 
 app:
+  dashboard:
+    # Học kỳ/đợt đăng ký được xem là "sắp tới" trong vòng 14 ngày; chỉnh tại cấu hình này.
+    upcoming-window-days: ${DASHBOARD_UPCOMING_WINDOW_DAYS:14}
   jwt:
     secret: ${JWT_SECRET:day-la-khoa-bi-mat-cho-he-thong-quan-ly-dao-tao-phai-du-32-byte}
     expiration-ms: ${JWT_EXPIRATION_MS:86400000}

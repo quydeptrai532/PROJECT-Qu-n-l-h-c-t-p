@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 
 @Service @Transactional(readOnly=true)
 public class TienDoService {
- private static final double PASS=5.0;
+ private static final double PASS=AcademicRules.DIEM_DAT;
  private final SinhVienRepository students; private final CurrentUser current; private final DangKyHocPhanRepository registrations;
  private final DiemRepository grades; private final ChuongTrinhDaoTaoRepository programs;
  public TienDoService(SinhVienRepository s,CurrentUser c,DangKyHocPhanRepository r,DiemRepository g,ChuongTrinhDaoTaoRepository p){students=s;current=c;registrations=r;grades=g;programs=p;}
