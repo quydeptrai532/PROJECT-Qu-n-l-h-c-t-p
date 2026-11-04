@@ -36,8 +36,9 @@ public class AuditLogService {
     private static final Set<String> SAFE_DETAIL_FIELDS = Set.of(
             "maLop", "monHocId", "hocKyId", "giangVienId", "phong", "thu", "tietBatDau", "soTiet",
             "siSoToiDa", "siSoHienTai", "conLai", "tenHocKy", "namHoc", "dangKyTu", "dangKyDen", "soTinChiToiThieu",
-            "soTinChiToiDa", "trangThai", "dangKyId", "lopHocPhanId", "active", "maMon", "tenMon", "soTinChi", "loaiDangKy",
-            "khoaId", "nganhId", "lopId", "monTienQuyetId", "lyDoHuy"
+            "soTinChiToiDa", "trangThai", "dangKyId", "lopHocPhanId", "active", "maMon", "tenMon", "soTinChi",
+            "loaiDangKy", "khoaId", "nganhId", "lopId", "monTienQuyetId", "lyDoHuy", "soBanGhi"
+
     );
 
     private final AuditLogRepository repository;

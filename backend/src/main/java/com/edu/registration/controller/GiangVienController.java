@@ -4,8 +4,10 @@ import com.edu.registration.dto.LopHocPhanDtos;
 import com.edu.registration.dto.RegistrationDtos;
 import com.edu.registration.service.DiemService;
 import com.edu.registration.service.LopHocPhanService;
+import com.edu.registration.service.LopSinhVienExportService;
 import com.edu.registration.service.ThongBaoNghiService;
 import jakarta.validation.Valid;
+import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @RestController
@@ -27,12 +30,14 @@ public class GiangVienController {
     private final LopHocPhanService lopHocPhanService;
     private final DiemService diemService;
     private final ThongBaoNghiService thongBaoNghiService;
+    private final LopSinhVienExportService lopSinhVienExportService;
 
     public GiangVienController(LopHocPhanService lopHocPhanService, DiemService diemService,
-                               ThongBaoNghiService thongBaoNghiService) {
+                               ThongBaoNghiService thongBaoNghiService, LopSinhVienExportService lopSinhVienExportService) {
         this.lopHocPhanService = lopHocPhanService;
         this.diemService = diemService;
         this.thongBaoNghiService = thongBaoNghiService;
+        this.lopSinhVienExportService = lopSinhVienExportService;
     }
 
     @GetMapping("/giang-vien/me/lop-hoc-phan")
@@ -64,6 +69,19 @@ public class GiangVienController {
     @GetMapping("/giang-vien/lop-hoc-phan/{id}/sinh-vien")
     public List<RegistrationDtos.DiemDto> danhSachSinhVien(@PathVariable Long id) {
         return diemService.danhSachDiemLop(id);
+    }
+
+    @GetMapping("/giang-vien/lop-hoc-phan/{id}/sinh-vien/csv")
+    public ResponseEntity<byte[]> xuatDanhSachSinhVien(@PathVariable Long id,
+                                                       @RequestParam(required = false) String tuKhoa,
+                                                       @RequestParam(required = false) String sapXep) {
+        LopSinhVienExportService.CsvFile tep = lopSinhVienExportService.xuatDanhSach(id, tuKhoa, sapXep);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(new MediaType("text", "csv", StandardCharsets.UTF_8));
+        headers.setContentDisposition(ContentDisposition.attachment()
+                .filename(tep.tenTep(), StandardCharsets.UTF_8).build());
+        headers.setCacheControl(CacheControl.noStore());
+        return new ResponseEntity<>(tep.noiDung(), headers, HttpStatus.OK);
     }
 
     @PutMapping("/diem/{dangKyId}")
