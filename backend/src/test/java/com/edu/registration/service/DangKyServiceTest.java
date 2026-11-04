@@ -237,7 +237,7 @@ class DangKyServiceTest {
                 .thenReturn(Optional.empty());
 
         assertThrows(ApiException.class,
-                () -> dangKyService.huyDangKy(200L));
+                () -> dangKyService.huyDangKy(200L, null));
 
         verify(lopHocPhanRepository, never()).findByIdForUpdate(any());
     }
@@ -256,7 +256,7 @@ class DangKyServiceTest {
                 .thenReturn(Optional.of(dangKy));
 
         assertThrows(ApiException.class,
-                () -> dangKyService.huyDangKy(200L));
+                () -> dangKyService.huyDangKy(200L, null));
 
         assertEquals(TrangThaiDangKy.DA_HUY, dangKy.getTrangThai());
         verify(lopHocPhanRepository, never()).findByIdForUpdate(any());
@@ -418,7 +418,7 @@ class DangKyServiceTest {
         when(lopHocPhanRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(lopHocPhan));
         when(dangKyHocPhanRepository.tinhTongTinChi(1L, 1L, TrangThaiDangKy.DA_DANG_KY)).thenReturn(3L);
 
-        dangKyService.huyDangKy(200L);
+        dangKyService.huyDangKy(200L, null);
 
         assertEquals(TrangThaiDangKy.DA_HUY, dangKy.getTrangThai());
         assertEquals(4, lopHocPhan.getSiSoHienTai());
@@ -437,7 +437,7 @@ class DangKyServiceTest {
         when(lopHocPhanRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(lopHocPhan));
         when(dangKyHocPhanRepository.tinhTongTinChi(1L, 1L, TrangThaiDangKy.DA_DANG_KY)).thenReturn(6L);
 
-        ApiException ex = assertThrows(ApiException.class, () -> dangKyService.huyDangKy(200L));
+        ApiException ex = assertThrows(ApiException.class, () -> dangKyService.huyDangKy(200L, null));
 
         assertTrue(ex.getMessage().contains("tối thiểu"));
         assertEquals(TrangThaiDangKy.DA_DANG_KY, dangKy.getTrangThai());
@@ -456,7 +456,7 @@ class DangKyServiceTest {
         when(dangKyHocPhanRepository.findByIdAndSinhVienId(200L, 1L)).thenReturn(Optional.of(dangKy));
         when(lopHocPhanRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(lopHocPhan));
 
-        ApiException ex = assertThrows(ApiException.class, () -> dangKyService.huyDangKy(200L));
+        ApiException ex = assertThrows(ApiException.class, () -> dangKyService.huyDangKy(200L, null));
 
         assertTrue(ex.getMessage().contains("hết thời gian"));
         assertEquals(TrangThaiDangKy.DA_DANG_KY, dangKy.getTrangThai());
