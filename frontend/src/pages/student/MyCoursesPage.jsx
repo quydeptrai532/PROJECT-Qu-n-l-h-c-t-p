@@ -37,11 +37,12 @@ export default function MyCoursesPage() {
       tone: "danger",
     });
     if (!daXacNhan) return;
+    const lyDo = window.prompt("Lý do hủy đăng ký (không bắt buộc):") ?? "";
     setBusyId(item.id);
     setError("");
     setMessage("");
     try {
-      await api.delete(`/dang-ky/${item.id}`);
+      await api.delete(`/dang-ky/${item.id}`, { params: lyDo.trim() ? { lyDo: lyDo.trim() } : {} });
       setMessage(`Đã hủy đăng ký lớp ${item.maLop}`);
       await reload();
     } catch (err) {

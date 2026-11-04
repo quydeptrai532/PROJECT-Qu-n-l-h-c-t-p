@@ -15,7 +15,8 @@ public final class RegistrationDtos {
     private RegistrationDtos() {
     }
 
-    public record DangKyRequest(@NotNull(message = "Vui lòng chọn lớp học phần") Long lopHocPhanId) {
+    public record DangKyRequest(@NotNull(message = "Vui lòng chọn lớp học phần") Long lopHocPhanId,
+                                String loaiDangKy) {
     }
 
     public record XacNhanKeHoachRequest(
@@ -27,6 +28,18 @@ public final class RegistrationDtos {
                             Long hocKyId, String tenHocKy, String namHoc, LocalDateTime thoiGianDangKy, String trangThai,
                             Double diemQuaTrinh, Double diemCuoiKy, Double diemTongKet) {
     }
+
+    public record LichSuDangKyDto(Long id, Long dangKyId, Long hocKyId, String maLop, String maMon,
+                                  String tenMon, LocalDateTime thoiGianDangKy, String trangThai,
+                                  LocalDateTime thoiDiem, LocalDateTime thoiGianHuy, String lyDoHuy) { }
+
+    public record LanHocTruocDto(Long dangKyId, String maLop, String tenHocKy,
+                                 LocalDateTime thoiGianDangKy, Double diemTongKet) { }
+
+    public record DangKyHocLaiDto(Long lopHocPhanId, String maLop, Long monHocId, String maMon, String tenMon,
+                                  int soTinChi, String tenGiangVien, String phong, int thu, int tietBatDau,
+                                  int soTiet, int siSoHienTai, int siSoToiDa, boolean dangMoDangKy,
+                                  String loaiDangKy, List<LanHocTruocDto> cacLanHocTruoc) { }
 
     public record NhapDiemRequest(
             @NotNull(message = "Vui lòng nhập điểm quá trình")

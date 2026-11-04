@@ -37,7 +37,8 @@ public class AuditLogService {
             "maLop", "monHocId", "hocKyId", "giangVienId", "phong", "thu", "tietBatDau", "soTiet",
             "siSoToiDa", "siSoHienTai", "conLai", "tenHocKy", "namHoc", "dangKyTu", "dangKyDen", "soTinChiToiThieu",
             "soTinChiToiDa", "trangThai", "dangKyId", "lopHocPhanId", "active", "maMon", "tenMon", "soTinChi",
-            "khoaId", "nganhId", "lopId", "monTienQuyetId", "soBanGhi"
+            "loaiDangKy", "khoaId", "nganhId", "lopId", "monTienQuyetId", "lyDoHuy", "soBanGhi"
+
     );
 
     private final AuditLogRepository repository;

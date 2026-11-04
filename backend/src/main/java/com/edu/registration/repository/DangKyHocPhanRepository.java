@@ -36,9 +36,15 @@ public interface DangKyHocPhanRepository extends JpaRepository<DangKyHocPhan, Lo
     List<DangKyHocPhan> findAllActiveOfStudent(@Param("sinhVienId") Long sinhVienId,
                                                @Param("trangThai") TrangThaiDangKy trangThai);
 
+    @EntityGraph(attributePaths = {"lopHocPhan", "lopHocPhan.monHoc", "lopHocPhan.hocKy", "sinhVien"})
+    List<DangKyHocPhan> findBySinhVienIdOrderByLopHocPhanHocKyNgayBatDauDescIdDesc(Long sinhVienId);
+
     Optional<DangKyHocPhan> findBySinhVienIdAndLopHocPhanId(Long sinhVienId, Long lopHocPhanId);
 
     Optional<DangKyHocPhan> findByIdAndSinhVienId(Long id, Long sinhVienId);
+
+    @EntityGraph(attributePaths = {"lopHocPhan", "lopHocPhan.monHoc", "lopHocPhan.hocKy", "sinhVien"})
+    List<DangKyHocPhan> findBySinhVienIdAndLopHocPhanHocKyIdOrderByIdAsc(Long sinhVienId, Long hocKyId);
 
     @EntityGraph(attributePaths = {"sinhVien", "sinhVien.user", "lopHocPhan", "lopHocPhan.monHoc",
             "lopHocPhan.giangVien", "lopHocPhan.hocKy"})
