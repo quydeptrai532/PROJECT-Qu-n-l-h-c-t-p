@@ -9,6 +9,7 @@ import com.edu.registration.service.LopHocPhanService;
 import com.edu.registration.service.ThongBaoNghiService;
 import com.edu.registration.service.StudentAcademicProfileService;
 import com.edu.registration.service.SinhVienDashboardService;
+import com.edu.registration.service.HocLaiCaiThienService;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -34,17 +35,20 @@ public class SinhVienController {
     private final ThongBaoNghiService thongBaoNghiService;
     private final StudentAcademicProfileService studentAcademicProfileService;
     private final SinhVienDashboardService sinhVienDashboardService;
+    private final HocLaiCaiThienService hocLaiCaiThienService;
 
     public SinhVienController(LopHocPhanService lopHocPhanService, DangKyService dangKyService,
                               DiemService diemService, ThongBaoNghiService thongBaoNghiService,
                               StudentAcademicProfileService studentAcademicProfileService,
-                              SinhVienDashboardService sinhVienDashboardService) {
+                              SinhVienDashboardService sinhVienDashboardService,
+                              HocLaiCaiThienService hocLaiCaiThienService) {
         this.lopHocPhanService = lopHocPhanService;
         this.dangKyService = dangKyService;
         this.diemService = diemService;
         this.thongBaoNghiService = thongBaoNghiService;
         this.studentAcademicProfileService = studentAcademicProfileService;
         this.sinhVienDashboardService = sinhVienDashboardService;
+        this.hocLaiCaiThienService = hocLaiCaiThienService;
     }
 
     @GetMapping("/lop-hoc-phan")
@@ -62,7 +66,7 @@ public class SinhVienController {
     @PostMapping("/dang-ky")
     @PreAuthorize("hasRole('SINH_VIEN')")
     public RegistrationDtos.DangKyDto dangKy(@Valid @RequestBody RegistrationDtos.DangKyRequest request) {
-        return dangKyService.dangKy(request.lopHocPhanId());
+        return dangKyService.dangKy(request.lopHocPhanId(), request.loaiDangKy());
     }
 
     @PostMapping("/dang-ky/xac-nhan-ke-hoach")
@@ -122,5 +126,12 @@ public class SinhVienController {
     @PreAuthorize("hasRole('SINH_VIEN')")
     public List<SinhVienDashboardService.CanhBaoDto> canhBaoDashboard() {
         return sinhVienDashboardService.canhBao();
+    }
+
+    @GetMapping("/sinh-vien/me/dang-ky-hoc-lai-cai-thien")
+    @PreAuthorize("hasRole('SINH_VIEN')")
+    public List<RegistrationDtos.DangKyHocLaiDto> danhSachHocLaiCaiThien(
+            @RequestParam(required = false) Long hocKyId) {
+        return hocLaiCaiThienService.danhSach(hocKyId);
     }
 }

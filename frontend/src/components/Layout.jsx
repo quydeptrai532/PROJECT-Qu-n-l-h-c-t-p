@@ -3,6 +3,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import {
   BookMarked,
   BookOpen,
+  BookOpenCheck,
   Bell,
   Building2,
   CalendarDays,
@@ -29,6 +30,7 @@ const NAV = {
   SINH_VIEN: [
     { to: "/tong-quan", label: "Tổng quan", icon: LayoutDashboard },
     { to: "/dang-ky", label: "Đăng ký học phần", icon: BookOpen },
+    { to: "/dang-ky-hoc-lai", label: "Học lại / cải thiện", icon: BookOpenCheck },
     { to: "/ke-hoach-hoc-tap", label: "Kế hoạch học tập", icon: CalendarRange },
     { to: "/hoc-phan-cua-toi", label: "Học phần của tôi", icon: ClipboardList },
     { to: "/lich-su-dang-ky", label: "Lịch sử đăng ký", icon: History },
