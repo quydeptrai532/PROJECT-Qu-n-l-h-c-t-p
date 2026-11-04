@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { KeyRound, Mail, Phone, Save, UserRound } from "lucide-react";
+import { BookOpen, KeyRound, Mail, Phone, Save, UserRound } from "lucide-react";
 import api, { getErrorMessage } from "../api/client";
 import { Alert, Badge, Field, PageHeader, Spinner } from "../components/ui";
 import { ROLE_LABEL, useAuth } from "../context/AuthContext";
@@ -108,6 +108,7 @@ export default function ProfilePage() {
         </div>
 
         <div className="space-y-6 lg:col-span-2">
+          {data.role === "SINH_VIEN" && <StudentAcademicProfile />}
           <form className="card p-5" onSubmit={saveProfile}>
             <div className="mb-4 flex items-center gap-2">
               <UserRound size={18} className="text-indigo-600" />
@@ -205,6 +206,44 @@ export default function ProfilePage() {
           </form>
         </div>
       </div>
+    </div>
+  );
+}
+
+function StudentAcademicProfile() {
+  const { data, loading, error } = useApi("/sinh-vien/me/ho-so-dao-tao");
+
+  return (
+    <section className="card p-5" aria-labelledby="academic-profile-title">
+      <div className="mb-4 flex items-center gap-2">
+        <BookOpen size={18} className="text-indigo-600" />
+        <h2 id="academic-profile-title" className="text-sm font-semibold text-slate-800">Hồ sơ đào tạo</h2>
+      </div>
+      {loading ? <Spinner label="Đang tải hồ sơ đào tạo..." /> : error ? <Alert tone="error">{error}</Alert> : (
+        <dl className="grid gap-x-6 gap-y-4 text-sm sm:grid-cols-2">
+          <AcademicField label="Khoa" value={`${data.khoaMa} · ${data.khoaTen}`} />
+          <AcademicField label="Ngành" value={`${data.nganhMa} · ${data.nganhTen}`} />
+          <AcademicField label="Khóa" value={data.khoaNhapHoc} />
+          <AcademicField label="Lớp hành chính" value={`${data.lopMa} · ${data.lopTen}`} />
+          <AcademicField
+            label="Chương trình đào tạo"
+            value={data.chuongTrinhKhoaNhapHoc === "Chưa cập nhật" || data.chuongTrinhPhienBan === "Chưa cập nhật"
+              ? "Chưa cập nhật"
+              : `Khóa ${data.chuongTrinhKhoaNhapHoc} · Phiên bản ${data.chuongTrinhPhienBan}`}
+          />
+          <AcademicField label="Trạng thái học tập" value={data.trangThaiHocTap} />
+        </dl>
+      )}
+      <p className="mt-4 text-xs text-slate-500">Thông tin học vụ do phòng đào tạo quản lý và chỉ xem được.</p>
+    </section>
+  );
+}
+
+function AcademicField({ label, value }) {
+  return (
+    <div>
+      <dt className="text-slate-500">{label}</dt>
+      <dd className="mt-1 font-medium text-slate-800">{value || "Chưa cập nhật"}</dd>
     </div>
   );
 }
