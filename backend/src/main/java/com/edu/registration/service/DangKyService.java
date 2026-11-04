@@ -4,6 +4,7 @@ import com.edu.registration.dto.RegistrationDtos;
 import com.edu.registration.entity.DangKyHocPhan;
 import com.edu.registration.entity.Diem;
 import com.edu.registration.entity.HocKy;
+import com.edu.registration.entity.LichSuDangKy;
 import com.edu.registration.entity.LopHocPhan;
 import com.edu.registration.entity.MonHoc;
 import com.edu.registration.entity.MonTienQuyet;
@@ -13,12 +14,16 @@ import com.edu.registration.exception.ApiException;
 import com.edu.registration.repository.DangKyHocPhanRepository;
 import com.edu.registration.repository.DiemRepository;
 import com.edu.registration.repository.LopHocPhanRepository;
+import com.edu.registration.repository.LichSuDangKyRepository;
 import com.edu.registration.repository.MonTienQuyetRepository;
 import com.edu.registration.repository.SinhVienRepository;
 import com.edu.registration.security.CurrentUser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +44,7 @@ public class DangKyService {
     private static final double DIEM_DAT = 5.0;
 
     private final DangKyHocPhanRepository dangKyHocPhanRepository;
+    private final LichSuDangKyRepository lichSuDangKyRepository;
     private final LopHocPhanRepository lopHocPhanRepository;
     private final DiemRepository diemRepository;
     private final MonTienQuyetRepository monTienQuyetRepository;
@@ -50,11 +56,13 @@ public class DangKyService {
     private final ThongBaoService thongBaoService;
 
     public DangKyService(DangKyHocPhanRepository dangKyHocPhanRepository,
+                         LichSuDangKyRepository lichSuDangKyRepository,
                          LopHocPhanRepository lopHocPhanRepository, DiemRepository diemRepository,
                          MonTienQuyetRepository monTienQuyetRepository, SinhVienRepository sinhVienRepository,
                          CurrentUser currentUser, HocKyService hocKyService, DtoMapper mapper,
                          AuditLogService auditLogService, ThongBaoService thongBaoService) {
         this.dangKyHocPhanRepository = dangKyHocPhanRepository;
+        this.lichSuDangKyRepository = lichSuDangKyRepository;
         this.lopHocPhanRepository = lopHocPhanRepository;
         this.diemRepository = diemRepository;
         this.monTienQuyetRepository = monTienQuyetRepository;
@@ -145,11 +153,13 @@ public class DangKyService {
                     moi.setLopHocPhan(lop);
                     return moi;
                 });
+        LocalDateTime thoiDiemDangKy = LocalDateTime.now();
         dangKy.setTrangThai(TrangThaiDangKy.DA_DANG_KY);
-        dangKy.setThoiGianDangKy(LocalDateTime.now());
+        dangKy.setThoiGianDangKy(thoiDiemDangKy);
         lop.setSiSoHienTai(lop.getSiSoHienTai() + 1);
 
         DangKyHocPhan daLuu = dangKyHocPhanRepository.save(dangKy);
+        ghiLichSu(sinhVien, lop, daLuu, TrangThaiDangKy.DA_DANG_KY, thoiDiemDangKy, thoiDiemDangKy, null);
         thongBaoService.registrationChanged(daLuu, true);
         Map<String, Object> before = Map.of("maLop", lop.getMa(), "siSoToiDa", lop.getSiSoToiDa(),
                 "siSoHienTai", lop.getSiSoHienTai() - 1);
@@ -162,7 +172,10 @@ public class DangKyService {
     }
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
-    public void huyDangKy(Long dangKyId) {
+    public void huyDangKy(Long dangKyId, String lyDoHuy) {
+        if (lyDoHuy != null && lyDoHuy.length() > 255) {
+            throw ApiException.badRequest("Lý do hủy tối đa 255 ký tự");
+        }
         auditLogService.execute("COURSE_REGISTRATION_CANCELLED", "COURSE_REGISTRATION", dangKyId, audit -> {
         SinhVien sinhVien = sinhVienHienTaiForUpdate();
         DangKyHocPhan dangKy = dangKyHocPhanRepository.findByIdAndSinhVienId(dangKyId, sinhVien.getId())
@@ -189,12 +202,20 @@ public class DangKyService {
         Map<String, Object> before = Map.of("dangKyId", dangKy.getId(), "lopHocPhanId", lop.getId(),
                 "maLop", lop.getMa(), "trangThai", dangKy.getTrangThai().name(),
                 "siSoHienTai", lop.getSiSoHienTai());
+        LocalDateTime thoiDiemHuy = LocalDateTime.now();
         dangKy.setTrangThai(TrangThaiDangKy.DA_HUY);
         lop.setSiSoHienTai(Math.max(0, lop.getSiSoHienTai() - 1));
+        ghiLichSu(sinhVien, lop, dangKy, TrangThaiDangKy.DA_HUY, dangKy.getThoiGianDangKy(), thoiDiemHuy,
+                lyDoHuy == null || lyDoHuy.isBlank() ? null : lyDoHuy.trim());
         thongBaoService.registrationChanged(dangKy, false);
-        audit.changes(before, Map.of("dangKyId", dangKy.getId(), "lopHocPhanId", lop.getId(),
-                "maLop", lop.getMa(), "trangThai", dangKy.getTrangThai().name(),
-                "siSoHienTai", lop.getSiSoHienTai()));
+        Map<String, Object> after = new java.util.LinkedHashMap<>();
+        after.put("dangKyId", dangKy.getId());
+        after.put("lopHocPhanId", lop.getId());
+        after.put("maLop", lop.getMa());
+        after.put("trangThai", dangKy.getTrangThai().name());
+        after.put("siSoHienTai", lop.getSiSoHienTai());
+        if (lyDoHuy != null && !lyDoHuy.isBlank()) after.put("lyDoHuy", lyDoHuy.trim());
+        audit.changes(before, after);
         log.info("Sinh viên {} hủy đăng ký lớp {}", sinhVien.getMa(), lop.getMa());
         return null;
         });
@@ -210,6 +231,49 @@ public class DangKyService {
         return danhSach.stream()
                 .map(dk -> mapper.dangKy(dk, diemMap.get(dk.getId())))
                 .toList();
+    }
+
+    @Transactional
+    public Page<RegistrationDtos.LichSuDangKyDto> lichSuCuaToi(Long hocKyId, int page, int size) {
+        if (page < 0) throw ApiException.badRequest("Trang phải lớn hơn hoặc bằng 0");
+        if (size < 1 || size > 100) throw ApiException.badRequest("Kích thước trang phải từ 1 đến 100");
+        SinhVien sinhVien = sinhVienHienTai();
+        HocKy hocKy = hocKyService.lay(hocKyId);
+        // Preserve visibility for registrations created before the event table existed.
+        for (DangKyHocPhan legacy : dangKyHocPhanRepository
+                .findBySinhVienIdAndLopHocPhanHocKyIdOrderByIdAsc(sinhVien.getId(), hocKy.getId())) {
+            if (!lichSuDangKyRepository.existsByDangKyId(legacy.getId())) {
+                LocalDateTime registeredAt = legacy.getThoiGianDangKy();
+                ghiLichSu(sinhVien, legacy.getLopHocPhan(), legacy, legacy.getTrangThai(), registeredAt,
+                        registeredAt, null);
+            }
+        }
+        return lichSuDangKyRepository.findLichSu(sinhVien.getId(), hocKy.getId(),
+                        PageRequest.of(page, size, Sort.by(Sort.Order.desc("thoiDiem"), Sort.Order.desc("id"))))
+                .map(event -> {
+                    LopHocPhan lop = event.getLopHocPhan();
+                    return new RegistrationDtos.LichSuDangKyDto(event.getId(), event.getDangKyId(), hocKy.getId(),
+                            lop.getMa(), lop.getMonHoc().getMa(), lop.getMonHoc().getTen(),
+                            event.getThoiGianDangKy(), event.getTrangThai().name(), event.getThoiDiem(),
+                            event.getThoiGianHuy(),
+                            event.getLyDoHuy());
+                });
+    }
+
+    private void ghiLichSu(SinhVien sinhVien, LopHocPhan lop, DangKyHocPhan registration,
+                           TrangThaiDangKy status, LocalDateTime registeredAt, LocalDateTime occurredAt,
+                           String reason) {
+        LichSuDangKy event = new LichSuDangKy();
+        event.setSinhVien(sinhVien);
+        event.setLopHocPhan(lop);
+        event.setHocKyId(lop.getHocKy().getId());
+        event.setDangKyId(registration.getId());
+        event.setTrangThai(status);
+        event.setThoiGianDangKy(registeredAt);
+        event.setThoiDiem(occurredAt);
+        event.setLyDoHuy(reason);
+        if (status == TrangThaiDangKy.DA_HUY) event.setThoiGianHuy(occurredAt);
+        lichSuDangKyRepository.save(event);
     }
 
     @Transactional(readOnly = true)

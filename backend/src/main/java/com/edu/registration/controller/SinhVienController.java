@@ -19,6 +19,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.data.domain.Page;
+import jakarta.validation.constraints.Size;
 
 import java.util.List;
 
@@ -72,14 +74,24 @@ public class SinhVienController {
 
     @DeleteMapping("/dang-ky/{id}")
     @PreAuthorize("hasRole('SINH_VIEN')")
-    public void huyDangKy(@PathVariable Long id) {
-        dangKyService.huyDangKy(id);
+    public void huyDangKy(@PathVariable Long id,
+                          @RequestParam(required = false) @Size(max = 255) String lyDo) {
+        dangKyService.huyDangKy(id, lyDo);
     }
 
     @GetMapping("/dang-ky/me")
     @PreAuthorize("hasRole('SINH_VIEN')")
     public List<RegistrationDtos.DangKyDto> dangKyCuaToi(@RequestParam(required = false) Long hocKyId) {
         return dangKyService.danhSachCuaToi(hocKyId);
+    }
+
+    @GetMapping("/dang-ky/me/lich-su")
+    @PreAuthorize("hasRole('SINH_VIEN')")
+    public Page<RegistrationDtos.LichSuDangKyDto> lichSuDangKyCuaToi(
+            @RequestParam Long hocKyId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return dangKyService.lichSuCuaToi(hocKyId, page, size);
     }
 
     @GetMapping("/sinh-vien/me/thoi-khoa-bieu")

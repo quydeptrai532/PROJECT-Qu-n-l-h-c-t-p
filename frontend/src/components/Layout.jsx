@@ -31,6 +31,7 @@ const NAV = {
     { to: "/dang-ky", label: "Đăng ký học phần", icon: BookOpen },
     { to: "/ke-hoach-hoc-tap", label: "Kế hoạch học tập", icon: CalendarRange },
     { to: "/hoc-phan-cua-toi", label: "Học phần của tôi", icon: ClipboardList },
+    { to: "/lich-su-dang-ky", label: "Lịch sử đăng ký", icon: History },
     { to: "/thoi-khoa-bieu", label: "Thời khóa biểu", icon: CalendarDays },
     { to: "/diem", label: "Điểm & kết quả", icon: GraduationCap },
     { to: "/tien-do", label: "Tiến độ học tập", icon: ChartNoAxesCombined },
