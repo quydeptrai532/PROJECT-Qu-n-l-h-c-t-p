@@ -55,4 +55,22 @@ test.describe("Sinh viên", () => {
     await expect(page.getByText("GPA hệ 10")).toBeVisible();
     await expect(page.getByText("Xu hướng GPA")).toBeVisible();
   });
+
+  test("tra cứu lịch sử học tập, môn chưa đạt và lọc theo trạng thái", async ({ page }) => {
+    await login(page, "sv03", "123456");
+    await page.goto("/lich-su-hoc-tap");
+    await expect(page.getByRole("heading", { name: "Lịch sử học tập & môn chưa đạt" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Môn chưa đạt", exact: true })).toBeVisible();
+    await expect(page.getByText("INT101.01-HK2").first()).toBeVisible();
+    await expect(page.getByText("1/2 lần").first()).toBeVisible();
+    await expect(page.getByText("2/2 lần").first()).toBeVisible();
+
+    const statusSelect = page.getByLabel("Lọc theo trạng thái");
+    await statusSelect.selectOption("CHUA_DAT");
+    await expect(page.locator("tbody tr")).toHaveCount(1);
+    await expect(page.locator("tbody tr").first()).toContainText("Chưa đạt");
+
+    await statusSelect.selectOption("CHUA_CO_DIEM");
+    await expect(page.locator("tbody tr").first()).toContainText("Chưa có điểm");
+  });
 });

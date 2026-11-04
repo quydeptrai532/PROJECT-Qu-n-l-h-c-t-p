@@ -62,6 +62,20 @@ public final class RegistrationDtos {
                                   int tongTinChi, double gpa10, double gpa4, int tinChiTichLuy) {
     }
 
+    public record MucLichSuHocTapDto(Long dangKyId, Long hocKyId, String tenHocKy, String namHoc,
+                                     LocalDate ngayBatDauHocKy, Long monHocId, String maMon, String tenMon,
+                                     int soTinChi, Long lopHocPhanId, String maLop, String tenGiangVien,
+                                     LocalDateTime thoiGianDangKy, Double diemQuaTrinh, Double diemCuoiKy,
+                                     Double diemTongKet, String trangThaiKetQua, String tenTrangThaiKetQua,
+                                     int lanHoc, int tongSoLanHoc) {
+    }
+
+    public record LichSuHocTapDto(List<MucLichSuHocTapDto> items, List<HocKyTongKetDto> hocKy,
+                                  List<MucLichSuHocTapDto> monChuaDat, int tongTinChi, int tinChiCoDiem,
+                                  int tinChiTichLuy, double gpa10, double gpa4, int soMonDat,
+                                  int soMonChuaDat, int soMonChuaCoDiem, boolean coNhieuLanHoc) {
+    }
+
     public record ThoiKhoaBieuDto(Long lopHocPhanId, String maLop, String tenMon, String phong,
                                   int thu, int tietBatDau, int soTiet, String giangVien) {
     }

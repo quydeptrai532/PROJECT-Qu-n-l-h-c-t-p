@@ -1,5 +1,6 @@
 import { useMemo } from "react";
-import { Award, BookOpen, GraduationCap, TrendingUp } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Award, BookOpen, GraduationCap, ScrollText, TrendingUp } from "lucide-react";
 import {
   CartesianGrid,
   Line,
@@ -68,6 +69,12 @@ export default function GradesPage() {
         icon={GraduationCap}
         title="Điểm & kết quả học tập"
         description="Điểm thành phần, điểm tổng kết, GPA học kỳ và điểm tích lũy."
+        actions={
+          <Link to="/lich-su-hoc-tap" className="btn-secondary">
+            <ScrollText size={16} />
+            Lịch sử học tập & môn chưa đạt
+          </Link>
+        }
       />
 
 

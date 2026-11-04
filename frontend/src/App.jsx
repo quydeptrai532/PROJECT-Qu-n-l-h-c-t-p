@@ -11,6 +11,7 @@ import RegistrationHistoryPage from "./pages/student/RegistrationHistoryPage";
 import RetakeRegistrationPage from "./pages/student/RetakeRegistrationPage";
 import TimetablePage from "./pages/student/TimetablePage";
 import GradesPage from "./pages/student/GradesPage";
+import StudyHistoryPage from "./pages/student/StudyHistoryPage";
 import LecturerClassesPage from "./pages/lecturer/LecturerClassesPage";
 import LecturerTimetablePage from "./pages/lecturer/TimetablePage";
 import GradeEntryPage from "./pages/lecturer/GradeEntryPage";
@@ -87,6 +88,14 @@ export default function App() {
         element={
           <ProtectedRoute roles={["SINH_VIEN"]}>
             <GradesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/lich-su-hoc-tap"
+        element={
+          <ProtectedRoute roles={["SINH_VIEN"]}>
+            <StudyHistoryPage />
           </ProtectedRoute>
         }
       />

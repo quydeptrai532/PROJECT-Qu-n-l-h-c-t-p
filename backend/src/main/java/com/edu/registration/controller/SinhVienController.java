@@ -116,6 +116,14 @@ public class SinhVienController {
         return diemService.ketQuaHocTap();
     }
 
+    @GetMapping("/sinh-vien/me/lich-su-hoc-tap")
+    @PreAuthorize("hasRole('SINH_VIEN')")
+    public RegistrationDtos.LichSuHocTapDto lichSuHocTap(
+            @RequestParam(required = false) Long hocKyId,
+            @RequestParam(required = false) String trangThai) {
+        return diemService.lichSuHocTap(hocKyId, trangThai);
+    }
+
     @GetMapping("/sinh-vien/me/ho-so-dao-tao")
     @PreAuthorize("hasRole('SINH_VIEN')")
     public StudentAcademicProfileDto hoSoDaoTao() {
