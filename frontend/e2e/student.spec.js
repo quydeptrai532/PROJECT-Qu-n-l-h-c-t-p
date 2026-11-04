@@ -1,13 +1,27 @@
 import { expect, test } from "@playwright/test";
 import { login } from "./helpers";
 
-async function huyNeuDaDangKy(page) {
+async function goToMyCourses(page) {
+  const dangKyLoaded = page.waitForResponse(
+    (response) =>
+      response.url().includes("/api/dang-ky/me") &&
+      response.url().includes("hocKyId=") &&
+      response.request().method() === "GET" &&
+      response.ok()
+  );
   await page.goto("/hoc-phan-cua-toi");
+  await dangKyLoaded;
+  await expect(page.locator(".animate-spin")).toHaveCount(0);
+}
+
+async function huyNeuDaDangKy(page) {
+  await goToMyCourses(page);
   const row = page.locator("tr").filter({ hasText: "INT201.01" });
   if ((await row.count()) > 0) {
     await row.getByRole("button", { name: "Hủy", exact: true }).click();
     await page.getByRole("button", { name: "Hủy đăng ký", exact: true }).click();
     await expect(page.getByText(/Đã hủy đăng ký/)).toBeVisible();
+    await expect(row).toHaveCount(0);
   }
 }
 
@@ -25,7 +39,7 @@ test.describe("Sinh viên", () => {
     await lop.getByRole("button", { name: "Đăng ký", exact: true }).click();
     await expect(page.getByText(/Đăng ký thành công lớp INT201.01/)).toBeVisible();
 
-    await page.goto("/hoc-phan-cua-toi");
+    await goToMyCourses(page);
     const hocPhan = page.locator("tr").filter({ hasText: "INT201.01" });
     await expect(hocPhan).toBeVisible();
     await expect(page.getByText("INT201.01")).toBeVisible();
