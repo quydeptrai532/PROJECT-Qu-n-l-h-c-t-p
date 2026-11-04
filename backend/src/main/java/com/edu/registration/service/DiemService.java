@@ -31,7 +31,6 @@ import java.util.stream.Collectors;
 public class DiemService {
 
     private static final Logger log = LoggerFactory.getLogger(DiemService.class);
-    private static final double DIEM_DAT = 5.0;
 
     private final DangKyHocPhanRepository dangKyHocPhanRepository;
     private final DiemRepository diemRepository;
@@ -143,7 +142,7 @@ public class DiemService {
             tinChiCoDiem += item.soTinChi();
             tongDiem10 += item.diemTongKet() * item.soTinChi();
             tongDiem4 += quyDoi4(item.diemTongKet()) * item.soTinChi();
-            if (item.diemTongKet() >= DIEM_DAT) {
+            if (item.diemTongKet() >= AcademicRules.DIEM_DAT) {
                 tinChiTichLuy += item.soTinChi();
             }
         }
@@ -159,7 +158,7 @@ public class DiemService {
         if (diem10 >= 7.0) return 3.0;
         if (diem10 >= 6.5) return 2.5;
         if (diem10 >= 5.5) return 2.0;
-        if (diem10 >= 5.0) return 1.5;
+        if (diem10 >= AcademicRules.DIEM_DAT) return 1.5;
         if (diem10 >= 4.0) return 1.0;
         return 0.0;
     }
