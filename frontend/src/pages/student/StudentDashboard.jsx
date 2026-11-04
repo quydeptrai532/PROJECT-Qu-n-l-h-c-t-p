@@ -142,6 +142,8 @@ export default function StudentDashboard() {
         </div>
       </section>
 
+      <div className="mt-4"><Alert tone="warning">Quy chế thay điểm và tính GPA/tín chỉ khi học lại, học cải thiện chưa được cấu hình; GPA cho các môn học nhiều lần chưa phải kết quả chính thức.</Alert></div>
+
       <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Học phần đã đăng ký" value={hocPhan.length} icon={ClipboardList} />
         <StatCard label="Tín chỉ học kỳ" value={tongTinChi} icon={BookOpen} tone="emerald" />

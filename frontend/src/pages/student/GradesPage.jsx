@@ -70,6 +70,9 @@ export default function GradesPage() {
         description="Điểm thành phần, điểm tổng kết, GPA học kỳ và điểm tích lũy."
       />
 
+
+      <div className="mb-4"><Alert tone="warning">Quy chế thay điểm và tính GPA/tín chỉ khi học lại, học cải thiện chưa được cấu hình. Các điểm từng lần học được lưu riêng; GPA đang hiển thị chưa phải kết quả chính thức cho môn có nhiều lần học.</Alert></div>
+
       <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="GPA hệ 10" value={data?.gpa10?.toFixed(2) || "0.00"} icon={TrendingUp} />
         <StatCard label="GPA hệ 4" value={data?.gpa4?.toFixed(2) || "0.00"} icon={Award} tone="emerald" />

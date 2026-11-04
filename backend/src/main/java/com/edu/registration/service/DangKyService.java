@@ -75,9 +75,14 @@ public class DangKyService {
 
     // Serialize one student's cross-section checks; READ_COMMITTED refreshes MySQL reads after lock waits.
     @Transactional(isolation = Isolation.READ_COMMITTED)
-    public RegistrationDtos.DangKyDto dangKy(Long lopHocPhanId) {
+    public RegistrationDtos.DangKyDto dangKy(Long lopHocPhanId, String loaiDangKy) {
         SinhVien sinhVien = sinhVienHienTaiForUpdate();
-        return dangKyTrongGiaoDich(sinhVien, lopHocPhanId);
+        return dangKyTrongGiaoDich(sinhVien, lopHocPhanId, loaiDangKy);
+    }
+
+    /** Backward-compatible internal entry point for existing callers. */
+    public RegistrationDtos.DangKyDto dangKy(Long lopHocPhanId) {
+        return dangKy(lopHocPhanId, null);
     }
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
@@ -97,12 +102,13 @@ public class DangKyService {
         List<RegistrationDtos.DangKyDto> ketQua = new ArrayList<>();
         // Lock section rows in a stable order so overlapping multi-class plans do not deadlock.
         for (Long lopHocPhanId : lopHocPhanIds.stream().sorted().toList()) {
-            ketQua.add(dangKyTrongGiaoDich(sinhVien, lopHocPhanId));
+            ketQua.add(dangKyTrongGiaoDich(sinhVien, lopHocPhanId, null));
         }
         return ketQua;
     }
 
-    private RegistrationDtos.DangKyDto dangKyTrongGiaoDich(SinhVien sinhVien, Long lopHocPhanId) {
+    private RegistrationDtos.DangKyDto dangKyTrongGiaoDich(SinhVien sinhVien, Long lopHocPhanId,
+                                                            String loaiDangKyYeuCau) {
         return auditLogService.execute("COURSE_REGISTRATION", "COURSE_SECTION", lopHocPhanId, audit -> {
         LopHocPhan lop = lopHocPhanRepository.findByIdForUpdate(lopHocPhanId)
                 .orElseThrow(() -> ApiException.notFound("Lớp học phần không tồn tại"));
@@ -111,6 +117,18 @@ public class DangKyService {
 
         if (!hocKy.dangMoDangKy()) {
             throw ApiException.badRequest("Hiện không trong thời gian đăng ký của " + hocKy.getTen());
+        }
+
+        String loaiDuocPhep = loaiDangKyPhuHop(sinhVien, monHoc);
+        if ("MOI".equals(loaiDuocPhep) && loaiDangKyYeuCau != null) {
+            throw ApiException.badRequest("Bạn chưa có kết quả môn này nên không thuộc diện học lại hoặc học cải thiện");
+        }
+        if (!"MOI".equals(loaiDuocPhep) && loaiDangKyYeuCau == null) {
+            throw ApiException.badRequest("Môn đã có kết quả trước đây; hãy đăng ký từ mục học lại/học cải thiện");
+        }
+        if (loaiDangKyYeuCau != null && !loaiDuocPhep.equals(loaiDangKyYeuCau)) {
+            throw ApiException.badRequest("Kết quả gần nhất không khớp loại đăng ký. Loại phù hợp: "
+                    + ("HOC_LAI".equals(loaiDuocPhep) ? "học lại" : "học cải thiện"));
         }
 
         List<DangKyHocPhan> dangKyHienTai =
@@ -164,7 +182,7 @@ public class DangKyService {
                 "siSoHienTai", lop.getSiSoHienTai() - 1);
         audit.changes(before, Map.of("maLop", lop.getMa(), "siSoToiDa", lop.getSiSoToiDa(),
                 "siSoHienTai", lop.getSiSoHienTai(), "trangThai", dangKy.getTrangThai().name(),
-                "dangKyId", daLuu.getId()));
+                "dangKyId", daLuu.getId(), "loaiDangKy", "MOI".equals(loaiDuocPhep) ? "DANG_KY_MOI" : loaiDuocPhep));
         log.info("Sinh viên {} đăng ký lớp {} (môn {})", sinhVien.getMa(), lop.getMa(), monHoc.getMa());
         return mapper.dangKy(daLuu, null);
         });
@@ -298,6 +316,23 @@ public class DangKyService {
                         + tienQuyet.getMa() + " - " + tienQuyet.getTen());
             }
         }
+    }
+
+    private String loaiDangKyPhuHop(SinhVien sinhVien, MonHoc monHoc) {
+        List<DangKyHocPhan> attempts = dangKyHocPhanRepository
+                .findBySinhVienIdOrderByLopHocPhanHocKyNgayBatDauDescIdDesc(sinhVien.getId());
+        if (attempts.isEmpty()) return "MOI";
+        List<Long> ids = attempts.stream().map(DangKyHocPhan::getId).toList();
+        Map<Long, Diem> grades = diemRepository.findByDangKyIdIn(ids).stream()
+                .collect(Collectors.toMap(grade -> grade.getDangKy().getId(), Function.identity()));
+        for (DangKyHocPhan attempt : attempts) {
+            if (!attempt.getLopHocPhan().getMonHoc().getId().equals(monHoc.getId())) continue;
+            Diem grade = grades.get(attempt.getId());
+            if (grade != null && grade.getDiemTongKet() != null) {
+                return grade.getDiemTongKet() < AcademicRules.DIEM_DAT ? "HOC_LAI" : "HOC_CAI_THIEN";
+            }
+        }
+        return "MOI";
     }
 
     private Map<Long, Diem> layDiemTheoDangKy(List<DangKyHocPhan> danhSach) {
