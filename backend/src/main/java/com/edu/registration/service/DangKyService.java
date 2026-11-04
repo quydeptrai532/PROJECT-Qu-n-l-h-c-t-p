@@ -36,7 +36,6 @@ import java.util.stream.Collectors;
 public class DangKyService {
 
     private static final Logger log = LoggerFactory.getLogger(DangKyService.class);
-    private static final double DIEM_DAT = 5.0;
 
     private final DangKyHocPhanRepository dangKyHocPhanRepository;
     private final LopHocPhanRepository lopHocPhanRepository;
@@ -227,7 +226,7 @@ public class DangKyService {
         if (danhSachTienQuyet.isEmpty()) {
             return;
         }
-        Set<Long> monDaDat = new HashSet<>(diemRepository.findMonDaDat(sinhVien.getId(), DIEM_DAT));
+        Set<Long> monDaDat = new HashSet<>(diemRepository.findMonDaDat(sinhVien.getId(), AcademicRules.DIEM_DAT));
         for (MonTienQuyet lienKet : danhSachTienQuyet) {
             MonHoc tienQuyet = lienKet.getMonTienQuyet();
             if (!monDaDat.contains(tienQuyet.getId())) {

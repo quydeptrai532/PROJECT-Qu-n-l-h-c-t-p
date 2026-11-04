@@ -6,6 +6,7 @@ import com.edu.registration.service.DangKyService;
 import com.edu.registration.service.DiemService;
 import com.edu.registration.service.LopHocPhanService;
 import com.edu.registration.service.ThongBaoNghiService;
+import com.edu.registration.service.SinhVienDashboardService;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -27,13 +28,16 @@ public class SinhVienController {
     private final DangKyService dangKyService;
     private final DiemService diemService;
     private final ThongBaoNghiService thongBaoNghiService;
+    private final SinhVienDashboardService sinhVienDashboardService;
 
     public SinhVienController(LopHocPhanService lopHocPhanService, DangKyService dangKyService,
-                              DiemService diemService, ThongBaoNghiService thongBaoNghiService) {
+                              DiemService diemService, ThongBaoNghiService thongBaoNghiService,
+                              SinhVienDashboardService sinhVienDashboardService) {
         this.lopHocPhanService = lopHocPhanService;
         this.dangKyService = dangKyService;
         this.diemService = diemService;
         this.thongBaoNghiService = thongBaoNghiService;
+        this.sinhVienDashboardService = sinhVienDashboardService;
     }
 
     @GetMapping("/lop-hoc-phan")
@@ -89,5 +93,11 @@ public class SinhVienController {
     @PreAuthorize("hasRole('SINH_VIEN')")
     public RegistrationDtos.KetQuaHocTapDto ketQuaHocTap() {
         return diemService.ketQuaHocTap();
+    }
+
+    @GetMapping("/sinh-vien/me/canh-bao-dashboard")
+    @PreAuthorize("hasRole('SINH_VIEN')")
+    public List<SinhVienDashboardService.CanhBaoDto> canhBaoDashboard() {
+        return sinhVienDashboardService.canhBao();
     }
 }
