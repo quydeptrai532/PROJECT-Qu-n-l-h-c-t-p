@@ -170,6 +170,14 @@ Dữ liệu mẫu gồm 2 khoa, 3 ngành, 3 lớp hành chính, 8 môn học (c�
 | GET | `/api/notifications?unreadOnly=&page=&size=` | Danh sách thông báo của người đăng nhập (sinh viên/giảng viên), có lọc chưa đọc và phân trang |
 | PATCH | `/api/notifications/{id}/read` | Đánh dấu một thông báo của chính người đăng nhập đã đọc |
 | PATCH | `/api/notifications/read-all` | Đánh dấu tất cả thông báo của chính người đăng nhập đã đọc |
+| GET | `/api/yeu-cau-ho-tro/danh-muc` | Danh mục loại yêu cầu, trạng thái, chính sách tệp và đối tượng liên quan (môn học, học kỳ, điểm của sinh viên) |
+| POST | `/api/yeu-cau-ho-tro` | Sinh viên gửi phiếu hỗ trợ/khiếu nại (JSON hoặc `multipart/form-data` kèm tệp minh chứng) |
+| GET | `/api/yeu-cau-ho-tro/me` | Danh sách phiếu hỗ trợ của sinh viên đang đăng nhập (có lọc & phân trang) |
+| GET | `/api/yeu-cau-ho-tro/{id}` | Chi tiết phiếu hỗ trợ, nội dung gốc, tệp đính kèm, trao đổi và lịch sử trạng thái |
+| POST | `/api/yeu-cau-ho-tro/{id}/trao-doi` | Thêm phản hồi trao đổi trên phiếu hỗ trợ (sinh viên sở hữu phiếu hoặc quản trị viên) |
+| GET | `/api/yeu-cau-ho-tro/{id}/tep-dinh-kem/{attachmentId}` | Tải xuống tệp minh chứng sau khi kiểm tra quyền truy cập phiếu |
+| GET | `/api/admin/yeu-cau-ho-tro` | Quản trị viên tra cứu danh sách phiếu hỗ trợ (lọc & phân trang) |
+| PATCH | `/api/admin/yeu-cau-ho-tro/{id}/trang-thai` | Quản trị viên cập nhật trạng thái xử lý phiếu hỗ trợ và ghi lịch sử |
 
 Swagger/OpenAPI chưa tích hợp; có thể bổ sung `springdoc-openapi` nếu cần.
 
@@ -267,6 +275,11 @@ npm run build      # code-split React, Recharts, icons; xuất dist/
 | `JWT_EXPIRATION_MS` | `86400000` | Thời hạn token (24 giờ) |
 | `CORS_ORIGINS` | `http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:3000` | Origin được phép |
 | `SEED_ENABLED` | `true` | Tạo dữ liệu mẫu khi DB trống |
+| `SUPPORT_UPLOAD_DIR` | `./data/support-attachments` | Thư mục lưu tệp minh chứng ngoài vùng public |
+| `SUPPORT_MAX_FILE_SIZE_BYTES` | `5242880` | Dung lượng tối đa mỗi tệp đính kèm (5 MB, cấu hình tạm thời cần chủ dự án xác nhận) |
+| `SUPPORT_MAX_FILES_PER_REQUEST` | `3` | Số tệp tối đa trên mỗi phiếu hỗ trợ (cấu hình tạm thời cần chủ dự án xác nhận) |
+| `SUPPORT_ALLOWED_EXTENSIONS` | `pdf,png,jpg,jpeg` | Phần mở rộng tệp cho phép (kiểm tra đối chiếu magic bytes nội dung thực tế) |
+| `SUPPORT_SLA_NOTE` | *(trống)* | Ghi chú SLA nếu có quyết định chính thức (mặc định để trống, không tuyên bố SLA chính thức) |
 
 ## Ghi chú
 

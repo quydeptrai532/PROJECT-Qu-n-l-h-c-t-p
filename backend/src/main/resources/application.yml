@@ -21,10 +21,21 @@ spring:
         format_sql: true
   servlet:
     multipart:
-      max-file-size: 5MB
-      max-request-size: 5MB
+      max-file-size: ${SUPPORT_MAX_FILE_SIZE:5MB}
+      max-request-size: ${SUPPORT_MAX_REQUEST_SIZE:16MB}
 
 app:
+  support-request:
+    # Cấu hình tập trung tạm thời cho phiếu hỗ trợ/khiếu nại sinh viên (cần chủ dự án xác nhận danh mục/chính sách tệp/SLA chính thức).
+    storage-dir: ${SUPPORT_UPLOAD_DIR:./data/support-attachments}
+    max-file-size-bytes: ${SUPPORT_MAX_FILE_SIZE_BYTES:5242880}
+    max-files-per-request: ${SUPPORT_MAX_FILES_PER_REQUEST:3}
+    allowed-extensions: ${SUPPORT_ALLOWED_EXTENSIONS:pdf,png,jpg,jpeg}
+    allowed-types: ${SUPPORT_ALLOWED_TYPES:HOC_PHAN,DIEM_SO,HOC_KY,HO_SO_HOC_VU,KHAC}
+    allowed-statuses: ${SUPPORT_ALLOWED_STATUSES:MOI_TAO,DANG_XU_LY,CHO_PHAN_HOI_SINH_VIEN,DA_GIAI_QUYET,TU_CHOI,DA_DONG}
+    comment-allowed-statuses: ${SUPPORT_COMMENT_ALLOWED_STATUSES:MOI_TAO,DANG_XU_LY,CHO_PHAN_HOI_SINH_VIEN,DA_GIAI_QUYET}
+    # Không tuyên bố SLA chính thức khi chưa có quyết định của chủ dự án.
+    sla-note: ${SUPPORT_SLA_NOTE:}
   dashboard:
     # Học kỳ/đợt đăng ký được xem là "sắp tới" trong vòng 14 ngày; chỉnh tại cấu hình này.
     upcoming-window-days: ${DASHBOARD_UPCOMING_WINDOW_DAYS:14}

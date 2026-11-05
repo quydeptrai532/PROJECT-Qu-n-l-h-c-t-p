@@ -28,6 +28,8 @@ import AuditLogPage from "./pages/admin/AuditLogPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import ProgressPlannerPage from "./pages/student/ProgressPlannerPage";
 import CurriculumPage from "./pages/admin/CurriculumPage";
+import SupportRequestsPage from "./pages/student/SupportRequestsPage";
+import AdminSupportRequestsPage from "./pages/admin/AdminSupportRequestsPage";
 
 function RootRedirect() {
   const { user } = useAuth();
@@ -100,6 +102,7 @@ export default function App() {
         }
       />
       <Route path="/tien-do" element={<ProtectedRoute roles={["SINH_VIEN"]}><ProgressPlannerPage /></ProtectedRoute>} />
+      <Route path="/yeu-cau-ho-tro" element={<ProtectedRoute roles={["SINH_VIEN"]}><SupportRequestsPage /></ProtectedRoute>} />
       <Route
         path="/thong-bao"
         element={
@@ -215,6 +218,7 @@ export default function App() {
         }
       />
       <Route path="/quan-tri/chuong-trinh-dao-tao" element={<ProtectedRoute roles={["QUAN_TRI"]}><CurriculumPage /></ProtectedRoute>} />
+      <Route path="/quan-tri/yeu-cau-ho-tro" element={<ProtectedRoute roles={["QUAN_TRI"]}><AdminSupportRequestsPage /></ProtectedRoute>} />
 
       <Route
         path="/ho-so"
