@@ -36,6 +36,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -443,7 +444,8 @@ public class ThongBaoService {
     }
 
     public static String buildRegistrationEventKey(Long registrationId, String eventType, LocalDateTime registeredAt) {
-        return "registration:" + registrationId + ":" + eventType + ":" + registeredAt;
+        LocalDateTime normalized = registeredAt != null ? registeredAt.truncatedTo(ChronoUnit.SECONDS) : null;
+        return "registration:" + registrationId + ":" + eventType + ":" + normalized;
     }
 
     public static String deterministicSectionChangeKey(Long sectionId, String eventType, Map<String, Object> after) {
