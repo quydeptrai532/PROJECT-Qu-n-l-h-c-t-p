@@ -6,6 +6,7 @@ import {
   BookOpenCheck,
   Bell,
   Building2,
+  CalendarCheck,
   CalendarDays,
   CalendarRange,
   ClipboardList,
@@ -38,6 +39,7 @@ const NAV = {
     { to: "/lich-su-dang-ky", label: "Lịch sử đăng ký", icon: History },
     { to: "/thoi-khoa-bieu", label: "Thời khóa biểu", icon: CalendarDays },
     { to: "/diem", label: "Điểm & kết quả", icon: GraduationCap },
+    { to: "/chuyen-can-cua-toi", label: "Chuyên cần", icon: CalendarCheck },
     { to: "/lich-su-hoc-tap", label: "Lịch sử học tập", icon: ScrollText },
     { to: "/tien-do", label: "Tiến độ học tập", icon: ChartNoAxesCombined },
     { to: "/yeu-cau-ho-tro", label: "Hỗ trợ & khiếu nại", icon: LifeBuoy },
@@ -103,6 +105,8 @@ export default function Layout({ children }) {
     ? exact.label
     : location.pathname.endsWith("/nhap-diem")
     ? "Nhập điểm"
+    : location.pathname.endsWith("/diem-danh")
+    ? "Điểm danh & Chuyên cần"
     : "Hồ sơ cá nhân";
 
   const homNay = new Date().toLocaleDateString("vi-VN", {

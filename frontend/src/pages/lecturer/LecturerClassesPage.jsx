@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ClipboardList, Layers, MapPin, Megaphone, Users } from "lucide-react";
+import { CalendarCheck, ClipboardList, Layers, MapPin, Megaphone, Users } from "lucide-react";
 import ClassAnnouncementModal from "../../components/ClassAnnouncementModal";
 import { Alert, Badge, EmptyState, PageHeader, Spinner } from "../../components/ui";
 import { lichHoc } from "../../lib/format";
@@ -91,6 +91,12 @@ export default function LecturerClassesPage() {
                 >
                   Nhập điểm & xem danh sách
                 </Link>
+                <Link
+                  to={`/lop-cua-toi/${lop.id}/diem-danh`}
+                  className="btn-secondary w-full py-1.5 text-xs justify-center"
+                >
+                  <CalendarCheck size={14} /> Điểm danh & chuyên cần
+                </Link>
                 <button
                   type="button"
                   onClick={() => setSelectedLopForAnnouncement(lop)}
@@ -102,7 +108,9 @@ export default function LecturerClassesPage() {
             </div>
           ))}
         </div>
-      )}      {/* Modal gửi thông báo cho lớp (QLSV-68 / TASK-LC-03) */}
+      )}
+
+      {/* Modal gửi thông báo cho lớp (QLSV-68 / TASK-LC-03) */}
       <ClassAnnouncementModal
         open={Boolean(selectedLopForAnnouncement)}
         onClose={() => setSelectedLopForAnnouncement(null)}

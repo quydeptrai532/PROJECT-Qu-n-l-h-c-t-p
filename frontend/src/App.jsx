@@ -15,6 +15,8 @@ import StudyHistoryPage from "./pages/student/StudyHistoryPage";
 import LecturerClassesPage from "./pages/lecturer/LecturerClassesPage";
 import LecturerTimetablePage from "./pages/lecturer/TimetablePage";
 import GradeEntryPage from "./pages/lecturer/GradeEntryPage";
+import LecturerAttendancePage from "./pages/lecturer/LecturerAttendancePage";
+import StudentAttendancePage from "./pages/student/StudentAttendancePage";
 import DashboardPage from "./pages/admin/DashboardPage";
 import SemesterPage from "./pages/admin/SemesterPage";
 import FacultyPage from "./pages/admin/FacultyPage";
@@ -101,6 +103,7 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+      <Route path="/chuyen-can-cua-toi" element={<ProtectedRoute roles={["SINH_VIEN"]}><StudentAttendancePage /></ProtectedRoute>} />
       <Route path="/tien-do" element={<ProtectedRoute roles={["SINH_VIEN"]}><ProgressPlannerPage /></ProtectedRoute>} />
       <Route path="/yeu-cau-ho-tro" element={<ProtectedRoute roles={["SINH_VIEN"]}><SupportRequestsPage /></ProtectedRoute>} />
       <Route
@@ -133,6 +136,14 @@ export default function App() {
         element={
           <ProtectedRoute roles={["GIANG_VIEN"]}>
             <GradeEntryPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/lop-cua-toi/:id/diem-danh"
+        element={
+          <ProtectedRoute roles={["GIANG_VIEN", "QUAN_TRI"]}>
+            <LecturerAttendancePage />
           </ProtectedRoute>
         }
       />
