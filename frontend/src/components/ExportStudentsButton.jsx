@@ -17,8 +17,9 @@ async function docThongBaoLoi(err) {
 }
 
 /** Nút xuất danh sách sinh viên của lớp học phần ra CSV (TASK-LC-04). */
-export default function ExportStudentsButton({ lopId, maLop, soSinhVien, loading, onSuccess, onError }) {
+export default function ExportStudentsButton({ lopId, maLop, soSinhVien, siSo, loading, onSuccess, onError }) {
     const [exporting, setExporting] = useState(false);
+    const count = soSinhVien !== undefined ? soSinhVien : (siSo !== undefined ? siSo : 0);
 
     const xuatDanhSach = async () => {
         setExporting(true);
@@ -32,7 +33,7 @@ export default function ExportStudentsButton({ lopId, maLop, soSinhVien, loading
             link.click();
             link.remove();
             window.URL.revokeObjectURL(url);
-            onSuccess?.(`Đã xuất danh sách ${soSinhVien} sinh viên ra file CSV`);
+            onSuccess?.(`Đã xuất danh sách ${count} sinh viên ra file CSV`);
         } catch (err) {
             onError?.(await docThongBaoLoi(err));
         } finally {
@@ -44,8 +45,8 @@ export default function ExportStudentsButton({ lopId, maLop, soSinhVien, loading
         <button
             type="button"
             className="btn-secondary px-3 py-1.5 text-xs"
-            disabled={loading || soSinhVien === 0 || exporting}
-            title={soSinhVien === 0 ? "Lớp chưa có sinh viên để xuất" : "Tải danh sách sinh viên (CSV, UTF-8)"}
+            disabled={loading || count === 0 || exporting}
+            title={count === 0 ? "Lớp chưa có sinh viên để xuất" : "Tải danh sách sinh viên (CSV, UTF-8)"}
             onClick={xuatDanhSach}
         >
             <Download size={14} />
