@@ -136,6 +136,7 @@ Dữ liệu mẫu gồm 2 khoa, 3 ngành, 3 lớp hành chính, 8 môn học (c�
 10. GPA hệ 4 quy đổi: ≥8.5→4.0, ≥8.0→3.5, ≥7.0→3.0, ≥6.5→2.5, ≥5.5→2.0, ≥5.0→1.5, ≥4.0→1.0, còn lại 0. Tín chỉ tích lũy chỉ tính môn đạt (≥5.0).
 11. Không xóa dữ liệu danh mục đang được tham chiếu; API trả `409 Conflict` kèm thông báo.
 12. Mở lớp học phần có cảnh báo trùng phòng/trùng lịch giảng viên (vẫn cho phép lưu, trả về danh sách `canhBao`).
+13. Giảng viên chỉ được gửi thông báo cho các lớp học phần mình phụ trách. Người nhận được xác minh trên server từ các sinh viên đang đăng ký hiệu lực (`DA_DANG_KY`). Thông báo gửi ngay lập tức tới Notification Center của đúng sinh viên, lưu người tạo, thời điểm và ghi audit log (`CLASS_ANNOUNCEMENT_CREATED`). Chi tiết: [docs/LECTURER_CLASS_ANNOUNCEMENTS.md](docs/LECTURER_CLASS_ANNOUNCEMENTS.md).
 
 ## API chính
 

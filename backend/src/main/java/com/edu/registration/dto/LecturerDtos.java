@@ -1,11 +1,15 @@
 package com.edu.registration.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * Read models for the lecturer self-service profile and teaching dashboard (QLSV-66).
+ * Read models for the lecturer self-service profile and teaching dashboard (QLSV-66),
+ * student minimal profile (QLSV-67), and class announcements (QLSV-68).
  * All data is resolved from the authenticated lecturer; no client-supplied lecturer id is accepted.
  */
 public final class LecturerDtos {
@@ -71,5 +75,38 @@ public final class LecturerDtos {
                                        List<LopPhuTrachDto> lopPhuTrach,
                                        List<RegistrationDtos.ThoiKhoaBieuDto> lichDay,
                                        List<CongViecDto> congViec) {
+    }
+
+    /**
+     * Request payload to send an announcement to an assigned class (QLSV-68 / TASK-LC-03).
+     */
+    public record TaoThongBaoLopRequest(
+            @NotBlank(message = "Tiêu đề không được để trống")
+            @Size(max = 120, message = "Tiêu đề không được vượt quá 120 ký tự")
+            String tieuDe,
+
+            @NotBlank(message = "Nội dung không được để trống")
+            @Size(max = 1000, message = "Nội dung không được vượt quá 1000 ký tự")
+            String noiDung,
+
+            String idempotencyKey
+    ) {
+    }
+
+    /**
+     * Representation of an announcement sent to a class (QLSV-68 / TASK-LC-03).
+     */
+    public record ThongBaoLopDto(
+            Long id,
+            Long lopHocPhanId,
+            String maLop,
+            String tenMon,
+            String tieuDe,
+            String noiDung,
+            String giangVienTen,
+            LocalDateTime thoiGianGui,
+            int soNguoiNhan,
+            String trangThaiGui
+    ) {
     }
 }

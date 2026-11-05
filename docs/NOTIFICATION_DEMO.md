@@ -29,6 +29,12 @@
    - **Bảo mật dữ liệu điểm**: nội dung thông báo chỉ nêu mã lớp, mã/tên môn học, học kỳ/năm học và thời điểm công bố kèm liên kết nội bộ `/diem` (trang yêu cầu đăng nhập JWT và kiểm tra quyền `SINH_VIEN`). Tuyệt đối không đưa điểm cá nhân (`diemQuaTrinh`, `diemCuoiKy`, `diemTongKet`, GPA hay kết quả đạt/trượt) vào nội dung thông báo, URL, log ứng dụng hoặc chi tiết audit log.
    - **Thu hồi / điều chỉnh sau công bố**: khi thu hồi công bố (`POST /api/giang-vien/lop-hoc-phan/{id}/thu-hoi-cong-bo-diem` hoặc `/api/admin/lop-hoc-phan/{id}/thu-hoi-cong-bo-diem`), hệ thống ghi audit `GRADE_SHEET_PUBLICATION_REVOKED`, chuyển bảng điểm về `NHAP` và giữ nguyên `phienBanCongBo` để không tự phát lại thông báo công bố thông thường (`GRADES_PUBLISHED`) gây trùng lặp khi chưa có loại sự kiện nghiệp vụ riêng cho "công bố lại / điều chỉnh điểm sau công bố".
 
+
+8. **Thông báo lớp học phần từ Giảng viên (`CLASS_ANNOUNCEMENT` — QLSV-68)**:
+   - Khi giảng viên gửi thông báo cho lớp phụ trách (`POST /api/giang-vien/lop-hoc-phan/{id}/thong-bao`), hệ thống gửi thông báo nội bộ tới Notification Center của tất cả sinh viên đang có trạng thái đăng ký hiệu lực (`DA_DANG_KY`) và tài khoản hoạt động (`trangThai = true`).
+   - Nội dung thông báo hiển thị mã lớp, môn học, tiêu đề và nội dung thông báo kèm liên kết điều hướng `/hoc-phan-cua-toi`.
+   - Chống trùng lặp theo `idempotencyKey` (`class-announcement:{thongBaoLopId}`). Không hỗ trợ hẹn giờ hoặc sửa/xóa khi chưa có quy trình/hạ tầng scheduler tương ứng.
+
 ## Cơ chế chống trùng (Idempotency) & Xử lý lỗi giao dịch
 
 - **Ràng buộc duy nhất**: bảng `thong_bao` có unique constraint `(recipient_user_id, idempotency_key)` kết hợp truy vấn batch `findExistingRecipientIdsByIdempotencyKey` (tránh N+1 query khi gửi theo lớp) và xử lý `DataIntegrityViolationException` an toàn khi có retry đồng thời.
@@ -38,6 +44,7 @@
   - Thay đổi lịch/giảng viên lớp học phần: `section-update:{lopHocPhanId}:{eventType}:{phong}:{thu}:{tietBatDau}:{soTiet}:{giangVienId}`.
   - Nhắc hạn đóng đăng ký: `registration-window-closing:{hocKyId}:{dangKyDen}`.
   - Công bố điểm lớp học phần: `grade-published:{lopHocPhanId}:v{phienBanCongBo}` (kết hợp `recipient_user_id` trong ràng buộc duy nhất `uk_thong_bao_recipient_event`).
+  - Thông báo lớp học phần từ giảng viên: `class-announcement:{thongBaoLopId}`.
 - **Cách ly lỗi & khôi phục bền vững**:
   - Thông báo được phát ở pha `afterCommit` trong giao dịch mới (`PROPAGATION_REQUIRES_NEW`). Nếu giao dịch nghiệp vụ rollback thì không phát thông báo; nếu việc lưu thông báo gặp lỗi cơ sở dữ liệu tạm thời sau khi nghiệp vụ đã commit, lỗi được ghi log chẩn đoán và **không** làm rollback hay sai lệch trạng thái bảng điểm `DA_CONG_BO` đã commit.
   - Khi sinh viên truy vấn `/api/notifications` (hoặc đánh dấu tất cả đã đọc), `ThongBaoService.reconcileForUser` tự động đối soát cả `lich_su_dang_ky` và các lớp học phần đã công bố (`trangThaiBangDiem = DA_CONG_BO`, `congBoBangDiemLuc != null`) của sinh viên đó để tạo bù mọi thông báo còn thiếu theo đúng `idempotencyKey`.
@@ -55,3 +62,6 @@
 - `POST /api/admin/lop-hoc-phan/{id}/phe-duyet-diem`
 - `POST /api/admin/lop-hoc-phan/{id}/cong-bo-diem`
 - `POST /api/admin/lop-hoc-phan/{id}/thu-hoi-cong-bo-diem`
+- `POST /api/giang-vien/lop-hoc-phan/{id}/thong-bao`
+- `GET /api/giang-vien/lop-hoc-phan/{id}/thong-bao`
+- `GET /api/sinh-vien/lop-hoc-phan/{id}/thong-bao`

@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, BookOpen, Calculator, CheckCircle2, ClipboardList, Eye, Megaphone, RotateCcw, Save, Search, Send, Users } from "lucide-react";
 import api, { getErrorMessage } from "../../api/client";
 import ExportStudentsButton from "../../components/ExportStudentsButton";
+import ClassAnnouncementModal from "../../components/ClassAnnouncementModal";
 import { Alert, Badge, EmptyState, Modal, PageHeader, Spinner } from "../../components/ui";
 import { formatDiem, lichHoc } from "../../lib/format";
 import { useApi } from "../../lib/useApi";
@@ -40,6 +41,7 @@ export default function GradeEntryPage() {
 
     // Student academic profile modal state (QLSV-67 / TASK-LC-02)
     const [profileModalOpen, setProfileModalOpen] = useState(false);
+    const [announcementModalOpen, setAnnouncementModalOpen] = useState(false);
     const [profileLoading, setProfileLoading] = useState(false);
     const [profileError, setProfileError] = useState("");
     const [studentProfile, setStudentProfile] = useState(null);
@@ -173,6 +175,14 @@ export default function GradeEntryPage() {
                     lop && (
                         <div className="flex flex-wrap items-center gap-2">
                             <Badge tone={statusMeta.tone}>{statusMeta.label}</Badge>
+                            <button
+                                type="button"
+                                className="btn-secondary text-xs"
+                                onClick={() => setAnnouncementModalOpen(true)}
+                                title="Gửi thông báo đến sinh viên trong lớp học phần"
+                            >
+                                <Megaphone size={14} /> Gửi thông báo
+                            </button>
                             <ExportStudentsButton
                                 lopId={lop.id}
                                 maLop={lop.ma}
@@ -453,6 +463,12 @@ export default function GradeEntryPage() {
                     </div>
                 ) : null}
             </Modal>
+            {/* Modal gửi thông báo cho lớp (QLSV-68 / TASK-LC-03) */}
+            <ClassAnnouncementModal
+                open={announcementModalOpen}
+                onClose={() => setAnnouncementModalOpen(false)}
+                lop={lop}
+            />
         </div>
     );
 }

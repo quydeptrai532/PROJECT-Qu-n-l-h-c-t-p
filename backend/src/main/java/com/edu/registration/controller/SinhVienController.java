@@ -1,11 +1,13 @@
 package com.edu.registration.controller;
 
+import com.edu.registration.dto.LecturerDtos;
 import com.edu.registration.dto.LopHocPhanDtos;
 import com.edu.registration.dto.RegistrationDtos;
 import com.edu.registration.dto.StudentAcademicProfileDto;
 import com.edu.registration.service.DangKyService;
 import com.edu.registration.service.DiemService;
 import com.edu.registration.service.LopHocPhanService;
+import com.edu.registration.service.ThongBaoLopHocPhanService;
 import com.edu.registration.service.ThongBaoNghiService;
 import com.edu.registration.service.StudentAcademicProfileService;
 import com.edu.registration.service.SinhVienDashboardService;
@@ -46,6 +48,7 @@ public class SinhVienController {
     private final SinhVienDashboardService sinhVienDashboardService;
     private final HocLaiCaiThienService hocLaiCaiThienService;
     private final StudentTranscriptPdfService studentTranscriptPdfService;
+    private final ThongBaoLopHocPhanService thongBaoLopHocPhanService;
 
     public SinhVienController(LopHocPhanService lopHocPhanService, DangKyService dangKyService,
                               DiemService diemService, ThongBaoNghiService thongBaoNghiService,
@@ -53,7 +56,18 @@ public class SinhVienController {
                               SinhVienDashboardService sinhVienDashboardService,
                               HocLaiCaiThienService hocLaiCaiThienService) {
         this(lopHocPhanService, dangKyService, diemService, thongBaoNghiService,
-                studentAcademicProfileService, sinhVienDashboardService, hocLaiCaiThienService, null);
+                studentAcademicProfileService, sinhVienDashboardService, hocLaiCaiThienService, null, null);
+    }
+
+    public SinhVienController(LopHocPhanService lopHocPhanService, DangKyService dangKyService,
+                              DiemService diemService, ThongBaoNghiService thongBaoNghiService,
+                              StudentAcademicProfileService studentAcademicProfileService,
+                              SinhVienDashboardService sinhVienDashboardService,
+                              HocLaiCaiThienService hocLaiCaiThienService,
+                              StudentTranscriptPdfService studentTranscriptPdfService) {
+        this(lopHocPhanService, dangKyService, diemService, thongBaoNghiService,
+                studentAcademicProfileService, sinhVienDashboardService, hocLaiCaiThienService,
+                studentTranscriptPdfService, null);
     }
 
     @Autowired
@@ -62,7 +76,8 @@ public class SinhVienController {
                               StudentAcademicProfileService studentAcademicProfileService,
                               SinhVienDashboardService sinhVienDashboardService,
                               HocLaiCaiThienService hocLaiCaiThienService,
-                              StudentTranscriptPdfService studentTranscriptPdfService) {
+                              StudentTranscriptPdfService studentTranscriptPdfService,
+                              ThongBaoLopHocPhanService thongBaoLopHocPhanService) {
         this.lopHocPhanService = lopHocPhanService;
         this.dangKyService = dangKyService;
         this.diemService = diemService;
@@ -71,6 +86,7 @@ public class SinhVienController {
         this.sinhVienDashboardService = sinhVienDashboardService;
         this.hocLaiCaiThienService = hocLaiCaiThienService;
         this.studentTranscriptPdfService = studentTranscriptPdfService;
+        this.thongBaoLopHocPhanService = thongBaoLopHocPhanService;
     }
 
     @GetMapping("/lop-hoc-phan")
@@ -124,6 +140,16 @@ public class SinhVienController {
     @PreAuthorize("hasRole('SINH_VIEN')")
     public List<RegistrationDtos.ThoiKhoaBieuDto> thoiKhoaBieu(@RequestParam(required = false) Long hocKyId) {
         return dangKyService.thoiKhoaBieu(hocKyId);
+    }
+
+
+    @GetMapping("/sinh-vien/lop-hoc-phan/{id}/thong-bao")
+    @PreAuthorize("hasRole('SINH_VIEN')")
+    public List<LecturerDtos.ThongBaoLopDto> thongBaoLop(@PathVariable Long id) {
+        if (thongBaoLopHocPhanService == null) {
+            return List.of();
+        }
+        return thongBaoLopHocPhanService.danhSachThongBaoChoSinhVien(id);
     }
 
     @GetMapping("/sinh-vien/me/thong-bao-nghi")
