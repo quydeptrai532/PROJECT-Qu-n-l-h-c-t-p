@@ -28,6 +28,7 @@ import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -170,7 +171,11 @@ public class DangKyService {
                     moi.setLopHocPhan(lop);
                     return moi;
                 });
-        LocalDateTime thoiDiemDangKy = LocalDateTime.now();
+        LocalDateTime thoiDiemDangKy = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
+        if (dangKy.getThoiGianDangKy() != null
+                && !thoiDiemDangKy.isAfter(dangKy.getThoiGianDangKy().truncatedTo(ChronoUnit.SECONDS))) {
+            thoiDiemDangKy = dangKy.getThoiGianDangKy().truncatedTo(ChronoUnit.SECONDS).plusSeconds(1);
+        }
         dangKy.setTrangThai(TrangThaiDangKy.DA_DANG_KY);
         dangKy.setThoiGianDangKy(thoiDiemDangKy);
         lop.setSiSoHienTai(lop.getSiSoHienTai() + 1);
@@ -219,7 +224,7 @@ public class DangKyService {
         Map<String, Object> before = Map.of("dangKyId", dangKy.getId(), "lopHocPhanId", lop.getId(),
                 "maLop", lop.getMa(), "trangThai", dangKy.getTrangThai().name(),
                 "siSoHienTai", lop.getSiSoHienTai());
-        LocalDateTime thoiDiemHuy = LocalDateTime.now();
+        LocalDateTime thoiDiemHuy = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
         String normalizedReason = lyDoHuy == null || lyDoHuy.isBlank() ? null : lyDoHuy.trim();
         dangKy.setTrangThai(TrangThaiDangKy.DA_HUY);
         lop.setSiSoHienTai(Math.max(0, lop.getSiSoHienTai() - 1));
