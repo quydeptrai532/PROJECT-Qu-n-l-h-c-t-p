@@ -2,6 +2,8 @@ package com.edu.registration.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -10,6 +12,8 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "lop_hoc_phan", indexes = {
@@ -55,6 +59,36 @@ public class LopHocPhan {
 
     @Column(nullable = false)
     private int siSoHienTai = 0;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "trang_thai_bang_diem", length = 24)
+    private TrangThaiBangDiem trangThaiBangDiem;
+
+    @Column(name = "phien_ban_cong_bo", nullable = false)
+    private int phienBanCongBo = 1;
+
+    @Column(name = "gui_duyet_bang_diem_luc")
+    private LocalDateTime guiDuyetBangDiemLuc;
+
+    @Column(name = "duyet_bang_diem_luc")
+    private LocalDateTime duyetBangDiemLuc;
+
+    @Column(name = "nguoi_duyet_bang_diem_id")
+    private Long nguoiDuyetBangDiemId;
+
+    @Column(name = "cong_bo_bang_diem_luc")
+    private LocalDateTime congBoBangDiemLuc;
+
+    @Column(name = "nguoi_cong_bo_bang_diem_id")
+    private Long nguoiCongBoBangDiemId;
+
+    public TrangThaiBangDiem getTrangThaiBangDiemHieuLuc() {
+        return trangThaiBangDiem != null ? trangThaiBangDiem : TrangThaiBangDiem.NHAP;
+    }
+
+    public boolean isBangDiemDaCongBo() {
+        return trangThaiBangDiem == null || trangThaiBangDiem == TrangThaiBangDiem.DA_CONG_BO;
+    }
 
     public int getTietKetThuc() {
         return tietBatDau + soTiet - 1;
@@ -157,5 +191,61 @@ public class LopHocPhan {
 
     public void setSiSoHienTai(int siSoHienTai) {
         this.siSoHienTai = siSoHienTai;
+    }
+
+    public TrangThaiBangDiem getTrangThaiBangDiem() {
+        return trangThaiBangDiem;
+    }
+
+    public void setTrangThaiBangDiem(TrangThaiBangDiem trangThaiBangDiem) {
+        this.trangThaiBangDiem = trangThaiBangDiem;
+    }
+
+    public int getPhienBanCongBo() {
+        return phienBanCongBo;
+    }
+
+    public void setPhienBanCongBo(int phienBanCongBo) {
+        this.phienBanCongBo = phienBanCongBo;
+    }
+
+    public LocalDateTime getGuiDuyetBangDiemLuc() {
+        return guiDuyetBangDiemLuc;
+    }
+
+    public void setGuiDuyetBangDiemLuc(LocalDateTime guiDuyetBangDiemLuc) {
+        this.guiDuyetBangDiemLuc = guiDuyetBangDiemLuc;
+    }
+
+    public LocalDateTime getDuyetBangDiemLuc() {
+        return duyetBangDiemLuc;
+    }
+
+    public void setDuyetBangDiemLuc(LocalDateTime duyetBangDiemLuc) {
+        this.duyetBangDiemLuc = duyetBangDiemLuc;
+    }
+
+    public Long getNguoiDuyetBangDiemId() {
+        return nguoiDuyetBangDiemId;
+    }
+
+    public void setNguoiDuyetBangDiemId(Long nguoiDuyetBangDiemId) {
+        this.nguoiDuyetBangDiemId = nguoiDuyetBangDiemId;
+    }
+
+    public LocalDateTime getCongBoBangDiemLuc() {
+        return congBoBangDiemLuc;
+    }
+
+    public void setCongBoBangDiemLuc(LocalDateTime congBoBangDiemLuc) {
+        this.congBoBangDiemLuc = congBoBangDiemLuc;
+    }
+
+    public Long getNguoiCongBoBangDiemId() {
+        return nguoiCongBoBangDiemId;
+    }
+
+    public void setNguoiCongBoBangDiemId(Long nguoiCongBoBangDiemId) {
+        this.nguoiCongBoBangDiemId = nguoiCongBoBangDiemId;
     }
 }

@@ -127,6 +127,10 @@ public class YeuCauHoTroService {
         if (actor.getRole() == Role.SINH_VIEN) {
             SinhVien sinhVien = sinhVienHienTai(actor);
             diemCuaToi = diemRepository.findBySinhVienIdWithDetails(sinhVien.getId()).stream()
+                    .filter(d -> d.getDangKy() != null
+                            && d.getDangKy().getLopHocPhan() != null
+                            && d.getDangKy().getLopHocPhan().isBangDiemDaCongBo()
+                            && d.getDiemTongKet() != null)
                     .map(this::toDiemDto)
                     .toList();
         }
@@ -179,6 +183,9 @@ public class YeuCauHoTroService {
                 throw ApiException.forbidden("Bạn không được phép chọn bản ghi điểm của sinh viên khác");
             }
             LopHocPhan lopHocPhan = dangKy.getLopHocPhan();
+            if (lopHocPhan != null && !lopHocPhan.isBangDiemDaCongBo()) {
+                throw ApiException.badRequest("Điểm của lớp học phần này chưa được công bố");
+            }
             if (lopHocPhan != null) {
                 if (monHoc != null && lopHocPhan.getMonHoc() != null
                         && !monHoc.getId().equals(lopHocPhan.getMonHoc().getId())) {
@@ -619,6 +626,7 @@ public class YeuCauHoTroService {
         LopHocPhan lop = dangKy != null ? dangKy.getLopHocPhan() : null;
         MonHoc mon = lop != null ? lop.getMonHoc() : null;
         HocKy hk = lop != null ? lop.getHocKy() : null;
+        boolean daCongBo = lop != null && lop.isBangDiemDaCongBo() && diem.getDiemTongKet() != null;
         return new SupportRequestDtos.DiemLienQuanDto(
                 diem.getId(),
                 dangKy != null ? dangKy.getId() : null,
@@ -629,9 +637,9 @@ public class YeuCauHoTroService {
                 hk != null ? hk.getTen() : null,
                 hk != null ? hk.getNamHoc() : null,
                 lop != null ? lop.getMa() : null,
-                diem.getDiemQuaTrinh(),
-                diem.getDiemCuoiKy(),
-                diem.getDiemTongKet()
+                daCongBo ? diem.getDiemQuaTrinh() : null,
+                daCongBo ? diem.getDiemCuoiKy() : null,
+                daCongBo ? diem.getDiemTongKet() : null
         );
     }
 

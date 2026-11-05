@@ -18,6 +18,7 @@ const EVENT_TYPE_LABELS = {
   COURSE_SECTION_SCHEDULE_CHANGED: "Thay đổi lịch học",
   COURSE_SECTION_ASSIGNMENT_CHANGED: "Thay đổi giảng viên",
   REGISTRATION_WINDOW_CLOSING: "Nhắc hạn đăng ký",
+  GRADES_PUBLISHED: "Công bố điểm lớp học phần",
 };
 
 export default function NotificationsPage() {

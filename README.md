@@ -14,13 +14,13 @@
 
 ## Chức năng theo vai trò
 
-- **SINH_VIEN**: dashboard tổng quan (tín chỉ, GPA, lịch hôm nay, biểu đồ GPA), cập nhật họ tên/email/SĐT, đổi mật khẩu, lập kế hoạch học tập bằng giỏ lớp và thời khóa biểu dự kiến, xác nhận đăng ký/hủy học phần, xem thời khóa biểu, điểm/GPA, lịch sử học tập & môn chưa đạt, xuất bảng điểm cá nhân PDF và trung tâm thông báo (nhận thông báo kết quả đăng ký/hủy, lớp học phần bị hủy, buổi học tạm nghỉ, thay đổi lịch học/giảng viên).
-- **GIANG_VIEN**: dashboard tổng quan (lớp phụ trách, sĩ số, biểu đồ lấp đầy, lịch dạy hôm nay), thời khóa biểu giảng dạy, danh sách sinh viên, nhập/cập nhật điểm quá trình và cuối kỳ, cùng trung tâm thông báo cho lớp phụ trách.
-- **QUAN_TRI**: quản lý khoa/ngành/lớp hành chính/môn học/học kỳ, cấu hình đợt đăng ký, mở/cập nhật/hủy lớp học phần, quản lý sinh viên & giảng viên, khóa/mở tài khoản, nhập CSV, dashboard thống kê có biểu đồ và xuất CSV.
+- **SINH_VIEN**: dashboard tổng quan (tín chỉ, GPA, lịch hôm nay, biểu đồ GPA), cập nhật họ tên/email/SĐT, đổi mật khẩu, lập kế hoạch học tập bằng giỏ lớp và thời khóa biểu dự kiến, xác nhận đăng ký/hủy học phần, xem thời khóa biểu, điểm/GPA, lịch sử học tập & môn chưa đạt, xuất bảng điểm cá nhân PDF và trung tâm thông báo (nhận thông báo kết quả đăng ký/hủy, lớp học phần bị hủy, buổi học tạm nghỉ, thay đổi lịch học/giảng viên và công bố điểm lớp học phần).
+- **GIANG_VIEN**: dashboard tổng quan (lớp phụ trách, sĩ số, biểu đồ lấp đầy, lịch dạy hôm nay), thời khóa biểu giảng dạy, danh sách sinh viên, nhập/cập nhật điểm nháp, gửi duyệt/phê duyệt/công bố bảng điểm lớp phụ trách, cùng trung tâm thông báo.
+- **QUAN_TRI**: quản lý khoa/ngành/lớp hành chính/môn học/học kỳ, cấu hình đợt đăng ký, mở/cập nhật/hủy lớp học phần, phê duyệt/công bố bảng điểm, quản lý sinh viên & giảng viên, khóa/mở tài khoản, nhập CSV, dashboard thống kê có biểu đồ và xuất CSV.
 
 Sinh viên và giảng viên đăng nhập vào `/tong-quan`; quản trị vào `/quan-tri`.
 
-Dashboard sinh viên trả cảnh báo môn chưa đạt chỉ khi có điểm tổng kết và dùng chung ngưỡng đạt `AcademicRules.DIEM_DAT` (5.0); do hệ thống hiện công bố điểm ngay trên trang điểm sinh viên và chưa có cờ công bố riêng, các điểm tổng kết hiện có được coi là đã công bố. Cảnh báo mở/đóng đăng ký dựa trên ngày cấu hình của học kỳ trong cửa sổ sắp tới 14 ngày; chỉnh cửa sổ bằng `app.dashboard.upcoming-window-days` hoặc biến môi trường `DASHBOARD_UPCOMING_WINDOW_DAYS`. Không có dữ liệu đủ căn cứ thì API trả danh sách rỗng.
+Dashboard và trang điểm của sinh viên chỉ hiển thị điểm tổng kết khi bảng điểm lớp học phần đã được phê duyệt và chuyển sang trạng thái công bố (`DA_CONG_BO`), dùng chung ngưỡng đạt `AcademicRules.DIEM_DAT` (5.0). Cảnh báo mở/đóng đăng ký dựa trên ngày cấu hình của học kỳ trong cửa sổ sắp tới 14 ngày; chỉnh cửa sổ bằng `app.dashboard.upcoming-window-days` hoặc biến môi trường `DASHBOARD_UPCOMING_WINDOW_DAYS`. Không có dữ liệu đủ căn cứ thì API trả danh sách rỗng.
 
 Góp ý bổ sung cho báo cáo đề cương: [docs/PROPOSAL_CHECKLIST.md](docs/PROPOSAL_CHECKLIST.md).
 
@@ -124,13 +124,13 @@ Dữ liệu mẫu gồm 2 khoa, 3 ngành, 3 lớp hành chính, 8 môn học (c�
 ## Quy tắc nghiệp vụ đã triển khai
 
 1. Chỉ được đăng ký/hủy khi học kỳ đang trong thời gian cho phép (`dang_ky_tu` ≤ hôm nay ≤ `dang_ky_den`).
-2. Phải đạt **tất cả** môn tiên quyết (điểm tổng kết ≥ 5.0) trước khi đăng ký.
+2. Phải đạt **tất cả** môn tiên quyết (điểm tổng kết ≥ 5.0 đã được công bố) trước khi đăng ký.
 3. Không đăng ký hai lớp của cùng một môn trong cùng học kỳ.
 4. Không trùng thứ và khoảng tiết học với học phần đã đăng ký.
 5. Không vượt sĩ số tối đa; kiểm tra và tăng sĩ số nằm trong cùng transaction với khóa bi quan (`SELECT ... FOR UPDATE`) trên lớp học phần.
 6. Tổng tín chỉ không vượt quá giới hạn tối đa của học kỳ. Khi hủy, hệ thống chặn nếu tổng tín chỉ còn lại rơi vào khoảng (0, tối thiểu); được phép hủy toàn bộ để rút hết học phần. Khi đăng ký thêm, giao diện cảnh báo nếu chưa đạt mức tối thiểu.
 7. Hủy đăng ký hoàn lại một chỗ, giữ lại bản ghi với trạng thái `DA_HUY`; đăng ký lại sẽ kích hoạt lại bản ghi cũ (đảm bảo ràng buộc duy nhất `sinh_vien_id + lop_hoc_phan_id`).
-8. Giảng viên chỉ được xem/nhập điểm cho lớp mình phụ trách.
+8. Giảng viên chỉ được xem/nhập điểm cho lớp mình phụ trách. Bảng điểm lớp học phần tuân theo quy trình `NHAP` → `CHO_DUYET` → `DA_DUYET` → `DA_CONG_BO`; hệ thống chỉ hiển thị điểm cho sinh viên và phát thông báo nội bộ (`GRADES_PUBLISHED`) khi bảng điểm đã phê duyệt chuyển sang `DA_CONG_BO`.
 9. Điểm tổng kết = `0.4 × quá trình + 0.6 × cuối kỳ`, làm tròn 1 chữ số; điểm hợp lệ 0–10.
 10. GPA hệ 4 quy đổi: ≥8.5→4.0, ≥8.0→3.5, ≥7.0→3.0, ≥6.5→2.5, ≥5.5→2.0, ≥5.0→1.5, ≥4.0→1.0, còn lại 0. Tín chỉ tích lũy chỉ tính môn đạt (≥5.0).
 11. Không xóa dữ liệu danh mục đang được tham chiếu; API trả `409 Conflict` kèm thông báo.
@@ -157,7 +157,8 @@ Dữ liệu mẫu gồm 2 khoa, 3 ngành, 3 lớp hành chính, 8 môn học (c�
 | GET | `/api/giang-vien/me/lop-hoc-phan` | Lớp giảng viên phụ trách |
 | GET | `/api/giang-vien/me/thoi-khoa-bieu` | Thời khóa biểu giảng dạy |
 | GET | `/api/giang-vien/lop-hoc-phan/{id}/sinh-vien` | Danh sách sinh viên của lớp |
-| PUT | `/api/diem/{dangKyId}` | Nhập/cập nhật điểm |
+| PUT | `/api/diem/{dangKyId}` | Nhập/cập nhật điểm nháp |
+| POST | `/api/giang-vien/lop-hoc-phan/{id}/gui-duyet-diem`, `/phe-duyet-diem`, `/cong-bo-diem`, `/thu-hoi-cong-bo-diem` | Gửi duyệt, phê duyệt, công bố hoặc thu hồi công bố bảng điểm lớp học phần |
 | CRUD | `/api/admin/khoa`, `/nganh`, `/lop-hanh-chinh`, `/mon-hoc`, `/hoc-ky` | Quản trị danh mục |
 | GET/POST/DELETE | `/api/admin/mon-hoc/{id}/tien-quyet` | Cấu hình môn tiên quyết |
 | CRUD | `/api/admin/lop-hoc-phan` | Mở lớp học phần |

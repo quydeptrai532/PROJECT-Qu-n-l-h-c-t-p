@@ -2,6 +2,7 @@ package com.edu.registration.service;
 
 import com.edu.registration.dto.ThongBaoDtos;
 import com.edu.registration.entity.DangKyHocPhan;
+import com.edu.registration.entity.Diem;
 import com.edu.registration.entity.GiangVien;
 import com.edu.registration.entity.HocKy;
 import com.edu.registration.entity.LichSuDangKy;
@@ -13,6 +14,7 @@ import com.edu.registration.entity.TrangThaiDangKy;
 import com.edu.registration.entity.User;
 import com.edu.registration.exception.ApiException;
 import com.edu.registration.repository.DangKyHocPhanRepository;
+import com.edu.registration.repository.DiemRepository;
 import com.edu.registration.repository.HocKyRepository;
 import com.edu.registration.repository.LichSuDangKyRepository;
 import com.edu.registration.repository.SinhVienRepository;
@@ -38,8 +40,10 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 public class ThongBaoService {
@@ -47,10 +51,12 @@ public class ThongBaoService {
     private static final Logger log = LoggerFactory.getLogger(ThongBaoService.class);
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
     public static final String SECTION_CANCELLED_REASON_PREFIX = "Lớp học phần bị hủy";
+    public static final String GRADES_PUBLISHED_EVENT = "GRADES_PUBLISHED";
 
     private final ThongBaoRepository thongBaoRepository;
     private final DangKyHocPhanRepository dangKyRepository;
     private final LichSuDangKyRepository lichSuDangKyRepository;
+    private final DiemRepository diemRepository;
     private final SinhVienRepository sinhVienRepository;
     private final HocKyRepository hocKyRepository;
     private final CurrentUser currentUser;
@@ -61,10 +67,9 @@ public class ThongBaoService {
                            SinhVienRepository sinhVienRepository,
                            HocKyRepository hocKyRepository,
                            CurrentUser currentUser) {
-        this(thongBaoRepository, dangKyRepository, null, sinhVienRepository, hocKyRepository, currentUser, null);
+        this(thongBaoRepository, dangKyRepository, null, null, sinhVienRepository, hocKyRepository, currentUser, null);
     }
 
-    @Autowired
     public ThongBaoService(ThongBaoRepository thongBaoRepository,
                            DangKyHocPhanRepository dangKyRepository,
                            LichSuDangKyRepository lichSuDangKyRepository,
@@ -72,9 +77,23 @@ public class ThongBaoService {
                            HocKyRepository hocKyRepository,
                            CurrentUser currentUser,
                            PlatformTransactionManager transactionManager) {
+        this(thongBaoRepository, dangKyRepository, lichSuDangKyRepository, null,
+                sinhVienRepository, hocKyRepository, currentUser, transactionManager);
+    }
+
+    @Autowired
+    public ThongBaoService(ThongBaoRepository thongBaoRepository,
+                           DangKyHocPhanRepository dangKyRepository,
+                           LichSuDangKyRepository lichSuDangKyRepository,
+                           DiemRepository diemRepository,
+                           SinhVienRepository sinhVienRepository,
+                           HocKyRepository hocKyRepository,
+                           CurrentUser currentUser,
+                           PlatformTransactionManager transactionManager) {
         this.thongBaoRepository = thongBaoRepository;
         this.dangKyRepository = dangKyRepository;
         this.lichSuDangKyRepository = lichSuDangKyRepository;
+        this.diemRepository = diemRepository;
         this.sinhVienRepository = sinhVienRepository;
         this.hocKyRepository = hocKyRepository;
         this.currentUser = currentUser;
@@ -260,6 +279,49 @@ public class ThongBaoService {
         });
     }
 
+    /**
+     * Emits internal notifications to eligible students of a class section only after the grade sheet
+     * has been approved and transitions to DA_CONG_BO. Never includes personal grades in content or URL.
+     */
+    public void gradesPublished(LopHocPhan section, List<DangKyHocPhan> eligibleRegistrations,
+                                int publicationVersion, LocalDateTime occurredAt) {
+        if (section == null || section.getId() == null || eligibleRegistrations == null || eligibleRegistrations.isEmpty()) {
+            return;
+        }
+        Long sectionId = section.getId();
+        String sectionCode = section.getMa();
+        String subjectCode = section.getMonHoc() != null ? section.getMonHoc().getMa() : "";
+        String subjectName = section.getMonHoc() != null ? section.getMonHoc().getTen() : "";
+        String semesterName = section.getHocKy() != null ? section.getHocKy().getTen() : "";
+        String academicYear = section.getHocKy() != null ? section.getHocKy().getNamHoc() : "";
+        LocalDateTime effectiveTime = occurredAt != null ? occurredAt : LocalDateTime.now();
+
+        String idempotencyKey = buildGradePublishedEventKey(sectionId, publicationVersion);
+        String title = "Điểm lớp học phần " + sectionCode + " đã được công bố";
+        String message = buildGradePublishedMessage(
+                sectionCode, subjectCode, subjectName, semesterName, academicYear, effectiveTime);
+        String targetUrl = "/diem";
+
+        Map<Long, User> recipientsById = new LinkedHashMap<>();
+        for (DangKyHocPhan reg : eligibleRegistrations) {
+            if (reg == null || reg.getTrangThai() != TrangThaiDangKy.DA_DANG_KY || reg.getSinhVien() == null) {
+                continue;
+            }
+            User studentUser = reg.getSinhVien().getUser();
+            if (studentUser != null && studentUser.isTrangThai() && studentUser.getId() != null) {
+                recipientsById.putIfAbsent(studentUser.getId(), studentUser);
+            }
+        }
+        if (recipientsById.isEmpty()) {
+            return;
+        }
+
+        List<User> recipients = List.copyOf(recipientsById.values());
+        dispatchAfterCommit(GRADES_PUBLISHED_EVENT + ":" + idempotencyKey, () ->
+                sendBatchByIdempotencyKey(recipients, GRADES_PUBLISHED_EVENT, idempotencyKey,
+                        title, message, "HIGH", targetUrl, effectiveTime));
+    }
+
     /** Called only when the locked section's schedule or assigned lecturer actually changes. */
     public void sectionChanged(LopHocPhan section, Map<String, Object> before, Map<String, Object> after,
                                String idempotencyKey) {
@@ -328,56 +390,92 @@ public class ThongBaoService {
     }
 
     /**
-     * Reconciles durable LichSuDangKy events for a user so any notification whose post-commit write
-     * failed transiently is deterministically recovered without duplication.
+     * Reconciles durable registration and grade publication events for a user so any notification
+     * whose post-commit write failed transiently is deterministically recovered without duplication.
      */
     public int reconcileForUser(Long userId) {
-        if (userId == null || lichSuDangKyRepository == null) {
+        if (userId == null) {
             return 0;
         }
-        List<LichSuDangKy> events = lichSuDangKyRepository.findByStudentUserIdWithDetails(userId);
         int recovered = 0;
-        for (LichSuDangKy event : events) {
-            if (event.getDangKyId() == null || event.getLopHocPhan() == null || event.getSinhVien() == null) {
-                continue;
-            }
-            User studentUser = event.getSinhVien().getUser();
-            if (studentUser == null || !studentUser.isTrangThai()) {
-                continue;
-            }
-            boolean registered = event.getTrangThai() == TrangThaiDangKy.DA_DANG_KY;
-            boolean sectionCancelled = !registered && isSectionCancelledReason(event.getLyDoHuy());
-            String eventType = registered
-                    ? "COURSE_REGISTRATION_CONFIRMED"
-                    : (sectionCancelled ? "COURSE_SECTION_CANCELLED" : "COURSE_REGISTRATION_CANCELLED");
-            String idempotencyKey = buildRegistrationEventKey(
-                    event.getDangKyId(), eventType, event.getThoiGianDangKy());
-            LopHocPhan section = event.getLopHocPhan();
-            String sectionCode = section.getMa();
-            String subjectCode = section.getMonHoc() != null ? section.getMonHoc().getMa() : "";
-            String subjectName = section.getMonHoc() != null ? section.getMonHoc().getTen() : "";
-            String semesterName = section.getHocKy() != null ? section.getHocKy().getTen() : "";
-            LocalDateTime occurredAt = event.getThoiDiem() != null
-                    ? event.getThoiDiem() : event.getThoiGianDangKy();
-            String reason = sectionCancelled ? cleanSectionCancelReason(event.getLyDoHuy()) : event.getLyDoHuy();
-            String title = registered
-                    ? "Đăng ký học phần thành công"
-                    : (sectionCancelled ? "Lớp học phần bị hủy" : "Đã hủy đăng ký học phần");
-            String message = buildStudentRegistrationMessage(
-                    registered, sectionCancelled, sectionCode, subjectCode, subjectName, semesterName, occurredAt, reason);
-            String priority = sectionCancelled ? "HIGH" : "NORMAL";
-            String targetUrl = registered
-                    ? "/hoc-phan-cua-toi"
-                    : (sectionCancelled ? "/dang-ky" : "/thoi-khoa-bieu");
-            if (send(studentUser, eventType, idempotencyKey, title, message, priority, targetUrl, occurredAt)) {
-                recovered++;
+        if (lichSuDangKyRepository != null) {
+            List<LichSuDangKy> events = lichSuDangKyRepository.findByStudentUserIdWithDetails(userId);
+            for (LichSuDangKy event : events) {
+                if (event.getDangKyId() == null || event.getLopHocPhan() == null || event.getSinhVien() == null) {
+                    continue;
+                }
+                User studentUser = event.getSinhVien().getUser();
+                if (studentUser == null || !studentUser.isTrangThai()) {
+                    continue;
+                }
+                boolean registered = event.getTrangThai() == TrangThaiDangKy.DA_DANG_KY;
+                boolean sectionCancelled = !registered && isSectionCancelledReason(event.getLyDoHuy());
+                String eventType = registered
+                        ? "COURSE_REGISTRATION_CONFIRMED"
+                        : (sectionCancelled ? "COURSE_SECTION_CANCELLED" : "COURSE_REGISTRATION_CANCELLED");
+                String idempotencyKey = buildRegistrationEventKey(
+                        event.getDangKyId(), eventType, event.getThoiGianDangKy());
+                LopHocPhan section = event.getLopHocPhan();
+                String sectionCode = section.getMa();
+                String subjectCode = section.getMonHoc() != null ? section.getMonHoc().getMa() : "";
+                String subjectName = section.getMonHoc() != null ? section.getMonHoc().getTen() : "";
+                String semesterName = section.getHocKy() != null ? section.getHocKy().getTen() : "";
+                LocalDateTime occurredAt = event.getThoiDiem() != null
+                        ? event.getThoiDiem() : event.getThoiGianDangKy();
+                String reason = sectionCancelled ? cleanSectionCancelReason(event.getLyDoHuy()) : event.getLyDoHuy();
+                String title = registered
+                        ? "Đăng ký học phần thành công"
+                        : (sectionCancelled ? "Lớp học phần bị hủy" : "Đã hủy đăng ký học phần");
+                String message = buildStudentRegistrationMessage(
+                        registered, sectionCancelled, sectionCode, subjectCode, subjectName, semesterName, occurredAt, reason);
+                String priority = sectionCancelled ? "HIGH" : "NORMAL";
+                String targetUrl = registered
+                        ? "/hoc-phan-cua-toi"
+                        : (sectionCancelled ? "/dang-ky" : "/thoi-khoa-bieu");
+                if (send(studentUser, eventType, idempotencyKey, title, message, priority, targetUrl, occurredAt)) {
+                    recovered++;
+                }
             }
         }
+
+        if (diemRepository != null) {
+            List<Diem> publishedGrades = diemRepository.findPublishedGradesForStudentUser(userId);
+            for (Diem diem : publishedGrades) {
+                DangKyHocPhan reg = diem.getDangKy();
+                if (reg == null || reg.getTrangThai() != TrangThaiDangKy.DA_DANG_KY
+                        || reg.getLopHocPhan() == null || reg.getSinhVien() == null) {
+                    continue;
+                }
+                User studentUser = reg.getSinhVien().getUser();
+                if (studentUser == null || !studentUser.isTrangThai()) {
+                    continue;
+                }
+                LopHocPhan section = reg.getLopHocPhan();
+                if (!section.isBangDiemDaCongBo() || section.getCongBoBangDiemLuc() == null) {
+                    continue;
+                }
+                String idempotencyKey = buildGradePublishedEventKey(section.getId(), section.getPhienBanCongBo());
+                String sectionCode = section.getMa();
+                String subjectCode = section.getMonHoc() != null ? section.getMonHoc().getMa() : "";
+                String subjectName = section.getMonHoc() != null ? section.getMonHoc().getTen() : "";
+                String semesterName = section.getHocKy() != null ? section.getHocKy().getTen() : "";
+                String academicYear = section.getHocKy() != null ? section.getHocKy().getNamHoc() : "";
+                LocalDateTime publishedAt = section.getCongBoBangDiemLuc();
+                String title = "Điểm lớp học phần " + sectionCode + " đã được công bố";
+                String message = buildGradePublishedMessage(
+                        sectionCode, subjectCode, subjectName, semesterName, academicYear, publishedAt);
+                if (send(studentUser, GRADES_PUBLISHED_EVENT, idempotencyKey,
+                        title, message, "HIGH", "/diem", publishedAt)) {
+                    recovered++;
+                }
+            }
+        }
+
         return recovered;
     }
 
     private void reconcileForUserSafely(Long userId) {
-        if (userId == null || lichSuDangKyRepository == null) {
+        if (userId == null || (lichSuDangKyRepository == null && diemRepository == null)) {
             return;
         }
         try {
@@ -387,7 +485,7 @@ public class ThongBaoService {
                 reconcileForUser(userId);
             }
         } catch (RuntimeException ex) {
-            log.warn("Không thể đồng bộ bù thông báo đăng ký cho userId={}: {}",
+            log.warn("Không thể đồng bộ bù thông báo nội bộ cho userId={}: {}",
                     userId, ex.getClass().getSimpleName());
         }
     }
@@ -418,12 +516,41 @@ public class ThongBaoService {
         }
     }
 
+    private void sendBatchByIdempotencyKey(List<User> recipients, String eventType, String idempotencyKey,
+                                           String title, String message, String priority,
+                                           String targetUrl, LocalDateTime createdAt) {
+        List<User> activeRecipients = recipients.stream()
+                .filter(u -> u != null && u.isTrangThai() && u.getId() != null)
+                .toList();
+        if (activeRecipients.isEmpty()) {
+            return;
+        }
+        Set<Long> existingRecipientIds = thongBaoRepository.findExistingRecipientIdsByIdempotencyKey(
+                idempotencyKey, activeRecipients.stream().map(User::getId).toList());
+        for (User recipient : activeRecipients) {
+            if (existingRecipientIds != null && existingRecipientIds.contains(recipient.getId())) {
+                continue;
+            }
+            saveNotification(recipient, eventType, idempotencyKey, title, message, priority, targetUrl, createdAt);
+        }
+    }
+
     private boolean send(User recipient, String eventType, String idempotencyKey, String title,
                          String message, String priority, String targetUrl, LocalDateTime createdAt) {
         if (recipient == null || !recipient.isTrangThai()
                 || thongBaoRepository.existsByRecipientIdAndIdempotencyKey(recipient.getId(), idempotencyKey)) {
             return false;
         }
+        try {
+            return saveNotification(recipient, eventType, idempotencyKey, title, message, priority, targetUrl, createdAt);
+        } catch (DataAccessResourceFailureException e) {
+            log.warn("Failed to persist notification [{}] for recipientId={}: {}", eventType, recipient.getId(), e.getMessage());
+            return false;
+        }
+    }
+
+    private boolean saveNotification(User recipient, String eventType, String idempotencyKey, String title,
+                                     String message, String priority, String targetUrl, LocalDateTime createdAt) {
         ThongBao notification = new ThongBao();
         notification.setRecipient(recipient);
         notification.setEventType(eventType);
@@ -448,6 +575,11 @@ public class ThongBaoService {
         return "registration:" + registrationId + ":" + eventType + ":" + normalized;
     }
 
+    public static String buildGradePublishedEventKey(Long sectionId, int publicationVersion) {
+        int safeVersion = Math.max(1, publicationVersion);
+        return "grade-published:" + sectionId + ":v" + safeVersion;
+    }
+
     public static String deterministicSectionChangeKey(Long sectionId, String eventType, Map<String, Object> after) {
         if (after == null) {
             return "section-update:" + sectionId + ":" + eventType;
@@ -456,6 +588,19 @@ public class ThongBaoService {
                 + after.get("phong") + ":" + after.get("thu") + ":"
                 + after.get("tietBatDau") + ":" + after.get("soTiet") + ":"
                 + after.get("giangVienId");
+    }
+
+    private String buildGradePublishedMessage(String sectionCode, String subjectCode, String subjectName,
+                                              String semesterName, String academicYear, LocalDateTime occurredAt) {
+        String subjectLabel = (subjectCode == null || subjectCode.isBlank())
+                ? subjectName
+                : subjectCode + " - " + subjectName;
+        String semesterLabel = (academicYear == null || academicYear.isBlank())
+                ? semesterName
+                : semesterName + " (" + academicYear + ")";
+        return "Bảng điểm lớp " + sectionCode + " — " + subjectLabel + ", " + semesterLabel
+                + " đã được phê duyệt và công bố lúc " + formatTime(occurredAt)
+                + ". Bước tiếp theo: truy cập trang Kết quả học tập để xem chi tiết.";
     }
 
     private String buildStudentRegistrationMessage(boolean registered, boolean sectionCancelled,

@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public final class LopHocPhanDtos {
@@ -16,7 +17,19 @@ public final class LopHocPhanDtos {
     public record LopHocPhanDto(Long id, String ma, Long monHocId, String maMon, String tenMon, int soTinChi,
                                 Long hocKyId, String tenHocKy, Long giangVienId, String tenGiangVien,
                                 String phong, int thu, int tietBatDau, int soTiet,
-                                int siSoToiDa, int siSoHienTai, int conLai) {
+                                int siSoToiDa, int siSoHienTai, int conLai,
+                                String trangThaiBangDiem, int phienBanCongBo,
+                                LocalDateTime guiDuyetBangDiemLuc,
+                                LocalDateTime duyetBangDiemLuc,
+                                LocalDateTime congBoBangDiemLuc) {
+        public LopHocPhanDto(Long id, String ma, Long monHocId, String maMon, String tenMon, int soTinChi,
+                             Long hocKyId, String tenHocKy, Long giangVienId, String tenGiangVien,
+                             String phong, int thu, int tietBatDau, int soTiet,
+                             int siSoToiDa, int siSoHienTai, int conLai) {
+            this(id, ma, monHocId, maMon, tenMon, soTinChi, hocKyId, tenHocKy, giangVienId, tenGiangVien,
+                    phong, thu, tietBatDau, soTiet, siSoToiDa, siSoHienTai, conLai,
+                    "NHAP", 1, null, null, null);
+        }
     }
 
     public record LopHocPhanRequest(

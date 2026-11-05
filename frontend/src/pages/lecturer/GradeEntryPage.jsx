@@ -1,11 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Calculator, ClipboardList, Save, Users } from "lucide-react";
+import { ArrowLeft, Calculator, CheckCircle2, ClipboardList, Megaphone, RotateCcw, Save, Send, Users } from "lucide-react";
 import api, { getErrorMessage } from "../../api/client";
 import ExportStudentsButton from "../../components/ExportStudentsButton";
-import { Alert, EmptyState, PageHeader, Spinner } from "../../components/ui";
+import { Alert, Badge, EmptyState, PageHeader, Spinner } from "../../components/ui";
 import { formatDiem, lichHoc } from "../../lib/format";
 import { useApi } from "../../lib/useApi";
+
+const GRADE_SHEET_STATUS_META = {
+    NHAP: { label: "Bản nháp (Chưa công bố)", tone: "slate" },
+    CHO_DUYET: { label: "Chờ phê duyệt", tone: "amber" },
+    DA_DUYET: { label: "Đã phê duyệt (Sẵn sàng công bố)", tone: "blue" },
+    DA_CONG_BO: { label: "Đã công bố", tone: "green" },
+};
 
 function tinhTongKet(quaTrinh, cuoiKy) {
     const qt = Number(quaTrinh);
@@ -16,7 +23,7 @@ function tinhTongKet(quaTrinh, cuoiKy) {
 
 export default function GradeEntryPage() {
     const { id } = useParams();
-    const { data: lop, loading: loadingLop, error: lopError } = useApi(`/lop-hoc-phan/${id}`);
+    const { data: lop, loading: loadingLop, error: lopError, reload: reloadLop } = useApi(`/lop-hoc-phan/${id}`);
     const {
         data: sinhVienList,
         loading: loadingSv,
@@ -26,6 +33,7 @@ export default function GradeEntryPage() {
     const [rows, setRows] = useState([]);
     const [edits, setEdits] = useState({});
     const [busyId, setBusyId] = useState(null);
+    const [workflowBusy, setWorkflowBusy] = useState(false);
     const [error, setError] = useState("");
     const [message, setMessage] = useState("");
 
@@ -37,6 +45,11 @@ export default function GradeEntryPage() {
         () => rows.filter((row) => row.diemTongKet !== null && row.diemTongKet !== undefined).length,
         [rows]
     );
+
+    const trangThaiBangDiem = lop?.trangThaiBangDiem || "NHAP";
+    const statusMeta = GRADE_SHEET_STATUS_META[trangThaiBangDiem] || GRADE_SHEET_STATUS_META.NHAP;
+    const daCongBo = trangThaiBangDiem === "DA_CONG_BO";
+    const duDieuKienDuyet = rows.length > 0 && soDaNhap === rows.length && Object.keys(edits).length === 0;
 
     const onChange = (dangKyId, field, value) => {
         setEdits((current) => ({
@@ -82,11 +95,27 @@ export default function GradeEntryPage() {
                 delete next[row.dangKyId];
                 return next;
             });
-            setMessage(`Đã lưu điểm cho ${row.maSinhVien} - ${row.hoTen}`);
+            setMessage(`Đã lưu điểm nháp cho ${row.maSinhVien} - ${row.hoTen}`);
+            reloadLop();
         } catch (err) {
             setError(getErrorMessage(err));
         } finally {
             setBusyId(null);
+        }
+    };
+
+    const thucHienQuyTrinh = async (endpoint, successMessage) => {
+        setWorkflowBusy(true);
+        setError("");
+        setMessage("");
+        try {
+            await api.post(`/giang-vien/lop-hoc-phan/${id}/${endpoint}`);
+            await reloadLop();
+            setMessage(successMessage);
+        } catch (err) {
+            setError(getErrorMessage(err));
+        } finally {
+            setWorkflowBusy(false);
         }
     };
 
@@ -109,10 +138,11 @@ export default function GradeEntryPage() {
                 actions={
                     lop && (
                         <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
-              <span className="inline-flex items-center gap-2">
-                <Users size={16} className="text-slate-400" />
-                  {lop.siSoHienTai}/{lop.siSoToiDa} sinh viên
-              </span>
+                            <Badge tone={statusMeta.tone}>{statusMeta.label}</Badge>
+                            <span className="inline-flex items-center gap-2">
+                                <Users size={16} className="text-slate-400" />
+                                {lop.siSoHienTai}/{lop.siSoToiDa} sinh viên
+                            </span>
                             <ExportStudentsButton
                                 lopId={id}
                                 maLop={lop.ma}
@@ -137,6 +167,57 @@ export default function GradeEntryPage() {
                 {message && <Alert tone="success" onClose={() => setMessage("")}>{message}</Alert>}
                 {error && <Alert tone="error" onClose={() => setError("")}>{error}</Alert>}
             </div>
+
+            {lop && (
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+                    <div className="text-xs text-slate-600">
+                        <span className="font-semibold text-slate-800">Quy trình công bố điểm:</span>{" "}
+                        Nhập điểm nháp → Gửi duyệt → Phê duyệt → Công bố chính thức (hệ thống chỉ gửi thông báo nội bộ cho sinh viên khi bảng điểm chuyển sang trạng thái Đã công bố).
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                        {trangThaiBangDiem === "NHAP" && (
+                            <button
+                                type="button"
+                                className="btn-secondary text-xs"
+                                disabled={workflowBusy || !duDieuKienDuyet}
+                                onClick={() => thucHienQuyTrinh("gui-duyet-diem", "Đã gửi duyệt bảng điểm. Chưa phát thông báo tới sinh viên.")}
+                            >
+                                <Send size={14} /> Gửi duyệt
+                            </button>
+                        )}
+                        {(trangThaiBangDiem === "NHAP" || trangThaiBangDiem === "CHO_DUYET") && (
+                            <button
+                                type="button"
+                                className="btn-secondary text-xs"
+                                disabled={workflowBusy || !duDieuKienDuyet}
+                                onClick={() => thucHienQuyTrinh("phe-duyet-diem", "Đã phê duyệt bảng điểm. Bấm Công bố điểm để phát thông báo cho sinh viên.")}
+                            >
+                                <CheckCircle2 size={14} /> Phê duyệt bảng điểm
+                            </button>
+                        )}
+                        {trangThaiBangDiem === "DA_DUYET" && (
+                            <button
+                                type="button"
+                                className="btn-primary text-xs"
+                                disabled={workflowBusy || !duDieuKienDuyet}
+                                onClick={() => thucHienQuyTrinh("cong-bo-diem", "Đã công bố bảng điểm và phát thông báo nội bộ cho sinh viên đủ điều kiện của lớp.")}
+                            >
+                                <Megaphone size={14} /> Công bố điểm
+                            </button>
+                        )}
+                        {daCongBo && (
+                            <button
+                                type="button"
+                                className="btn-secondary text-xs"
+                                disabled={workflowBusy}
+                                onClick={() => thucHienQuyTrinh("thu-hoi-cong-bo-diem", "Đã thu hồi công bố bảng điểm để điều chỉnh.")}
+                            >
+                                <RotateCcw size={14} /> Thu hồi công bố
+                            </button>
+                        )}
+                    </div>
+                </div>
+            )}
 
             <div className="card overflow-hidden">
                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-50 px-4 py-3">
@@ -190,6 +271,7 @@ export default function GradeEntryPage() {
                                                 min="0"
                                                 max="10"
                                                 step="0.1"
+                                                disabled={daCongBo}
                                                 value={quaTrinh}
                                                 onChange={(event) => onChange(row.dangKyId, "diemQuaTrinh", event.target.value)}
                                             />
@@ -201,21 +283,22 @@ export default function GradeEntryPage() {
                                                 min="0"
                                                 max="10"
                                                 step="0.1"
+                                                disabled={daCongBo}
                                                 value={cuoiKy}
                                                 onChange={(event) => onChange(row.dangKyId, "diemCuoiKy", event.target.value)}
                                             />
                                         </td>
                                         <td className="td text-center">
-                        <span className="inline-flex items-center gap-1 font-semibold text-slate-900">
-                          <Calculator size={14} className="text-slate-400" />
-                            {tongKet !== null ? formatDiem(tongKet) : formatDiem(row.diemTongKet)}
-                        </span>
+                                            <span className="inline-flex items-center gap-1 font-semibold text-slate-900">
+                                                <Calculator size={14} className="text-slate-400" />
+                                                {tongKet !== null ? formatDiem(tongKet) : formatDiem(row.diemTongKet)}
+                                            </span>
                                         </td>
                                         <td className="td text-right">
                                             <button
                                                 type="button"
                                                 className={daThayDoi ? "btn-primary px-3 py-1.5 text-xs" : "btn-secondary px-3 py-1.5 text-xs"}
-                                                disabled={busyId === row.dangKyId || !daThayDoi}
+                                                disabled={daCongBo || busyId === row.dangKyId || !daThayDoi}
                                                 onClick={() => luuDiem(row)}
                                             >
                                                 <Save size={14} />
@@ -232,7 +315,7 @@ export default function GradeEntryPage() {
             </div>
 
             <p className="mt-3 text-xs text-slate-500">
-                Điểm hợp lệ từ 0 đến 10. Sinh viên đạt môn khi điểm tổng kết từ 5.0 trở lên.
+                Điểm hợp lệ từ 0 đến 10. Sinh viên đạt môn khi điểm tổng kết từ 5.0 trở lên. Điểm nháp/chờ duyệt chưa hiển thị cho sinh viên cho tới khi bảng điểm được phê duyệt và công bố.
             </p>
         </div>
     );

@@ -69,7 +69,7 @@ public class SinhVienDashboardService {
         Map<Long, DangKyHocPhan> ketQuaMoiNhatTheoMon = new HashMap<>();
         for (DangKyHocPhan dk : dangKy) {
             Diem diem = diemTheoDangKy.get(dk.getId());
-            if (diem == null || diem.getDiemTongKet() == null) continue;
+            if (diem == null || diem.getDiemTongKet() == null || !dk.getLopHocPhan().isBangDiemDaCongBo()) continue;
             Long monHocId = dk.getLopHocPhan().getMonHoc().getId();
             DangKyHocPhan hienTai = ketQuaMoiNhatTheoMon.get(monHocId);
             if (hienTai == null || soSanhLanHoc(dk, hienTai) > 0) ketQuaMoiNhatTheoMon.put(monHocId, dk);
