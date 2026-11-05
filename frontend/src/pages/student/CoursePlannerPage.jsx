@@ -150,6 +150,7 @@ export default function CoursePlannerPage() {
       updateCart(remaining);
       setSuccess(`Đã đăng ký chính thức ${data.length} lớp học phần.`);
       await Promise.all([reloadClasses(), reloadRegistrations()]);
+      window.dispatchEvent(new Event("notifications:updated"));
     } catch (requestError) {
       setError(getErrorMessage(requestError));
       await Promise.all([reloadClasses(), reloadRegistrations()]);

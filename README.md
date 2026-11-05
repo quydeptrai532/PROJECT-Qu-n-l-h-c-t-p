@@ -1,4 +1,4 @@
-﻿# Hệ thống Quản lý đào tạo và Đăng ký học phần
+# Hệ thống Quản lý đào tạo và Đăng ký học phần
 
 Đồ án xây dựng theo tài liệu SRS `SRS_QuanLyDaoTao_DangKyHocPhan`: quản lý chương trình, môn học, lớp học phần; sinh viên đăng ký/hủy học phần trực tuyến; giảng viên nhập điểm; phòng đào tạo thống kê và xuất báo cáo.
 
@@ -14,9 +14,9 @@
 
 ## Chức năng theo vai trò
 
-- **SINH_VIEN**: dashboard tổng quan (tín chỉ, GPA, lịch hôm nay, biểu đồ GPA), cập nhật họ tên/email/SĐT, đổi mật khẩu, lập kế hoạch học tập bằng giỏ lớp và thời khóa biểu dự kiến, xác nhận đăng ký/hủy học phần, xem thời khóa biểu, điểm/GPA, lịch sử học tập & môn chưa đạt, xuất bảng điểm cá nhân PDF và trung tâm thông báo.
+- **SINH_VIEN**: dashboard tổng quan (tín chỉ, GPA, lịch hôm nay, biểu đồ GPA), cập nhật họ tên/email/SĐT, đổi mật khẩu, lập kế hoạch học tập bằng giỏ lớp và thời khóa biểu dự kiến, xác nhận đăng ký/hủy học phần, xem thời khóa biểu, điểm/GPA, lịch sử học tập & môn chưa đạt, xuất bảng điểm cá nhân PDF và trung tâm thông báo (nhận thông báo kết quả đăng ký/hủy, lớp học phần bị hủy, buổi học tạm nghỉ, thay đổi lịch học/giảng viên).
 - **GIANG_VIEN**: dashboard tổng quan (lớp phụ trách, sĩ số, biểu đồ lấp đầy, lịch dạy hôm nay), thời khóa biểu giảng dạy, danh sách sinh viên, nhập/cập nhật điểm quá trình và cuối kỳ, cùng trung tâm thông báo cho lớp phụ trách.
-- **QUAN_TRI**: quản lý khoa/ngành/lớp hành chính/môn học/học kỳ, cấu hình đợt đăng ký, mở lớp học phần, quản lý sinh viên & giảng viên, khóa/mở tài khoản, nhập CSV, dashboard thống kê có biểu đồ và xuất CSV.
+- **QUAN_TRI**: quản lý khoa/ngành/lớp hành chính/môn học/học kỳ, cấu hình đợt đăng ký, mở/cập nhật/hủy lớp học phần, quản lý sinh viên & giảng viên, khóa/mở tài khoản, nhập CSV, dashboard thống kê có biểu đồ và xuất CSV.
 
 Sinh viên và giảng viên đăng nhập vào `/tong-quan`; quản trị vào `/quan-tri`.
 
@@ -50,6 +50,7 @@ frontend/
 docs/
   TEST_PLAN.md    # test case theo FR/NFR và kết quả
   COURSE_PLANNER_DEMO.md # hướng dẫn demo Course Planner
+  NOTIFICATION_DEMO.md # hướng dẫn trung tâm thông báo và cơ chế idempotency
   AUDIT_LOG_DEMO.md # hướng dẫn tra cứu nhật ký kiểm toán
   PROPOSAL_CHECKLIST.md # góp ý bổ sung báo cáo đề cương
   screenshots/    # ảnh giao diện cho báo cáo/Figma
@@ -160,6 +161,7 @@ Dữ liệu mẫu gồm 2 khoa, 3 ngành, 3 lớp hành chính, 8 môn học (c�
 | CRUD | `/api/admin/khoa`, `/nganh`, `/lop-hanh-chinh`, `/mon-hoc`, `/hoc-ky` | Quản trị danh mục |
 | GET/POST/DELETE | `/api/admin/mon-hoc/{id}/tien-quyet` | Cấu hình môn tiên quyết |
 | CRUD | `/api/admin/lop-hoc-phan` | Mở lớp học phần |
+| POST | `/api/admin/lop-hoc-phan/{id}/huy` | Hủy lớp học phần, chuyển các đăng ký đang hoạt động sang `DA_HUY` và thông báo sinh viên bị ảnh hưởng |
 | CRUD | `/api/admin/sinh-vien`, `/giang-vien` | Quản lý người dùng |
 | POST | `/api/admin/sinh-vien/import` | Nhập sinh viên từ CSV |
 | GET | `/api/admin/thong-ke/tong-quan`, `/theo-mon`, `/hanh-dong?hocKyId=&khoaId=` | Thống kê và danh sách việc giáo vụ cần chú ý; chỉ quản trị viên |
@@ -190,7 +192,7 @@ SV010,Nguyễn Văn A,a@student.edu.vn,1,1,1
 
 ```bash
 cd backend
-./mvnw test        # 42 test: 23 unit + 19 integration trên HTTP
+./mvnw test
 ```
 
 ### E2E với Playwright

@@ -42,6 +42,7 @@ public class LichSuDangKy {
     private String lyDoHuy;
 
     public Long getId() { return id; }
+    public SinhVien getSinhVien() { return sinhVien; }
     public Long getDangKyId() { return dangKyId; }
     public LopHocPhan getLopHocPhan() { return lopHocPhan; }
     public TrangThaiDangKy getTrangThai() { return trangThai; }

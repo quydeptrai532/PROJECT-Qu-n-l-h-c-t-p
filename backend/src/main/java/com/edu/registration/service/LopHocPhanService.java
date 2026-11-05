@@ -2,25 +2,31 @@ package com.edu.registration.service;
 
 import com.edu.registration.dto.LopHocPhanDtos;
 import com.edu.registration.dto.RegistrationDtos;
+import com.edu.registration.entity.DangKyHocPhan;
 import com.edu.registration.entity.GiangVien;
 import com.edu.registration.entity.HocKy;
+import com.edu.registration.entity.LichSuDangKy;
 import com.edu.registration.entity.LopHocPhan;
 import com.edu.registration.entity.MonHoc;
+import com.edu.registration.entity.TrangThaiDangKy;
 import com.edu.registration.exception.ApiException;
 import com.edu.registration.repository.DangKyHocPhanRepository;
 import com.edu.registration.repository.GiangVienRepository;
+import com.edu.registration.repository.LichSuDangKyRepository;
 import com.edu.registration.repository.LopHocPhanRepository;
 import com.edu.registration.repository.MonHocRepository;
 import com.edu.registration.repository.ThongBaoNghiRepository;
 import com.edu.registration.security.CurrentUser;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.UUID;
 
 @Service
 @Transactional
@@ -30,6 +36,7 @@ public class LopHocPhanService {
     private final MonHocRepository monHocRepository;
     private final GiangVienRepository giangVienRepository;
     private final DangKyHocPhanRepository dangKyHocPhanRepository;
+    private final LichSuDangKyRepository lichSuDangKyRepository;
     private final ThongBaoNghiRepository thongBaoNghiRepository;
     private final HocKyService hocKyService;
     private final AuditLogService auditLogService;
@@ -43,10 +50,23 @@ public class LopHocPhanService {
                              ThongBaoNghiRepository thongBaoNghiRepository,
                              HocKyService hocKyService, AuditLogService auditLogService,
                              CurrentUser currentUser, DtoMapper mapper, ThongBaoService thongBaoService) {
+        this(lopHocPhanRepository, monHocRepository, giangVienRepository, dangKyHocPhanRepository,
+                null, thongBaoNghiRepository, hocKyService, auditLogService, currentUser, mapper, thongBaoService);
+    }
+
+    @Autowired
+    public LopHocPhanService(LopHocPhanRepository lopHocPhanRepository, MonHocRepository monHocRepository,
+                             GiangVienRepository giangVienRepository,
+                             DangKyHocPhanRepository dangKyHocPhanRepository,
+                             LichSuDangKyRepository lichSuDangKyRepository,
+                             ThongBaoNghiRepository thongBaoNghiRepository,
+                             HocKyService hocKyService, AuditLogService auditLogService,
+                             CurrentUser currentUser, DtoMapper mapper, ThongBaoService thongBaoService) {
         this.lopHocPhanRepository = lopHocPhanRepository;
         this.monHocRepository = monHocRepository;
         this.giangVienRepository = giangVienRepository;
         this.dangKyHocPhanRepository = dangKyHocPhanRepository;
+        this.lichSuDangKyRepository = lichSuDangKyRepository;
         this.thongBaoNghiRepository = thongBaoNghiRepository;
         this.hocKyService = hocKyService;
         this.auditLogService = auditLogService;
@@ -139,7 +159,6 @@ public class LopHocPhanService {
     }
 
     public LopHocPhanDtos.LopHocPhanResponse sua(Long id, LopHocPhanDtos.LopHocPhanRequest request) {
-        String notificationKey = "section-update:" + id + ":" + UUID.randomUUID();
         return auditLogService.execute("COURSE_SECTION_UPDATED", "COURSE_SECTION", id, audit -> {
             kiemTraLich(request);
             LopHocPhan lop = lopHocPhanRepository.findByIdForUpdate(id)
@@ -168,8 +187,63 @@ public class LopHocPhanService {
             apDung(lop, request);
             Map<String, Object> after = auditSnapshot(lop);
             audit.changes(before, after);
-            thongBaoService.sectionChanged(lop, before, after, notificationKey);
+            thongBaoService.sectionChanged(lop, before, after, null);
             return new LopHocPhanDtos.LopHocPhanResponse(mapper.lopHocPhan(lop), canhBao);
+        });
+    }
+
+    /**
+     * Cancels a course section, transitions all currently active registrations (DA_DANG_KY) to DA_HUY,
+     * records durable registration history events, and notifies only the affected students.
+     */
+    public LopHocPhanDtos.HuyLopHocPhanResponse huyLopHocPhan(Long id, String lyDo) {
+        if (lyDo != null && lyDo.trim().length() > 200) {
+            throw ApiException.badRequest("Lý do hủy lớp học phần tối đa 200 ký tự");
+        }
+        String normalizedReason = (lyDo == null || lyDo.isBlank()) ? null : lyDo.trim();
+        String historyReason = normalizedReason == null
+                ? ThongBaoService.SECTION_CANCELLED_REASON_PREFIX
+                : ThongBaoService.SECTION_CANCELLED_REASON_PREFIX + ": " + normalizedReason;
+
+        return auditLogService.execute("COURSE_SECTION_CANCELLED", "COURSE_SECTION", id, audit -> {
+            LopHocPhan lop = lopHocPhanRepository.findByIdForUpdate(id)
+                    .orElseThrow(() -> ApiException.notFound("Lớp học phần không tồn tại"));
+            Map<String, Object> before = auditSnapshot(lop);
+            List<DangKyHocPhan> activeRegistrations =
+                    dangKyHocPhanRepository.findByLopHocPhan(id, TrangThaiDangKy.DA_DANG_KY);
+            LocalDateTime now = LocalDateTime.now();
+
+            for (DangKyHocPhan registration : activeRegistrations) {
+                registration.setTrangThai(TrangThaiDangKy.DA_HUY);
+                dangKyHocPhanRepository.save(registration);
+                if (lichSuDangKyRepository != null) {
+                    LichSuDangKy event = new LichSuDangKy();
+                    event.setSinhVien(registration.getSinhVien());
+                    event.setLopHocPhan(lop);
+                    event.setHocKyId(lop.getHocKy().getId());
+                    event.setDangKyId(registration.getId());
+                    event.setTrangThai(TrangThaiDangKy.DA_HUY);
+                    event.setThoiGianDangKy(registration.getThoiGianDangKy());
+                    event.setThoiDiem(now);
+                    event.setThoiGianHuy(now);
+                    event.setLyDoHuy(historyReason);
+                    lichSuDangKyRepository.save(event);
+                }
+            }
+            lop.setSiSoHienTai(0);
+            lopHocPhanRepository.save(lop);
+
+            Map<String, Object> after = new LinkedHashMap<>(auditSnapshot(lop));
+            after.put("trangThai", "CANCELLED");
+            after.put("soDangKyBiHuy", activeRegistrations.size());
+            if (normalizedReason != null) {
+                after.put("lyDo", normalizedReason);
+            }
+            audit.changes(before, after);
+
+            thongBaoService.sectionCancelled(lop, activeRegistrations, now, normalizedReason);
+            return new LopHocPhanDtos.HuyLopHocPhanResponse(
+                    lop.getId(), lop.getMa(), activeRegistrations.size(), normalizedReason);
         });
     }
 

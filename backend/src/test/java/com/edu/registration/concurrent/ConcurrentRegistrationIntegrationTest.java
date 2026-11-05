@@ -64,6 +64,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import org.springframework.dao.DataAccessResourceFailureException;
 
@@ -98,7 +99,7 @@ class ConcurrentRegistrationIntegrationTest {
     @Autowired private LopHocPhanRepository lopHocPhanRepository;
     @Autowired private DangKyHocPhanRepository dangKyRepository;
     @Autowired private AuditLogRepository auditLogRepository;
-    @Autowired private ThongBaoRepository thongBaoRepository;
+    @SpyBean private ThongBaoRepository thongBaoRepository;
     @Autowired private ThongBaoService thongBaoService;
     @SpyBean private AuditLogRepository auditLogRepositorySpy;
     @Autowired private JwtService jwtService;
@@ -159,7 +160,7 @@ class ConcurrentRegistrationIntegrationTest {
         secondSection = saveSection("02", mon, hocKy, lecturer, capacity, 4);
 
         students = new ArrayList<>();
-        int fixtureCount = Math.max(studentCount, 2);
+        int fixtureCount = Math.max(studentCount, 3);
         for (int i = 0; i < fixtureCount; i++) {
             User user = new User();
             user.setUsername("test-sv-" + runId + "-" + i);
@@ -355,6 +356,121 @@ class ConcurrentRegistrationIntegrationTest {
         assertEquals(1, thongBaoRepository.findByRecipientId(students.get(0).getId(),
                 org.springframework.data.domain.PageRequest.of(0, 20)).getContent().stream()
                 .filter(n -> n.getEventType().equals("COURSE_REGISTRATION_CONFIRMED")).count());
+    }
+
+    @Test
+    void cancellationCreatesNotificationAndRetryDoesNotDuplicateAndFailedRegistrationCreatesNoNotification() {
+        // Failed registration on non-existent class or full class must not create any notification
+        assertEquals(HttpStatus.NOT_FOUND, postRegistration(students.get(0), Long.MAX_VALUE).getStatusCode());
+        assertEquals(0, thongBaoRepository.countByRecipientIdAndReadAtIsNull(students.get(0).getId()));
+
+        ResponseEntity<String> registered = postRegistration(students.get(0), primarySection.getId());
+        assertEquals(HttpStatus.OK, registered.getStatusCode());
+        Long registrationId = readId(registered.getBody());
+
+        HttpHeaders headers = headersFor(students.get(0));
+        ResponseEntity<String> cancelled = http.exchange(
+                "/api/dang-ky/" + registrationId + "?lyDo=Đổi kế hoạch học tập",
+                HttpMethod.DELETE, new HttpEntity<>(headers), String.class);
+        assertEquals(HttpStatus.OK, cancelled.getStatusCode());
+
+        // Retrying the same cancellation returns 400 and does not duplicate the cancellation notice
+        ResponseEntity<String> retryCancel = http.exchange(
+                "/api/dang-ky/" + registrationId + "?lyDo=Đổi kế hoạch học tập",
+                HttpMethod.DELETE, new HttpEntity<>(headers), String.class);
+        assertEquals(HttpStatus.BAD_REQUEST, retryCancel.getStatusCode());
+
+        List<ThongBao> notices = thongBaoRepository.findByRecipientId(students.get(0).getId(),
+                org.springframework.data.domain.PageRequest.of(0, 20)).getContent();
+        List<ThongBao> cancelNotices = notices.stream()
+                .filter(n -> "COURSE_REGISTRATION_CANCELLED".equals(n.getEventType()))
+                .toList();
+        assertEquals(1, cancelNotices.size());
+        assertEquals("Đã hủy đăng ký học phần", cancelNotices.get(0).getTitle());
+        assertEquals("/thoi-khoa-bieu", cancelNotices.get(0).getTargetUrl());
+        assertTrue(cancelNotices.get(0).getMessage().contains(primarySection.getMa()));
+        assertTrue(cancelNotices.get(0).getMessage().contains("Kết quả: Đã hủy đăng ký"));
+        assertTrue(cancelNotices.get(0).getMessage().contains("Đổi kế hoạch học tập"));
+        assertTrue(cancelNotices.get(0).getMessage().contains("Bước tiếp theo:"));
+    }
+
+    @Test
+    void courseSectionCancellationTransitionsActiveRegistrationsAndNotifiesOnlyCurrentlyAffectedStudents() {
+        // Student 0 and Student 1 register; Student 1 cancels before section is cancelled
+        ResponseEntity<String> reg0 = postRegistration(students.get(0), primarySection.getId());
+        ResponseEntity<String> reg1 = postRegistration(students.get(1), primarySection.getId());
+        assertEquals(HttpStatus.OK, reg0.getStatusCode());
+        assertEquals(HttpStatus.OK, reg1.getStatusCode());
+        Long reg0Id = readId(reg0.getBody());
+        Long reg1Id = readId(reg1.getBody());
+
+        assertEquals(HttpStatus.OK, http.exchange("/api/dang-ky/" + reg1Id,
+                HttpMethod.DELETE, new HttpEntity<>(headersFor(students.get(1))), String.class).getStatusCode());
+
+        User admin = userRepository.findByUsername("admin").orElseThrow();
+        HttpEntity<Map<String, String>> cancelSectionReq = new HttpEntity<>(
+                Map.of("lyDo", "Không đủ số lượng mở lớp"), headersFor(admin));
+        ResponseEntity<String> cancelSectionResp = http.exchange(
+                "/api/admin/lop-hoc-phan/" + primarySection.getId() + "/huy",
+                HttpMethod.POST, cancelSectionReq, String.class);
+        assertEquals(HttpStatus.OK, cancelSectionResp.getStatusCode());
+        assertTrue(cancelSectionResp.getBody().contains("\"soDangKyBiHuy\":1"));
+
+        // Retry section cancellation is idempotent
+        ResponseEntity<String> retrySectionCancel = http.exchange(
+                "/api/admin/lop-hoc-phan/" + primarySection.getId() + "/huy",
+                HttpMethod.POST, cancelSectionReq, String.class);
+        assertEquals(HttpStatus.OK, retrySectionCancel.getStatusCode());
+        assertTrue(retrySectionCancel.getBody().contains("\"soDangKyBiHuy\":0"));
+
+        entityManager.clear();
+        assertEquals(TrangThaiDangKy.DA_HUY, dangKyRepository.findById(reg0Id).orElseThrow().getTrangThai());
+        assertEquals(0, lopHocPhanRepository.findById(primarySection.getId()).orElseThrow().getSiSoHienTai());
+
+        // Student 0 (who was active at cancellation time) receives COURSE_SECTION_CANCELLED
+        List<ThongBao> student0SectionNotices = thongBaoRepository.findByRecipientId(students.get(0).getId(),
+                org.springframework.data.domain.PageRequest.of(0, 20)).getContent().stream()
+                .filter(n -> "COURSE_SECTION_CANCELLED".equals(n.getEventType()))
+                .toList();
+        assertEquals(1, student0SectionNotices.size());
+        assertEquals("HIGH", student0SectionNotices.get(0).getPriority());
+        assertEquals("/dang-ky", student0SectionNotices.get(0).getTargetUrl());
+        assertTrue(student0SectionNotices.get(0).getMessage().contains(primarySection.getMa()));
+        assertTrue(student0SectionNotices.get(0).getMessage().contains("Không đủ số lượng mở lớp"));
+
+        // Student 1 (already cancelled beforehand) and Student 2 (never registered) do NOT receive COURSE_SECTION_CANCELLED
+        assertEquals(0, thongBaoRepository.findByRecipientId(students.get(1).getId(),
+                org.springframework.data.domain.PageRequest.of(0, 20)).getContent().stream()
+                .filter(n -> "COURSE_SECTION_CANCELLED".equals(n.getEventType())).count());
+        assertEquals(0, thongBaoRepository.findByRecipientId(students.get(2).getId(),
+                org.springframework.data.domain.PageRequest.of(0, 20)).getContent().stream()
+                .filter(n -> "COURSE_SECTION_CANCELLED".equals(n.getEventType())).count());
+    }
+
+    @Test
+    void notificationPersistenceFailureDoesNotRollbackRegistrationAndIsRecoveredOnList() {
+        doThrow(new DataAccessResourceFailureException("notification table unavailable"))
+                .when(thongBaoRepository).save(any(ThongBao.class));
+
+        ResponseEntity<String> registered = postRegistration(students.get(0), primarySection.getId());
+        assertEquals(HttpStatus.OK, registered.getStatusCode());
+        Long registrationId = readId(registered.getBody());
+
+        // Registration is durably committed even though notification save failed
+        entityManager.clear();
+        assertEquals(TrangThaiDangKy.DA_DANG_KY,
+                dangKyRepository.findById(registrationId).orElseThrow().getTrangThai());
+        assertEquals(1, lopHocPhanRepository.findById(primarySection.getId()).orElseThrow().getSiSoHienTai());
+        assertEquals(0, thongBaoRepository.countByRecipientIdAndReadAtIsNull(students.get(0).getId()));
+
+        // Restore notification repository and call GET /api/notifications -> reconciliation recovers the missing notice
+        org.mockito.Mockito.reset(thongBaoRepository);
+        ResponseEntity<String> listResp = http.exchange("/api/notifications", HttpMethod.GET,
+                new HttpEntity<>(headersFor(students.get(0))), String.class);
+        assertEquals(HttpStatus.OK, listResp.getStatusCode());
+        assertTrue(listResp.getBody().contains("COURSE_REGISTRATION_CONFIRMED"));
+        assertTrue(listResp.getBody().contains(primarySection.getMa()));
+        assertEquals(1, thongBaoRepository.countByRecipientIdAndReadAtIsNull(students.get(0).getId()));
     }
 
     @Test

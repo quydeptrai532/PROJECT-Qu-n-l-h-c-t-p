@@ -61,6 +61,7 @@ export default function RegisterPage() {
       const { data } = await api.post("/dang-ky", { lopHocPhanId: lop.id });
       setMessage(`Đăng ký thành công lớp ${data.maLop} - ${data.tenMon}`);
       await Promise.all([reloadLop(), reloadRegs()]);
+      window.dispatchEvent(new Event("notifications:updated"));
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {

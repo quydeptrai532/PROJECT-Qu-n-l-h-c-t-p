@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
+
 public interface LichSuDangKyRepository extends JpaRepository<LichSuDangKy, Long> {
     boolean existsByDangKyId(Long dangKyId);
 
@@ -15,4 +17,9 @@ public interface LichSuDangKyRepository extends JpaRepository<LichSuDangKy, Long
     @Query("select h from LichSuDangKy h where h.sinhVien.id = :sinhVienId and h.hocKyId = :hocKyId")
     Page<LichSuDangKy> findLichSu(@Param("sinhVienId") Long sinhVienId,
                                    @Param("hocKyId") Long hocKyId, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"sinhVien", "sinhVien.user", "lopHocPhan", "lopHocPhan.monHoc",
+            "lopHocPhan.hocKy", "lopHocPhan.giangVien", "lopHocPhan.giangVien.user"})
+    @Query("select h from LichSuDangKy h where h.sinhVien.user.id = :userId order by h.thoiDiem asc, h.id asc")
+    List<LichSuDangKy> findByStudentUserIdWithDetails(@Param("userId") Long userId);
 }

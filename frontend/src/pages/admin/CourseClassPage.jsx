@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Download, Layers, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { Ban, Download, Layers, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import api, { getErrorMessage } from "../../api/client";
 import { useConfirm } from "../../components/ConfirmDialog";
 import { Alert, EmptyState, Field, Modal, PageHeader, Spinner } from "../../components/ui";
@@ -147,6 +147,30 @@ export default function CourseClassPage() {
     }
   };
 
+  const huyLop = async (row) => {
+    const daXacNhan = await confirm({
+      title: "Hủy lớp học phần",
+      message: `Bạn có chắc muốn hủy lớp ${row.ma} - ${row.tenMon}?`,
+      detail: "Tất cả đăng ký đang hiệu lực của lớp sẽ chuyển sang Đã hủy và gửi thông báo tự động tới sinh viên bị ảnh hưởng.",
+      confirmLabel: "Hủy lớp học phần",
+      tone: "danger",
+    });
+    if (!daXacNhan) return;
+    const lyDo = window.prompt("Lý do hủy lớp học phần (không bắt buộc):") ?? "";
+    setActionError("");
+    setMessage("");
+    setWarning("");
+    try {
+      const { data } = await api.post(`/admin/lop-hoc-phan/${row.id}/huy`, {
+        lyDo: lyDo.trim() || null,
+      });
+      setMessage(`Đã hủy lớp ${data.maLop} (${data.soDangKyBiHuy} đăng ký được chuyển sang Đã hủy và thông báo tới sinh viên)`);
+      reload();
+    } catch (err) {
+      setActionError(getErrorMessage(err));
+    }
+  };
+
   const taiCsv = async (row) => {
     setActionError("");
     try {
@@ -264,6 +288,16 @@ export default function CourseClassPage() {
                         >
                           <Pencil size={15} />
                         </button>
+                        {row.siSoHienTai > 0 && (
+                          <button
+                            type="button"
+                            className="rounded-md p-1.5 text-amber-600 hover:bg-amber-50"
+                            onClick={() => huyLop(row)}
+                            title="Hủy lớp học phần"
+                          >
+                            <Ban size={15} />
+                          </button>
+                        )}
                         <button
                           type="button"
                           className="rounded-md p-1.5 text-rose-500 hover:bg-rose-50"

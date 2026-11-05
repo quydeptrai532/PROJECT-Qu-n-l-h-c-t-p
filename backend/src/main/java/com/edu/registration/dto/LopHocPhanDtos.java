@@ -4,6 +4,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 import java.util.List;
 
@@ -34,5 +35,12 @@ public final class LopHocPhanDtos {
     }
 
     public record LopHocPhanResponse(LopHocPhanDto lopHocPhan, List<String> canhBao) {
+    }
+
+    public record HuyLopHocPhanRequest(
+            @Size(max = 200, message = "Lý do hủy lớp học phần tối đa 200 ký tự") String lyDo) {
+    }
+
+    public record HuyLopHocPhanResponse(Long lopHocPhanId, String maLop, int soDangKyBiHuy, String lyDo) {
     }
 }

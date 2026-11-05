@@ -10,6 +10,16 @@ const DATE_FORMAT = new Intl.DateTimeFormat("vi-VN", {
   timeStyle: "short",
 });
 
+const EVENT_TYPE_LABELS = {
+  COURSE_REGISTRATION_CONFIRMED: "Đăng ký học phần thành công",
+  COURSE_REGISTRATION_CANCELLED: "Hủy đăng ký học phần",
+  COURSE_SECTION_CANCELLED: "Lớp học phần bị hủy",
+  COURSE_SESSION_CANCELLED: "Buổi học tạm nghỉ",
+  COURSE_SECTION_SCHEDULE_CHANGED: "Thay đổi lịch học",
+  COURSE_SECTION_ASSIGNMENT_CHANGED: "Thay đổi giảng viên",
+  REGISTRATION_WINDOW_CLOSING: "Nhắc hạn đăng ký",
+};
+
 export default function NotificationsPage() {
   const [unreadOnly, setUnreadOnly] = useState(false);
   const [page, setPage] = useState(0);
@@ -121,7 +131,11 @@ export default function NotificationsPage() {
                     <span className="inline-flex items-center gap-1.5">
                       <Clock3 size={13} /> {DATE_FORMAT.format(new Date(notification.createdAt))}
                     </span>
-                    <span>{notification.eventType.replaceAll("_", " ")}</span>
+                    <span>
+                      {EVENT_TYPE_LABELS[notification.eventType]
+                        ? `${EVENT_TYPE_LABELS[notification.eventType]} (${notification.eventType.replaceAll("_", " ")})`
+                        : notification.eventType.replaceAll("_", " ")}
+                    </span>
                   </div>
                   <div className="mt-4 flex flex-wrap gap-2">
                     <button type="button" className="btn-secondary" onClick={() => openNotification(notification)}>
