@@ -17,6 +17,13 @@ public interface DiemRepository extends JpaRepository<Diem, Long> {
     @EntityGraph(attributePaths = {"dangKy", "dangKy.sinhVien"})
     List<Diem> findByDangKyIdIn(Collection<Long> dangKyIds);
 
+    @EntityGraph(attributePaths = {"dangKy", "dangKy.sinhVien", "dangKy.lopHocPhan", "dangKy.lopHocPhan.monHoc", "dangKy.lopHocPhan.hocKy"})
+    Optional<Diem> findWithDetailsById(Long id);
+
+    @EntityGraph(attributePaths = {"dangKy", "dangKy.sinhVien", "dangKy.lopHocPhan", "dangKy.lopHocPhan.monHoc", "dangKy.lopHocPhan.hocKy"})
+    @Query("select d from Diem d where d.dangKy.sinhVien.id = :sinhVienId order by d.dangKy.lopHocPhan.hocKy.ngayBatDau desc, d.id desc")
+    List<Diem> findBySinhVienIdWithDetails(@Param("sinhVienId") Long sinhVienId);
+
     @Query("""
             select distinct d.dangKy.lopHocPhan.monHoc.id from Diem d
             where d.dangKy.sinhVien.id = :sinhVienId

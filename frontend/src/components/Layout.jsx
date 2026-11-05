@@ -15,6 +15,7 @@ import {
   History,
   Layers,
   LayoutDashboard,
+  LifeBuoy,
   LogOut,
   Menu,
   Network,
@@ -39,6 +40,7 @@ const NAV = {
     { to: "/diem", label: "Điểm & kết quả", icon: GraduationCap },
     { to: "/lich-su-hoc-tap", label: "Lịch sử học tập", icon: ScrollText },
     { to: "/tien-do", label: "Tiến độ học tập", icon: ChartNoAxesCombined },
+    { to: "/yeu-cau-ho-tro", label: "Hỗ trợ & khiếu nại", icon: LifeBuoy },
     { to: "/thong-bao", label: "Thông báo", icon: Bell },
   ],
   GIANG_VIEN: [
@@ -58,6 +60,7 @@ const NAV = {
     { to: "/quan-tri/sinh-vien", label: "Sinh viên", icon: UserRound },
     { to: "/quan-tri/chuong-trinh-dao-tao", label: "Chương trình đào tạo", icon: LibraryBig },
     { to: "/quan-tri/giang-vien", label: "Giảng viên", icon: UserCog },
+    { to: "/quan-tri/yeu-cau-ho-tro", label: "Yêu cầu hỗ trợ", icon: LifeBuoy },
     { to: "/quan-tri/nhat-ky-hoat-dong", label: "Nhật ký hoạt động", icon: History },
   ],
 };

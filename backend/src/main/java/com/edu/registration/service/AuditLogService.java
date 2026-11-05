@@ -37,7 +37,8 @@ public class AuditLogService {
             "maLop", "monHocId", "hocKyId", "giangVienId", "phong", "thu", "tietBatDau", "soTiet",
             "siSoToiDa", "siSoHienTai", "conLai", "tenHocKy", "namHoc", "dangKyTu", "dangKyDen", "soTinChiToiThieu",
             "soTinChiToiDa", "trangThai", "dangKyId", "lopHocPhanId", "active", "maMon", "tenMon", "soTinChi",
-            "loaiDangKy", "khoaId", "nganhId", "lopId", "monTienQuyetId", "lyDoHuy", "soBanGhi"
+            "loaiDangKy", "khoaId", "nganhId", "lopId", "monTienQuyetId", "lyDoHuy", "soBanGhi",
+            "maPhieu", "loaiYeuCau", "trangThaiCu", "trangThaiMoi", "soTepDinhKem", "diemId", "traoDoiId"
 
     );
 
