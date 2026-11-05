@@ -45,6 +45,28 @@ public final class LecturerDtos {
                               String tieuDe, String moTa, String lienKet) {
     }
 
+    /**
+     * Minimal academic profile of an assigned student (QLSV-67 / TASK-LC-02).
+     * Excludes password, token, personal phone number, and sensitive private contact information.
+     */
+    public record StudentMinimalProfileDto(
+            Long id,
+            String ma,
+            String hoTen,
+            String email,
+            String khoaMa,
+            String khoaTen,
+            String nganhMa,
+            String nganhTen,
+            String khoaNhapHoc,
+            String lopMa,
+            String lopTen,
+            String chuongTrinhKhoaNhapHoc,
+            String chuongTrinhPhienBan,
+            String trangThaiHocTap
+    ) {
+    }
+
     public record LecturerDashboardDto(HocKyTomTatDto hocKy, TongQuanDto tongQuan,
                                        List<LopPhuTrachDto> lopPhuTrach,
                                        List<RegistrationDtos.ThoiKhoaBieuDto> lichDay,

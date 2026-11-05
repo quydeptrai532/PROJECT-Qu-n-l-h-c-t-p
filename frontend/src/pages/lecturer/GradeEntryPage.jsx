@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Calculator, CheckCircle2, ClipboardList, Megaphone, RotateCcw, Save, Send, Users } from "lucide-react";
+import { ArrowLeft, BookOpen, Calculator, CheckCircle2, ClipboardList, Eye, Megaphone, RotateCcw, Save, Search, Send, Users } from "lucide-react";
 import api, { getErrorMessage } from "../../api/client";
 import ExportStudentsButton from "../../components/ExportStudentsButton";
-import { Alert, Badge, EmptyState, PageHeader, Spinner } from "../../components/ui";
+import { Alert, Badge, EmptyState, Modal, PageHeader, Spinner } from "../../components/ui";
 import { formatDiem, lichHoc } from "../../lib/format";
 import { useApi } from "../../lib/useApi";
 
@@ -36,10 +36,28 @@ export default function GradeEntryPage() {
     const [workflowBusy, setWorkflowBusy] = useState(false);
     const [error, setError] = useState("");
     const [message, setMessage] = useState("");
+    const [searchQuery, setSearchQuery] = useState("");
+
+    // Student academic profile modal state (QLSV-67 / TASK-LC-02)
+    const [profileModalOpen, setProfileModalOpen] = useState(false);
+    const [profileLoading, setProfileLoading] = useState(false);
+    const [profileError, setProfileError] = useState("");
+    const [studentProfile, setStudentProfile] = useState(null);
 
     useEffect(() => {
         setRows(sinhVienList || []);
     }, [sinhVienList]);
+
+    const filteredRows = useMemo(() => {
+        if (!searchQuery.trim()) return rows;
+        const q = searchQuery.trim().toLowerCase();
+        return rows.filter(
+            (row) =>
+                (row.maSinhVien && row.maSinhVien.toLowerCase().includes(q)) ||
+                (row.hoTen && row.hoTen.toLowerCase().includes(q)) ||
+                (row.email && row.email.toLowerCase().includes(q))
+        );
+    }, [rows, searchQuery]);
 
     const soDaNhap = useMemo(
         () => rows.filter((row) => row.diemTongKet !== null && row.diemTongKet !== undefined).length,
@@ -110,8 +128,8 @@ export default function GradeEntryPage() {
         setMessage("");
         try {
             await api.post(`/giang-vien/lop-hoc-phan/${id}/${endpoint}`);
-            await reloadLop();
             setMessage(successMessage);
+            await reloadLop();
         } catch (err) {
             setError(getErrorMessage(err));
         } finally {
@@ -119,34 +137,47 @@ export default function GradeEntryPage() {
         }
     };
 
+    const xemHoSoSinhVien = async (sinhVienId) => {
+        setProfileModalOpen(true);
+        setProfileLoading(true);
+        setProfileError("");
+        setStudentProfile(null);
+        try {
+            const { data } = await api.get(`/giang-vien/lop-hoc-phan/${id}/sinh-vien/${sinhVienId}`);
+            setStudentProfile(data);
+        } catch (err) {
+            setProfileError(getErrorMessage(err));
+        } finally {
+            setProfileLoading(false);
+        }
+    };
+
     return (
         <div>
-            <div className="mb-4">
-                <Link to="/lop-cua-toi" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800">
-                    <ArrowLeft size={16} /> Quay lại danh sách lớp
-                </Link>
-            </div>
+            <Link
+                to="/lop-cua-toi"
+                className="mb-4 inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-800"
+            >
+                <ArrowLeft size={14} /> Quay lại danh sách lớp
+            </Link>
 
             <PageHeader
                 icon={ClipboardList}
-                title={loadingLop ? "Nhập điểm" : `${lop?.tenMon} - ${lop?.ma}`}
+                title={lop ? `Nhập điểm: ${lop.ma} - ${lop.tenMon}` : "Nhập điểm lớp học phần"}
                 description={
                     lop
-                        ? `${lichHoc(lop.thu, lop.tietBatDau, lop.soTiet)} · Phòng ${lop.phong} · ${lop.tenHocKy}`
-                        : "Nhập điểm quá trình và điểm cuối kỳ cho sinh viên trong lớp."
+                        ? `${lop.tenHocKy} · Phòng ${lop.phong} · ${lichHoc(lop.thu, lop.tietBatDau, lop.soTiet)} · Sĩ số ${lop.siSoHienTai}/${lop.siSoToiDa}`
+                        : "Quản lý điểm thành phần và quy trình phê duyệt bảng điểm"
                 }
                 actions={
                     lop && (
-                        <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
+                        <div className="flex flex-wrap items-center gap-2">
                             <Badge tone={statusMeta.tone}>{statusMeta.label}</Badge>
-                            <span className="inline-flex items-center gap-2">
-                                <Users size={16} className="text-slate-400" />
-                                {lop.siSoHienTai}/{lop.siSoToiDa} sinh viên
-                            </span>
                             <ExportStudentsButton
-                                lopId={id}
+                                lopId={lop.id}
                                 maLop={lop.ma}
-                                soSinhVien={rows.length}
+                                siSo={rows.length}
+                                disabled={loadingSv || Boolean(svError)}
                                 loading={loadingSv}
                                 onSuccess={(text) => {
                                     setError("");
@@ -220,8 +251,20 @@ export default function GradeEntryPage() {
             )}
 
             <div className="card overflow-hidden">
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-50 px-4 py-3">
-                    <p className="text-sm font-medium text-slate-700">Danh sách sinh viên</p>
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-slate-50 px-4 py-3">
+                    <div className="flex items-center gap-3">
+                        <p className="text-sm font-medium text-slate-700">Danh sách sinh viên</p>
+                        <div className="relative">
+                            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                            <input
+                                type="text"
+                                className="input h-8 w-48 pl-8 text-xs sm:w-64"
+                                placeholder="Lọc theo mã hoặc tên SV..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
+                    </div>
                     <p className="text-xs text-slate-500">
                         Đã nhập điểm: {soDaNhap}/{rows.length} · Điểm tổng kết = 40% quá trình + 60% cuối kỳ
                     </p>
@@ -235,15 +278,20 @@ export default function GradeEntryPage() {
                         title="Lớp chưa có sinh viên đăng ký"
                         description="Sinh viên cần đăng ký lớp trước khi giảng viên nhập điểm."
                     />
+                ) : filteredRows.length === 0 ? (
+                    <div className="p-8 text-center text-sm text-slate-500">
+                        Không tìm thấy sinh viên khớp với từ khóa "{searchQuery}".
+                    </div>
                 ) : (
                     <div className="overflow-x-auto">
-                        <table className="w-full min-w-[860px]">
+                        <table className="w-full min-w-[900px]">
                             <thead className="bg-white">
                             <tr>
                                 <th className="th w-12 text-center">STT</th>
                                 <th className="th">Mã SV</th>
                                 <th className="th">Họ tên</th>
                                 <th className="th">Email</th>
+                                <th className="th w-28 text-center">Hồ sơ</th>
                                 <th className="th w-32 text-center">Quá trình</th>
                                 <th className="th w-32 text-center">Cuối kỳ</th>
                                 <th className="th w-28 text-center">Tổng kết</th>
@@ -251,7 +299,7 @@ export default function GradeEntryPage() {
                             </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                            {rows.map((row, index) => {
+                            {filteredRows.map((row, index) => {
                                 const quaTrinh = getValue(row, "diemQuaTrinh");
                                 const cuoiKy = getValue(row, "diemCuoiKy");
                                 const tongKet = tinhTongKet(quaTrinh, cuoiKy);
@@ -261,9 +309,28 @@ export default function GradeEntryPage() {
                                 return (
                                     <tr key={row.dangKyId} className="hover:bg-slate-50/60">
                                         <td className="td text-center text-slate-500">{index + 1}</td>
-                                        <td className="td font-medium text-slate-900">{row.maSinhVien}</td>
+                                        <td className="td font-medium text-slate-900">
+                                            <button
+                                                type="button"
+                                                onClick={() => xemHoSoSinhVien(row.sinhVienId)}
+                                                className="text-indigo-600 hover:underline font-mono"
+                                                title="Xem hồ sơ học tập tối thiểu"
+                                            >
+                                                {row.maSinhVien}
+                                            </button>
+                                        </td>
                                         <td className="td">{row.hoTen}</td>
                                         <td className="td text-slate-500">{row.email || "—"}</td>
+                                        <td className="td text-center">
+                                            <button
+                                                type="button"
+                                                onClick={() => xemHoSoSinhVien(row.sinhVienId)}
+                                                className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100"
+                                                title="Xem hồ sơ đào tạo"
+                                            >
+                                                <Eye size={13} /> Chi tiết
+                                            </button>
+                                        </td>
                                         <td className="td">
                                             <input
                                                 className="input w-24 text-center"
@@ -317,6 +384,74 @@ export default function GradeEntryPage() {
             <p className="mt-3 text-xs text-slate-500">
                 Điểm hợp lệ từ 0 đến 10. Sinh viên đạt môn khi điểm tổng kết từ 5.0 trở lên. Điểm nháp/chờ duyệt chưa hiển thị cho sinh viên cho tới khi bảng điểm được phê duyệt và công bố.
             </p>
+
+            {/* Modal xem hồ sơ học tập tối thiểu sinh viên (QLSV-67 / TASK-LC-02) */}
+            <Modal
+                open={profileModalOpen}
+                onClose={() => setProfileModalOpen(false)}
+                title={
+                    studentProfile
+                        ? `Hồ sơ học tập: ${studentProfile.hoTen} (${studentProfile.ma})`
+                        : "Hồ sơ học tập sinh viên"
+                }
+                description="Thông tin học vụ tối thiểu phục vụ công tác giảng dạy."
+                size="md"
+            >
+                {profileLoading ? (
+                    <Spinner label="Đang tải hồ sơ đào tạo sinh viên..." />
+                ) : profileError ? (
+                    <Alert tone="error">{profileError}</Alert>
+                ) : studentProfile ? (
+                    <div className="space-y-4">
+                        <dl className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2 text-sm">
+                            <div className="rounded-lg bg-slate-50 p-3">
+                                <dt className="text-xs font-medium text-slate-500">Mã sinh viên</dt>
+                                <dd className="mt-1 font-semibold text-slate-900">{studentProfile.ma}</dd>
+                            </div>
+                            <div className="rounded-lg bg-slate-50 p-3">
+                                <dt className="text-xs font-medium text-slate-500">Họ và tên</dt>
+                                <dd className="mt-1 font-semibold text-slate-900">{studentProfile.hoTen}</dd>
+                            </div>
+                            <div className="rounded-lg bg-slate-50 p-3">
+                                <dt className="text-xs font-medium text-slate-500">Email học tập</dt>
+                                <dd className="mt-1 text-slate-700">{studentProfile.email || "—"}</dd>
+                            </div>
+                            <div className="rounded-lg bg-slate-50 p-3">
+                                <dt className="text-xs font-medium text-slate-500">Khoa</dt>
+                                <dd className="mt-1 text-slate-700">{studentProfile.khoaMa} · {studentProfile.khoaTen}</dd>
+                            </div>
+                            <div className="rounded-lg bg-slate-50 p-3">
+                                <dt className="text-xs font-medium text-slate-500">Ngành học</dt>
+                                <dd className="mt-1 text-slate-700">{studentProfile.nganhMa} · {studentProfile.nganhTen}</dd>
+                            </div>
+                            <div className="rounded-lg bg-slate-50 p-3">
+                                <dt className="text-xs font-medium text-slate-500">Khóa nhập học</dt>
+                                <dd className="mt-1 text-slate-700">{studentProfile.khoaNhapHoc}</dd>
+                            </div>
+                            <div className="rounded-lg bg-slate-50 p-3">
+                                <dt className="text-xs font-medium text-slate-500">Lớp hành chính</dt>
+                                <dd className="mt-1 text-slate-700">{studentProfile.lopMa} · {studentProfile.lopTen}</dd>
+                            </div>
+                            <div className="rounded-lg bg-slate-50 p-3">
+                                <dt className="text-xs font-medium text-slate-500">Chương trình đào tạo</dt>
+                                <dd className="mt-1 text-slate-700">
+                                    {studentProfile.chuongTrinhKhoaNhapHoc !== "Chưa cập nhật"
+                                        ? `Khóa ${studentProfile.chuongTrinhKhoaNhapHoc} · Phiên bản ${studentProfile.chuongTrinhPhienBan}`
+                                        : "Chưa cập nhật"}
+                                </dd>
+                            </div>
+                            <div className="rounded-lg bg-slate-50 p-3 sm:col-span-2">
+                                <dt className="text-xs font-medium text-slate-500">Trạng thái học tập</dt>
+                                <dd className="mt-1 text-slate-700 font-medium">{studentProfile.trangThaiHocTap}</dd>
+                            </div>
+                        </dl>
+
+                        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-500">
+                            Chính sách bảo mật: Hồ sơ chỉ hiển thị các trường dữ liệu tối thiểu phục vụ giảng dạy. Tuyệt đối không hiển thị thông tin riêng tư như số điện thoại cá nhân, mật khẩu hoặc CCCD.
+                        </div>
+                    </div>
+                ) : null}
+            </Modal>
         </div>
     );
 }

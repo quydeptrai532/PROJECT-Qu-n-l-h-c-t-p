@@ -48,6 +48,7 @@ frontend/
     lib/          # format, hook useApi
     pages/        # student / lecturer / admin / RoleDashboard
 docs/
+  LECTURER_STUDENT_SCOPE.md # quy định phạm vi xem thông tin sinh viên cho giảng viên (QLSV-67)
   TEST_PLAN.md    # test case theo FR/NFR và kết quả
   COURSE_PLANNER_DEMO.md # hướng dẫn demo Course Planner
   NOTIFICATION_DEMO.md # hướng dẫn trung tâm thông báo và cơ chế idempotency
@@ -158,7 +159,11 @@ Dữ liệu mẫu gồm 2 khoa, 3 ngành, 3 lớp hành chính, 8 môn học (c�
 | GET | `/api/giang-vien/me/dashboard?hocKyId=` | Dashboard giảng dạy theo học kỳ (thống kê lớp phụ trách, sĩ số, lịch dạy, việc cần xử lý như bảng điểm nháp/chờ duyệt); tự động giới hạn theo giảng viên hiện tại |
 | GET | `/api/giang-vien/me/lop-hoc-phan` | Lớp giảng viên phụ trách |
 | GET | `/api/giang-vien/me/thoi-khoa-bieu` | Thời khóa biểu giảng dạy |
-| GET | `/api/giang-vien/lop-hoc-phan/{id}/sinh-vien` | Danh sách sinh viên của lớp |
+| GET | `/api/giang-vien/lop-hoc-phan/{id}/sinh-vien` | Danh sách sinh viên của lớp phụ trách (hỗ trợ tìm kiếm `tuKhoa`) |
+| GET | `/api/giang-vien/lop-hoc-phan/{id}/sinh-vien/csv` | Xuất danh sách sinh viên lớp phụ trách CSV |
+| GET | `/api/giang-vien/lop-hoc-phan/{lopId}/sinh-vien/{studentId}` | Hồ sơ học tập tối thiểu của sinh viên trong lớp phụ trách |
+| GET | `/api/giang-vien/sinh-vien?lopHocPhanId=&tuKhoa=` | Tìm kiếm sinh viên trong phạm vi lớp giảng viên phụ trách |
+| GET | `/api/giang-vien/sinh-vien/{studentId}` | Hồ sơ học tập tối thiểu sinh viên được phân công |
 | PUT | `/api/diem/{dangKyId}` | Nhập/cập nhật điểm nháp |
 | POST | `/api/giang-vien/lop-hoc-phan/{id}/gui-duyet-diem`, `/phe-duyet-diem`, `/cong-bo-diem`, `/thu-hoi-cong-bo-diem` | Gửi duyệt, phê duyệt, công bố hoặc thu hồi công bố bảng điểm lớp học phần |
 | CRUD | `/api/admin/khoa`, `/nganh`, `/lop-hanh-chinh`, `/mon-hoc`, `/hoc-ky` | Quản trị danh mục |

@@ -67,7 +67,7 @@ public class LopSinhVienExportService {
                     .orElseThrow(() -> ApiException.notFound("Không tìm thấy hồ sơ giảng viên"));
             LopHocPhan lop = lopHocPhanRepository.findWithDetailsById(lopHocPhanId)
                     .orElseThrow(() -> ApiException.notFound("Lớp học phần không tồn tại"));
-            if (!lop.getGiangVien().getId().equals(giangVien.getId())) {
+            if (lop.getGiangVien() == null || !lop.getGiangVien().getId().equals(giangVien.getId())) {
                 throw ApiException.forbidden("Bạn không phụ trách lớp học phần này");
             }
 
