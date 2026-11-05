@@ -45,6 +45,13 @@ public class AdminLopHocPhanController {
         return lopHocPhanService.sua(id, request);
     }
 
+    @PostMapping("/lop-hoc-phan/{id}/huy")
+    public LopHocPhanDtos.HuyLopHocPhanResponse huy(
+            @PathVariable Long id,
+            @Valid @RequestBody(required = false) LopHocPhanDtos.HuyLopHocPhanRequest request) {
+        return lopHocPhanService.huyLopHocPhan(id, request != null ? request.lyDo() : null);
+    }
+
     @DeleteMapping("/lop-hoc-phan/{id}")
     public void xoa(@PathVariable Long id) {
         lopHocPhanService.xoa(id);

@@ -37,6 +37,7 @@ export default function RetakeRegistrationPage() {
       await api.post("/dang-ky", { lopHocPhanId: item.lopHocPhanId, loaiDangKy: item.loaiDangKy });
       setMessage(`Đã đăng ký lớp ${item.maLop} · ${item.tenMon}. Điểm các lần học cũ vẫn được lưu riêng.`);
       setItems((current) => current.filter((candidate) => candidate.monHocId !== item.monHocId));
+      window.dispatchEvent(new Event("notifications:updated"));
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {

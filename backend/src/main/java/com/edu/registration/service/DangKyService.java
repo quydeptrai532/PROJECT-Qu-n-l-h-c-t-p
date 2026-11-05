@@ -177,7 +177,7 @@ public class DangKyService {
 
         DangKyHocPhan daLuu = dangKyHocPhanRepository.save(dangKy);
         ghiLichSu(sinhVien, lop, daLuu, TrangThaiDangKy.DA_DANG_KY, thoiDiemDangKy, thoiDiemDangKy, null);
-        thongBaoService.registrationChanged(daLuu, true);
+        notifyRegistrationChangedSafely(daLuu, true, thoiDiemDangKy, null);
         Map<String, Object> before = Map.of("maLop", lop.getMa(), "siSoToiDa", lop.getSiSoToiDa(),
                 "siSoHienTai", lop.getSiSoHienTai() - 1);
         audit.changes(before, Map.of("maLop", lop.getMa(), "siSoToiDa", lop.getSiSoToiDa(),
@@ -220,22 +220,33 @@ public class DangKyService {
                 "maLop", lop.getMa(), "trangThai", dangKy.getTrangThai().name(),
                 "siSoHienTai", lop.getSiSoHienTai());
         LocalDateTime thoiDiemHuy = LocalDateTime.now();
+        String normalizedReason = lyDoHuy == null || lyDoHuy.isBlank() ? null : lyDoHuy.trim();
         dangKy.setTrangThai(TrangThaiDangKy.DA_HUY);
         lop.setSiSoHienTai(Math.max(0, lop.getSiSoHienTai() - 1));
         ghiLichSu(sinhVien, lop, dangKy, TrangThaiDangKy.DA_HUY, dangKy.getThoiGianDangKy(), thoiDiemHuy,
-                lyDoHuy == null || lyDoHuy.isBlank() ? null : lyDoHuy.trim());
-        thongBaoService.registrationChanged(dangKy, false);
+                normalizedReason);
+        notifyRegistrationChangedSafely(dangKy, false, thoiDiemHuy, normalizedReason);
         Map<String, Object> after = new java.util.LinkedHashMap<>();
         after.put("dangKyId", dangKy.getId());
         after.put("lopHocPhanId", lop.getId());
         after.put("maLop", lop.getMa());
         after.put("trangThai", dangKy.getTrangThai().name());
         after.put("siSoHienTai", lop.getSiSoHienTai());
-        if (lyDoHuy != null && !lyDoHuy.isBlank()) after.put("lyDoHuy", lyDoHuy.trim());
+        if (normalizedReason != null) after.put("lyDoHuy", normalizedReason);
         audit.changes(before, after);
         log.info("Sinh viên {} hủy đăng ký lớp {}", sinhVien.getMa(), lop.getMa());
         return null;
         });
+    }
+
+    private void notifyRegistrationChangedSafely(DangKyHocPhan registration, boolean registered,
+                                                 LocalDateTime occurredAt, String reason) {
+        try {
+            thongBaoService.registrationChanged(registration, registered, occurredAt, reason);
+        } catch (RuntimeException ex) {
+            log.error("Không thể lập lịch thông báo cho đăng ký id={} (registered={}); sẽ đồng bộ bù từ lịch sử: {}",
+                    registration != null ? registration.getId() : null, registered, ex.getClass().getSimpleName());
+        }
     }
 
     @Transactional(readOnly = true)

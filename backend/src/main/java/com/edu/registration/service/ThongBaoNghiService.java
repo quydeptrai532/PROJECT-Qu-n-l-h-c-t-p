@@ -13,6 +13,7 @@ import com.edu.registration.repository.LopHocPhanRepository;
 import com.edu.registration.repository.SinhVienRepository;
 import com.edu.registration.repository.ThongBaoNghiRepository;
 import com.edu.registration.security.CurrentUser;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,18 +31,31 @@ public class ThongBaoNghiService {
     private final SinhVienRepository sinhVienRepository;
     private final HocKyService hocKyService;
     private final CurrentUser currentUser;
+    private final ThongBaoService thongBaoService;
 
     public ThongBaoNghiService(ThongBaoNghiRepository thongBaoNghiRepository,
                                LopHocPhanRepository lopHocPhanRepository,
                                GiangVienRepository giangVienRepository,
                                SinhVienRepository sinhVienRepository,
                                HocKyService hocKyService, CurrentUser currentUser) {
+        this(thongBaoNghiRepository, lopHocPhanRepository, giangVienRepository, sinhVienRepository,
+                hocKyService, currentUser, null);
+    }
+
+    @Autowired
+    public ThongBaoNghiService(ThongBaoNghiRepository thongBaoNghiRepository,
+                               LopHocPhanRepository lopHocPhanRepository,
+                               GiangVienRepository giangVienRepository,
+                               SinhVienRepository sinhVienRepository,
+                               HocKyService hocKyService, CurrentUser currentUser,
+                               ThongBaoService thongBaoService) {
         this.thongBaoNghiRepository = thongBaoNghiRepository;
         this.lopHocPhanRepository = lopHocPhanRepository;
         this.giangVienRepository = giangVienRepository;
         this.sinhVienRepository = sinhVienRepository;
         this.hocKyService = hocKyService;
         this.currentUser = currentUser;
+        this.thongBaoService = thongBaoService;
     }
 
     @Transactional(readOnly = true)
@@ -94,7 +108,11 @@ public class ThongBaoNghiService {
         thongBao.setNgayNghi(ngayNghi);
         thongBao.setLyDo(request.lyDo() == null ? null : request.lyDo().trim());
         thongBao.setThoiGianTao(LocalDateTime.now());
-        return map(thongBaoNghiRepository.save(thongBao));
+        ThongBaoNghi saved = thongBaoNghiRepository.save(thongBao);
+        if (thongBaoService != null) {
+            thongBaoService.classSessionCancelled(saved);
+        }
+        return map(saved);
     }
 
     public void xoa(Long id) {
