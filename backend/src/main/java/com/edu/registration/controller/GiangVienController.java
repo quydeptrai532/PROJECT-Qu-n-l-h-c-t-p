@@ -1,8 +1,10 @@
 package com.edu.registration.controller;
 
+import com.edu.registration.dto.LecturerDtos;
 import com.edu.registration.dto.LopHocPhanDtos;
 import com.edu.registration.dto.RegistrationDtos;
 import com.edu.registration.service.DiemService;
+import com.edu.registration.service.GiangVienDashboardService;
 import com.edu.registration.service.LopHocPhanService;
 import com.edu.registration.service.LopSinhVienExportService;
 import com.edu.registration.service.ThongBaoNghiService;
@@ -36,13 +38,26 @@ public class GiangVienController {
     private final DiemService diemService;
     private final ThongBaoNghiService thongBaoNghiService;
     private final LopSinhVienExportService lopSinhVienExportService;
+    private final GiangVienDashboardService giangVienDashboardService;
 
     public GiangVienController(LopHocPhanService lopHocPhanService, DiemService diemService,
-                               ThongBaoNghiService thongBaoNghiService, LopSinhVienExportService lopSinhVienExportService) {
+                               ThongBaoNghiService thongBaoNghiService, LopSinhVienExportService lopSinhVienExportService,
+                               GiangVienDashboardService giangVienDashboardService) {
         this.lopHocPhanService = lopHocPhanService;
         this.diemService = diemService;
         this.thongBaoNghiService = thongBaoNghiService;
         this.lopSinhVienExportService = lopSinhVienExportService;
+        this.giangVienDashboardService = giangVienDashboardService;
+    }
+
+    @GetMapping("/giang-vien/me/ho-so")
+    public LecturerDtos.LecturerProfileDto hoSoCuaToi() {
+        return giangVienDashboardService.hoSo();
+    }
+
+    @GetMapping("/giang-vien/me/dashboard")
+    public LecturerDtos.LecturerDashboardDto dashboard(@RequestParam(required = false) Long hocKyId) {
+        return giangVienDashboardService.dashboard(hocKyId);
     }
 
     @GetMapping("/giang-vien/me/lop-hoc-phan")
