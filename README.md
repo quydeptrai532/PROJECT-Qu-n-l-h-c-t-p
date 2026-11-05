@@ -154,6 +154,8 @@ Dữ liệu mẫu gồm 2 khoa, 3 ngành, 3 lớp hành chính, 8 môn học (c�
 | GET | `/api/sinh-vien/me/diem` | Điểm, GPA học kỳ và tích lũy |
 | GET | `/api/sinh-vien/me/lich-su-hoc-tap?hocKyId=&trangThai=` | Lịch sử học tập theo học kỳ, môn chưa đạt và số lần học của sinh viên đang đăng nhập |
 | GET | `/api/sinh-vien/me/ho-so-dao-tao` | Hồ sơ học vụ của sinh viên đăng nhập (khoa, ngành, khóa, lớp, chương trình, trạng thái); trường chưa được gán trả `Chưa cập nhật`, không nhận ID sinh viên |
+| GET | `/api/giang-vien/me/ho-so` | Hồ sơ cá nhân của giảng viên đăng nhập (mã, họ tên, email, sđt, khoa, trạng thái tài khoản, danh sách trường được phép tự sửa); không nhận ID từ client |
+| GET | `/api/giang-vien/me/dashboard?hocKyId=` | Dashboard giảng dạy theo học kỳ (thống kê lớp phụ trách, sĩ số, lịch dạy, việc cần xử lý như bảng điểm nháp/chờ duyệt); tự động giới hạn theo giảng viên hiện tại |
 | GET | `/api/giang-vien/me/lop-hoc-phan` | Lớp giảng viên phụ trách |
 | GET | `/api/giang-vien/me/thoi-khoa-bieu` | Thời khóa biểu giảng dạy |
 | GET | `/api/giang-vien/lop-hoc-phan/{id}/sinh-vien` | Danh sách sinh viên của lớp |

@@ -18,6 +18,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class AuthService {
 
+    /**
+     * Fields a student/lecturer may change on their own profile via {@code PUT /api/auth/me}.
+     * Role, user code, faculty, class assignments and account status remain admin-managed.
+     */
+    public static final java.util.List<String> SELF_EDITABLE_PROFILE_FIELDS =
+            java.util.List.of("hoTen", "email", "soDienThoai");
+
     private final UserRepository userRepository;
     private final SinhVienRepository sinhVienRepository;
     private final GiangVienRepository giangVienRepository;

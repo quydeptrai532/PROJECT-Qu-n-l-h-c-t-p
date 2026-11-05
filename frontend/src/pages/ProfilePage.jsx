@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BookOpen, KeyRound, Mail, Phone, Save, UserRound } from "lucide-react";
+import { BookOpen, Building2, KeyRound, Mail, Phone, Save, UserRound } from "lucide-react";
 import api, { getErrorMessage } from "../api/client";
 import { Alert, Badge, Field, PageHeader, Spinner } from "../components/ui";
 import { ROLE_LABEL, useAuth } from "../context/AuthContext";
@@ -109,6 +109,7 @@ export default function ProfilePage() {
 
         <div className="space-y-6 lg:col-span-2">
           {data.role === "SINH_VIEN" && <StudentAcademicProfile />}
+          {data.role === "GIANG_VIEN" && <LecturerFacultyProfile />}
           <form className="card p-5" onSubmit={saveProfile}>
             <div className="mb-4 flex items-center gap-2">
               <UserRound size={18} className="text-indigo-600" />
@@ -235,6 +236,37 @@ function StudentAcademicProfile() {
         </dl>
       )}
       <p className="mt-4 text-xs text-slate-500">Thông tin học vụ do phòng đào tạo quản lý và chỉ xem được.</p>
+    </section>
+  );
+}
+
+function LecturerFacultyProfile() {
+  const { data, loading, error } = useApi("/giang-vien/me/ho-so");
+
+  return (
+    <section className="card p-5" aria-labelledby="lecturer-profile-title">
+      <div className="mb-4 flex items-center gap-2">
+        <Building2 size={18} className="text-indigo-600" />
+        <h2 id="lecturer-profile-title" className="text-sm font-semibold text-slate-800">Thông tin đơn vị & quản trị</h2>
+      </div>
+      {loading ? (
+        <Spinner label="Đang tải thông tin giảng viên..." />
+      ) : error ? (
+        <Alert tone="error">{error}</Alert>
+      ) : (
+        <dl className="grid gap-x-6 gap-y-4 text-sm sm:grid-cols-2">
+          <AcademicField label="Mã giảng viên" value={data.ma} />
+          <AcademicField label="Khoa phụ trách" value={`${data.khoaMa} · ${data.khoaTen}`} />
+          <AcademicField
+            label="Trạng thái tài khoản"
+            value={data.taiKhoanHoatDong ? "Đang hoạt động" : "Đã khóa"}
+          />
+          <AcademicField label="Vai trò hệ thống" value="Giảng viên" />
+        </dl>
+      )}
+      <p className="mt-4 text-xs text-slate-500">
+        Mã giảng viên, đơn vị khoa và phân công giảng dạy do phòng đào tạo quản lý và chỉ xem được.
+      </p>
     </section>
   );
 }

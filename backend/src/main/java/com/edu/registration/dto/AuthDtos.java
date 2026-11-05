@@ -21,10 +21,16 @@ public final class AuthDtos {
                              String email, String soDienThoai) {
     }
 
+    /**
+     * Self-service profile update. Only these fields are accepted (see
+     * {@code AuthService.SELF_EDITABLE_PROFILE_FIELDS}); unknown properties such as role or code are ignored.
+     */
     public record UpdateProfileRequest(
-            @NotBlank(message = "Họ tên không được để trống") String hoTen,
-            @Email(message = "Email không hợp lệ") String email,
-            String soDienThoai) {
+            @NotBlank(message = "Họ tên không được để trống")
+            @Size(max = 150, message = "Họ tên tối đa 150 ký tự") String hoTen,
+            @Email(message = "Email không hợp lệ")
+            @Size(max = 150, message = "Email tối đa 150 ký tự") String email,
+            @Size(max = 20, message = "Số điện thoại tối đa 20 ký tự") String soDienThoai) {
     }
 
     public record ChangePasswordRequest(

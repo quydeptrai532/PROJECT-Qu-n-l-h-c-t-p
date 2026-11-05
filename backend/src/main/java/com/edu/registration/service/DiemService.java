@@ -520,12 +520,17 @@ public class DiemService {
                 continue;
             }
             Diem diem = diemMap.get(dk.getId());
-            if (diem != null && diem.getDiemQuaTrinh() != null
-                    && diem.getDiemCuoiKy() != null && diem.getDiemTongKet() != null) {
+            if (laDiemDayDu(diem)) {
                 eligible.add(dk);
             }
         }
         return eligible;
+    }
+
+    /** A grade row counts as complete when process, final and total scores are all present. */
+    public static boolean laDiemDayDu(Diem diem) {
+        return diem != null && diem.getDiemQuaTrinh() != null
+                && diem.getDiemCuoiKy() != null && diem.getDiemTongKet() != null;
     }
 
     private int demSinhVienDuDieuKien(List<DangKyHocPhan> activeRegistrations, Map<Long, Diem> diemMap) {
