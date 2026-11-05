@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Award, BookOpen, GraduationCap, ScrollText, TrendingUp } from "lucide-react";
 import {
@@ -11,6 +11,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import ExportTranscriptPdfButton from "../../components/ExportTranscriptPdfButton";
 import { Alert, Badge, EmptyState, PageHeader, StatCard, Spinner } from "../../components/ui";
 import { formatDiem } from "../../lib/format";
 import { useApi } from "../../lib/useApi";
@@ -25,6 +26,8 @@ function ketQuaBadge(diemTongKet) {
 
 export default function GradesPage() {
   const { data, loading, error } = useApi("/sinh-vien/me/diem");
+  const [exportSuccess, setExportSuccess] = useState("");
+  const [exportError, setExportError] = useState("");
 
   const groups = useMemo(() => {
     if (!data?.items) return [];
@@ -70,13 +73,29 @@ export default function GradesPage() {
         title="Điểm & kết quả học tập"
         description="Điểm thành phần, điểm tổng kết, GPA học kỳ và điểm tích lũy."
         actions={
-          <Link to="/lich-su-hoc-tap" className="btn-secondary">
-            <ScrollText size={16} />
-            Lịch sử học tập & môn chưa đạt
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link to="/lich-su-hoc-tap" className="btn-secondary">
+              <ScrollText size={16} />
+              Lịch sử học tập & môn chưa đạt
+            </Link>
+            <ExportTranscriptPdfButton
+              onSuccess={setExportSuccess}
+              onError={setExportError}
+            />
+          </div>
         }
       />
 
+      {exportSuccess && (
+        <div className="mb-4">
+          <Alert tone="success">{exportSuccess}</Alert>
+        </div>
+      )}
+      {exportError && (
+        <div className="mb-4">
+          <Alert tone="error">{exportError}</Alert>
+        </div>
+      )}
 
       <div className="mb-4"><Alert tone="warning">Quy chế thay điểm và tính GPA/tín chỉ khi học lại, học cải thiện chưa được cấu hình. Các điểm từng lần học được lưu riêng; GPA đang hiển thị chưa phải kết quả chính thức cho môn có nhiều lần học.</Alert></div>
 

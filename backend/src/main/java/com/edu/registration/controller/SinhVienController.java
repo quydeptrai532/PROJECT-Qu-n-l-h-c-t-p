@@ -10,7 +10,17 @@ import com.edu.registration.service.ThongBaoNghiService;
 import com.edu.registration.service.StudentAcademicProfileService;
 import com.edu.registration.service.SinhVienDashboardService;
 import com.edu.registration.service.HocLaiCaiThienService;
+import com.edu.registration.service.StudentTranscriptPdfService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Size;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.http.CacheControl;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,9 +30,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.data.domain.Page;
-import jakarta.validation.constraints.Size;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @RestController
@@ -36,12 +45,24 @@ public class SinhVienController {
     private final StudentAcademicProfileService studentAcademicProfileService;
     private final SinhVienDashboardService sinhVienDashboardService;
     private final HocLaiCaiThienService hocLaiCaiThienService;
+    private final StudentTranscriptPdfService studentTranscriptPdfService;
 
     public SinhVienController(LopHocPhanService lopHocPhanService, DangKyService dangKyService,
                               DiemService diemService, ThongBaoNghiService thongBaoNghiService,
                               StudentAcademicProfileService studentAcademicProfileService,
                               SinhVienDashboardService sinhVienDashboardService,
                               HocLaiCaiThienService hocLaiCaiThienService) {
+        this(lopHocPhanService, dangKyService, diemService, thongBaoNghiService,
+                studentAcademicProfileService, sinhVienDashboardService, hocLaiCaiThienService, null);
+    }
+
+    @Autowired
+    public SinhVienController(LopHocPhanService lopHocPhanService, DangKyService dangKyService,
+                              DiemService diemService, ThongBaoNghiService thongBaoNghiService,
+                              StudentAcademicProfileService studentAcademicProfileService,
+                              SinhVienDashboardService sinhVienDashboardService,
+                              HocLaiCaiThienService hocLaiCaiThienService,
+                              StudentTranscriptPdfService studentTranscriptPdfService) {
         this.lopHocPhanService = lopHocPhanService;
         this.dangKyService = dangKyService;
         this.diemService = diemService;
@@ -49,6 +70,7 @@ public class SinhVienController {
         this.studentAcademicProfileService = studentAcademicProfileService;
         this.sinhVienDashboardService = sinhVienDashboardService;
         this.hocLaiCaiThienService = hocLaiCaiThienService;
+        this.studentTranscriptPdfService = studentTranscriptPdfService;
     }
 
     @GetMapping("/lop-hoc-phan")
@@ -122,6 +144,18 @@ public class SinhVienController {
             @RequestParam(required = false) Long hocKyId,
             @RequestParam(required = false) String trangThai) {
         return diemService.lichSuHocTap(hocKyId, trangThai);
+    }
+
+    @GetMapping("/sinh-vien/me/bang-diem/pdf")
+    @PreAuthorize("hasRole('SINH_VIEN')")
+    public ResponseEntity<byte[]> xuatBangDiemPdf(@RequestParam(required = false) Long hocKyId) {
+        StudentTranscriptPdfService.PdfFile tep = studentTranscriptPdfService.xuatBangDiemPdf(hocKyId);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDisposition(ContentDisposition.attachment()
+                .filename(tep.tenTep(), StandardCharsets.UTF_8).build());
+        headers.setCacheControl(CacheControl.noStore());
+        return new ResponseEntity<>(tep.noiDung(), headers, HttpStatus.OK);
     }
 
     @GetMapping("/sinh-vien/me/ho-so-dao-tao")

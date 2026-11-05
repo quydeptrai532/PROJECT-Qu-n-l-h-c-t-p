@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { readFile } from "node:fs/promises";
 import { login } from "./helpers";
 
 async function goToMyCourses(page) {
@@ -56,7 +57,7 @@ test.describe("Sinh viên", () => {
     await expect(page.locator("tr").filter({ hasText: "INT201.01" })).toHaveCount(0);
   });
 
-  test("xem thời khóa biểu và kết quả học tập", async ({ page }) => {
+  test("xem thời khóa biểu, kết quả học tập và xuất bảng điểm PDF", async ({ page }) => {
     await login(page, "sv02", "123456");
     await page.goto("/thoi-khoa-bieu");
     await expect(page.getByRole("main").getByRole("heading", { name: "Thời khóa biểu" })).toBeVisible();
@@ -68,6 +69,40 @@ test.describe("Sinh viên", () => {
     await expect(page.getByRole("heading", { name: "Điểm & kết quả học tập" })).toBeVisible();
     await expect(page.getByText("GPA hệ 10")).toBeVisible();
     await expect(page.getByText("Xu hướng GPA")).toBeVisible();
+
+    const [download] = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByRole("button", { name: "Xuất bảng điểm PDF" }).click(),
+    ]);
+    expect(download.suggestedFilename()).toBe("bang-diem-SV002.pdf");
+    const buffer = await readFile(await download.path());
+    expect(buffer.subarray(0, 5).toString("ascii")).toBe("%PDF-");
+    expect(buffer.length).toBeGreaterThan(1000);
+    await expect(page.getByText("Đã tải xuống bảng điểm PDF (bang-diem-SV002.pdf)")).toBeVisible();
+
+    // Không thể mạo danh sinh viên khác qua query hoặc path
+    const tokenSv02 = await page.evaluate(() => localStorage.getItem("token"));
+    const tamperQuery = await page.request.get(
+      "/api/sinh-vien/me/bang-diem/pdf?studentId=1&sinhVienId=1&maSinhVien=SV001",
+      { headers: { Authorization: `Bearer ${tokenSv02}` } }
+    );
+    expect(tamperQuery.status()).toBe(200);
+    expect(tamperQuery.headers()["content-disposition"]).toContain("bang-diem-SV002.pdf");
+    expect(tamperQuery.headers()["content-disposition"]).not.toContain("SV001");
+
+    const tamperPath = await page.request.get("/api/sinh-vien/1/bang-diem/pdf", {
+      headers: { Authorization: `Bearer ${tokenSv02}` },
+    });
+    expect(tamperPath.status()).not.toBe(200);
+
+    // Sinh viên chưa có điểm công bố (sv04) nhận thông báo rõ ràng, không tải file hỏng
+    await page.evaluate(() => localStorage.clear());
+    await login(page, "sv04", "123456");
+    await page.goto("/diem");
+    await page.getByRole("button", { name: "Xuất bảng điểm PDF" }).click();
+    await expect(
+      page.getByText("Chưa có kết quả học tập đã công bố để xuất bảng điểm PDF")
+    ).toBeVisible();
   });
 
   test("tra cứu lịch sử học tập, môn chưa đạt và lọc theo trạng thái", async ({ page }) => {

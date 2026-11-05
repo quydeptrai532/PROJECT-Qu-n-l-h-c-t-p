@@ -346,6 +346,10 @@ public class DiemService {
         return new TongHop(tongTinChi, tinChiCoDiem, gpa10, gpa4, tinChiTichLuy);
     }
 
+    public double quyDoiHe4(double diem10) {
+        return quyDoi4(diem10);
+    }
+
     private double quyDoi4(double diem10) {
         if (diem10 >= 8.5) return 4.0;
         if (diem10 >= 8.0) return 3.5;

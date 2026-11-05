@@ -1,4 +1,4 @@
-# Hệ thống Quản lý đào tạo và Đăng ký học phần
+﻿# Hệ thống Quản lý đào tạo và Đăng ký học phần
 
 Đồ án xây dựng theo tài liệu SRS `SRS_QuanLyDaoTao_DangKyHocPhan`: quản lý chương trình, môn học, lớp học phần; sinh viên đăng ký/hủy học phần trực tuyến; giảng viên nhập điểm; phòng đào tạo thống kê và xuất báo cáo.
 
@@ -14,7 +14,7 @@
 
 ## Chức năng theo vai trò
 
-- **SINH_VIEN**: dashboard tổng quan (tín chỉ, GPA, lịch hôm nay, biểu đồ GPA), cập nhật họ tên/email/SĐT, đổi mật khẩu, lập kế hoạch học tập bằng giỏ lớp và thời khóa biểu dự kiến, xác nhận đăng ký/hủy học phần, xem thời khóa biểu, điểm/GPA, lịch sử học tập & môn chưa đạt và trung tâm thông báo.
+- **SINH_VIEN**: dashboard tổng quan (tín chỉ, GPA, lịch hôm nay, biểu đồ GPA), cập nhật họ tên/email/SĐT, đổi mật khẩu, lập kế hoạch học tập bằng giỏ lớp và thời khóa biểu dự kiến, xác nhận đăng ký/hủy học phần, xem thời khóa biểu, điểm/GPA, lịch sử học tập & môn chưa đạt, xuất bảng điểm cá nhân PDF và trung tâm thông báo.
 - **GIANG_VIEN**: dashboard tổng quan (lớp phụ trách, sĩ số, biểu đồ lấp đầy, lịch dạy hôm nay), thời khóa biểu giảng dạy, danh sách sinh viên, nhập/cập nhật điểm quá trình và cuối kỳ, cùng trung tâm thông báo cho lớp phụ trách.
 - **QUAN_TRI**: quản lý khoa/ngành/lớp hành chính/môn học/học kỳ, cấu hình đợt đăng ký, mở lớp học phần, quản lý sinh viên & giảng viên, khóa/mở tài khoản, nhập CSV, dashboard thống kê có biểu đồ và xuất CSV.
 
