@@ -1,6 +1,7 @@
 package com.edu.registration.repository;
 
 import com.edu.registration.entity.DangKyHocPhan;
+import com.edu.registration.entity.SinhVien;
 import com.edu.registration.entity.TrangThaiDangKy;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -83,4 +84,42 @@ public interface DangKyHocPhanRepository extends JpaRepository<DangKyHocPhan, Lo
                         @Param("trangThai") TrangThaiDangKy trangThai);
 
     long countByTrangThai(TrangThaiDangKy trangThai);
+
+    @Query("""
+            select count(d) > 0 from DangKyHocPhan d
+            where d.sinhVien.id = :sinhVienId
+              and d.lopHocPhan.giangVien.id = :giangVienId
+              and d.trangThai = :trangThai
+            """)
+    boolean existsBySinhVienIdAndGiangVienIdAndTrangThai(@Param("sinhVienId") Long sinhVienId,
+                                                         @Param("giangVienId") Long giangVienId,
+                                                         @Param("trangThai") TrangThaiDangKy trangThai);
+
+    @Query("""
+            select count(d) > 0 from DangKyHocPhan d
+            where d.sinhVien.id = :sinhVienId
+              and d.lopHocPhan.id = :lopHocPhanId
+              and d.lopHocPhan.giangVien.id = :giangVienId
+              and d.trangThai = :trangThai
+            """)
+    boolean existsBySinhVienIdAndLopHocPhanIdAndGiangVienIdAndTrangThai(@Param("sinhVienId") Long sinhVienId,
+                                                                        @Param("lopHocPhanId") Long lopHocPhanId,
+                                                                        @Param("giangVienId") Long giangVienId,
+                                                                        @Param("trangThai") TrangThaiDangKy trangThai);
+
+    @Query("""
+            select distinct s from DangKyHocPhan d
+            join d.sinhVien s
+            left join fetch s.khoa
+            left join fetch s.nganh
+            left join fetch s.lopHanhChinh
+            left join fetch s.chuongTrinh
+            where d.lopHocPhan.giangVien.id = :giangVienId
+              and d.trangThai = :trangThai
+              and (:lopHocPhanId is null or d.lopHocPhan.id = :lopHocPhanId)
+            order by s.ma
+            """)
+    List<SinhVien> findAssignedStudentsOfLecturer(@Param("giangVienId") Long giangVienId,
+                                                 @Param("lopHocPhanId") Long lopHocPhanId,
+                                                 @Param("trangThai") TrangThaiDangKy trangThai);
 }

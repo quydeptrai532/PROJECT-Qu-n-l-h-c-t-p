@@ -91,11 +91,27 @@ public class DiemService {
 
     @Transactional(readOnly = true)
     public List<RegistrationDtos.DiemDto> danhSachDiemLop(Long lopHocPhanId) {
+        return danhSachDiemLop(lopHocPhanId, null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<RegistrationDtos.DiemDto> danhSachDiemLop(Long lopHocPhanId, String tuKhoa) {
         LopHocPhan lop = lopHocPhanRepository.findWithDetailsById(lopHocPhanId)
                 .orElseThrow(() -> ApiException.notFound("Lớp học phần không tồn tại"));
         kiemTraQuyenQuanLyBangDiem(lop);
         List<DangKyHocPhan> danhSach =
                 dangKyHocPhanRepository.findByLopHocPhan(lopHocPhanId, TrangThaiDangKy.DA_DANG_KY);
+        if (tuKhoa != null && !tuKhoa.isBlank()) {
+            String kw = tuKhoa.trim().toLowerCase(Locale.ROOT);
+            danhSach = danhSach.stream()
+                    .filter(dk -> {
+                        SinhVien sv = dk.getSinhVien();
+                        return (sv.getMa() != null && sv.getMa().toLowerCase(Locale.ROOT).contains(kw))
+                                || (sv.getHoTen() != null && sv.getHoTen().toLowerCase(Locale.ROOT).contains(kw))
+                                || (sv.getEmail() != null && sv.getEmail().toLowerCase(Locale.ROOT).contains(kw));
+                    })
+                    .toList();
+        }
         Map<Long, Diem> diemMap = layDiemTheoDangKy(danhSach);
         return danhSach.stream()
                 .map(dk -> mapper.diem(dk, diemMap.get(dk.getId())))

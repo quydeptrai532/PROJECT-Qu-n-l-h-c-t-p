@@ -3,12 +3,15 @@ package com.edu.registration.controller;
 import com.edu.registration.dto.LecturerDtos;
 import com.edu.registration.dto.LopHocPhanDtos;
 import com.edu.registration.dto.RegistrationDtos;
+import com.edu.registration.dto.StudentAcademicProfileDto;
 import com.edu.registration.service.DiemService;
 import com.edu.registration.service.GiangVienDashboardService;
 import com.edu.registration.service.LopHocPhanService;
 import com.edu.registration.service.LopSinhVienExportService;
+import com.edu.registration.service.StudentAcademicProfileService;
 import com.edu.registration.service.ThongBaoNghiService;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -39,15 +42,26 @@ public class GiangVienController {
     private final ThongBaoNghiService thongBaoNghiService;
     private final LopSinhVienExportService lopSinhVienExportService;
     private final GiangVienDashboardService giangVienDashboardService;
+    private final StudentAcademicProfileService studentAcademicProfileService;
 
     public GiangVienController(LopHocPhanService lopHocPhanService, DiemService diemService,
                                ThongBaoNghiService thongBaoNghiService, LopSinhVienExportService lopSinhVienExportService,
                                GiangVienDashboardService giangVienDashboardService) {
+        this(lopHocPhanService, diemService, thongBaoNghiService, lopSinhVienExportService,
+                giangVienDashboardService, null);
+    }
+
+    @Autowired
+    public GiangVienController(LopHocPhanService lopHocPhanService, DiemService diemService,
+                               ThongBaoNghiService thongBaoNghiService, LopSinhVienExportService lopSinhVienExportService,
+                               GiangVienDashboardService giangVienDashboardService,
+                               StudentAcademicProfileService studentAcademicProfileService) {
         this.lopHocPhanService = lopHocPhanService;
         this.diemService = diemService;
         this.thongBaoNghiService = thongBaoNghiService;
         this.lopSinhVienExportService = lopSinhVienExportService;
         this.giangVienDashboardService = giangVienDashboardService;
+        this.studentAcademicProfileService = studentAcademicProfileService;
     }
 
     @GetMapping("/giang-vien/me/ho-so")
@@ -87,8 +101,46 @@ public class GiangVienController {
     }
 
     @GetMapping("/giang-vien/lop-hoc-phan/{id}/sinh-vien")
-    public List<RegistrationDtos.DiemDto> danhSachSinhVien(@PathVariable Long id) {
-        return diemService.danhSachDiemLop(id);
+    public List<RegistrationDtos.DiemDto> danhSachSinhVien(
+            @PathVariable Long id,
+            @RequestParam(required = false) String tuKhoa,
+            @RequestParam(required = false) String keyword) {
+        String kw = tuKhoa != null ? tuKhoa : keyword;
+        return diemService.danhSachDiemLop(id, kw);
+    }
+
+    @GetMapping("/giang-vien/lop-hoc-phan/{lopId}/sinh-vien/{studentId}")
+    public LecturerDtos.StudentMinimalProfileDto chiTietSinhVienLop(
+            @PathVariable Long lopId,
+            @PathVariable Long studentId) {
+        return studentAcademicProfileService.getMinimalProfileForLecturer(studentId, lopId);
+    }
+
+    @GetMapping({"/giang-vien/lop-hoc-phan/{lopId}/sinh-vien/{studentId}/ho-so",
+                 "/giang-vien/lop-hoc-phan/{lopId}/sinh-vien/{studentId}/ho-so-dao-tao"})
+    public StudentAcademicProfileDto hoSoDaoTaoSinhVienLop(
+            @PathVariable Long lopId,
+            @PathVariable Long studentId) {
+        return studentAcademicProfileService.getProfileDtoForLecturer(studentId, lopId);
+    }
+
+    @GetMapping("/giang-vien/sinh-vien")
+    public List<LecturerDtos.StudentMinimalProfileDto> danhSachSinhVienPhuTrach(
+            @RequestParam(required = false) Long lopHocPhanId,
+            @RequestParam(required = false) String tuKhoa,
+            @RequestParam(required = false) String keyword) {
+        String kw = tuKhoa != null ? tuKhoa : keyword;
+        return studentAcademicProfileService.getAssignedStudentsForLecturer(lopHocPhanId, kw);
+    }
+
+    @GetMapping("/giang-vien/sinh-vien/{studentId}")
+    public LecturerDtos.StudentMinimalProfileDto hoSoSinhVien(@PathVariable Long studentId) {
+        return studentAcademicProfileService.getMinimalProfileForLecturer(studentId, null);
+    }
+
+    @GetMapping({"/giang-vien/sinh-vien/{studentId}/ho-so", "/giang-vien/sinh-vien/{studentId}/ho-so-dao-tao"})
+    public StudentAcademicProfileDto hoSoDaoTaoSinhVien(@PathVariable Long studentId) {
+        return studentAcademicProfileService.getProfileDtoForLecturer(studentId, null);
     }
 
     @GetMapping("/giang-vien/lop-hoc-phan/{id}/sinh-vien/csv")
