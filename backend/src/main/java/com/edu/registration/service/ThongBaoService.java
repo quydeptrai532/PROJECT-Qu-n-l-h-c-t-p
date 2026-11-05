@@ -9,6 +9,7 @@ import com.edu.registration.entity.LichSuDangKy;
 import com.edu.registration.entity.LopHocPhan;
 import com.edu.registration.entity.SinhVien;
 import com.edu.registration.entity.ThongBao;
+import com.edu.registration.entity.ThongBaoLopHocPhan;
 import com.edu.registration.entity.ThongBaoNghi;
 import com.edu.registration.entity.TrangThaiDangKy;
 import com.edu.registration.entity.User;
@@ -53,6 +54,7 @@ public class ThongBaoService {
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
     public static final String SECTION_CANCELLED_REASON_PREFIX = "Lớp học phần bị hủy";
     public static final String GRADES_PUBLISHED_EVENT = "GRADES_PUBLISHED";
+    public static final String CLASS_ANNOUNCEMENT_EVENT = "CLASS_ANNOUNCEMENT";
 
     private final ThongBaoRepository thongBaoRepository;
     private final DangKyHocPhanRepository dangKyRepository;
@@ -277,6 +279,33 @@ public class ThongBaoService {
                 send(recipient, eventType, idempotencyKey, title, message,
                         "HIGH", "/thoi-khoa-bieu", effectiveTime);
             }
+        });
+    }
+
+    /**
+     * Emits class announcement notifications to actively enrolled students of a course section (QLSV-68).
+     */
+    public void classAnnouncementCreated(ThongBaoLopHocPhan announcement, List<User> eligibleStudents) {
+        if (announcement == null || announcement.getLopHocPhan() == null || eligibleStudents == null || eligibleStudents.isEmpty()) {
+            return;
+        }
+        LopHocPhan section = announcement.getLopHocPhan();
+        String sectionCode = section.getMa();
+        String subjectName = section.getMonHoc() != null ? section.getMonHoc().getTen() : "";
+        LocalDateTime effectiveTime = announcement.getThoiGianTao() != null ? announcement.getThoiGianTao() : LocalDateTime.now();
+        String title = announcement.getTieuDe();
+        String prefix = "[Lớp " + sectionCode + (subjectName.isBlank() ? "" : " — " + subjectName) + "] ";
+        String message = prefix + announcement.getNoiDung();
+        if (message.length() > 1000) {
+            message = message.substring(0, 997) + "...";
+        }
+        String idempotencyKey = "class-announcement:" + announcement.getId();
+        String targetUrl = "/hoc-phan-cua-toi";
+
+        String finalMessage = message;
+        dispatchAfterCommit(CLASS_ANNOUNCEMENT_EVENT + ":" + idempotencyKey, () -> {
+            sendBatchByIdempotencyKey(eligibleStudents, CLASS_ANNOUNCEMENT_EVENT, idempotencyKey,
+                    title, finalMessage, "NORMAL", targetUrl, effectiveTime);
         });
     }
 

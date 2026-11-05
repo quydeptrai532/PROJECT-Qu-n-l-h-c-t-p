@@ -40,7 +40,7 @@ public class ThongBao {
     @Column(nullable = false, length = 120)
     private String title;
 
-    @Column(nullable = false, length = 500)
+    @Column(nullable = false, length = 1000)
     private String message;
 
     @Column(nullable = false, length = 16)

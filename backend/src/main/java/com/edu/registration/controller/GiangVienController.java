@@ -9,6 +9,7 @@ import com.edu.registration.service.GiangVienDashboardService;
 import com.edu.registration.service.LopHocPhanService;
 import com.edu.registration.service.LopSinhVienExportService;
 import com.edu.registration.service.StudentAcademicProfileService;
+import com.edu.registration.service.ThongBaoLopHocPhanService;
 import com.edu.registration.service.ThongBaoNghiService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -43,25 +45,36 @@ public class GiangVienController {
     private final LopSinhVienExportService lopSinhVienExportService;
     private final GiangVienDashboardService giangVienDashboardService;
     private final StudentAcademicProfileService studentAcademicProfileService;
+    private final ThongBaoLopHocPhanService thongBaoLopHocPhanService;
 
     public GiangVienController(LopHocPhanService lopHocPhanService, DiemService diemService,
                                ThongBaoNghiService thongBaoNghiService, LopSinhVienExportService lopSinhVienExportService,
                                GiangVienDashboardService giangVienDashboardService) {
         this(lopHocPhanService, diemService, thongBaoNghiService, lopSinhVienExportService,
-                giangVienDashboardService, null);
+                giangVienDashboardService, null, null);
+    }
+
+    public GiangVienController(LopHocPhanService lopHocPhanService, DiemService diemService,
+                               ThongBaoNghiService thongBaoNghiService, LopSinhVienExportService lopSinhVienExportService,
+                               GiangVienDashboardService giangVienDashboardService,
+                               StudentAcademicProfileService studentAcademicProfileService) {
+        this(lopHocPhanService, diemService, thongBaoNghiService, lopSinhVienExportService,
+                giangVienDashboardService, studentAcademicProfileService, null);
     }
 
     @Autowired
     public GiangVienController(LopHocPhanService lopHocPhanService, DiemService diemService,
                                ThongBaoNghiService thongBaoNghiService, LopSinhVienExportService lopSinhVienExportService,
                                GiangVienDashboardService giangVienDashboardService,
-                               StudentAcademicProfileService studentAcademicProfileService) {
+                               StudentAcademicProfileService studentAcademicProfileService,
+                               ThongBaoLopHocPhanService thongBaoLopHocPhanService) {
         this.lopHocPhanService = lopHocPhanService;
         this.diemService = diemService;
         this.thongBaoNghiService = thongBaoNghiService;
         this.lopSinhVienExportService = lopSinhVienExportService;
         this.giangVienDashboardService = giangVienDashboardService;
         this.studentAcademicProfileService = studentAcademicProfileService;
+        this.thongBaoLopHocPhanService = thongBaoLopHocPhanService;
     }
 
     @GetMapping("/giang-vien/me/ho-so")
@@ -99,6 +112,28 @@ public class GiangVienController {
     public void xoaThongBaoNghi(@PathVariable Long id) {
         thongBaoNghiService.xoa(id);
     }
+
+    // --- Class Announcements (QLSV-68 / TASK-LC-03) ---
+
+    @PostMapping("/giang-vien/lop-hoc-phan/{id}/thong-bao")
+    public LecturerDtos.ThongBaoLopDto taoThongBaoLop(
+            @PathVariable Long id,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKeyHeader,
+            @Valid @RequestBody LecturerDtos.TaoThongBaoLopRequest request) {
+        return thongBaoLopHocPhanService.taoThongBao(id, request, idempotencyKeyHeader);
+    }
+
+    @GetMapping("/giang-vien/lop-hoc-phan/{id}/thong-bao")
+    public List<LecturerDtos.ThongBaoLopDto> danhSachThongBaoLop(@PathVariable Long id) {
+        return thongBaoLopHocPhanService.danhSachThongBaoLop(id);
+    }
+
+    @GetMapping("/giang-vien/me/thong-bao-lop")
+    public List<LecturerDtos.ThongBaoLopDto> danhSachThongBaoCuaToi(@RequestParam(required = false) Long lopHocPhanId) {
+        return thongBaoLopHocPhanService.danhSachThongBaoCuaGiangVien(lopHocPhanId);
+    }
+
+    // --------------------------------------------------
 
     @GetMapping("/giang-vien/lop-hoc-phan/{id}/sinh-vien")
     public List<RegistrationDtos.DiemDto> danhSachSinhVien(
