@@ -54,6 +54,13 @@ public final class RegistrationDtos {
                           Double diemQuaTrinh, Double diemCuoiKy, Double diemTongKet) {
     }
 
+    public record TrangThaiBangDiemDto(Long lopHocPhanId, String maLop, String maMon, String tenMon,
+                                       Long hocKyId, String tenHocKy, String namHoc,
+                                       String trangThaiBangDiem, int phienBanCongBo,
+                                       int soSinhVienDangHoc, int soSinhVienDuDieuKien,
+                                       LocalDateTime guiDuyetLuc, LocalDateTime duyetLuc, LocalDateTime congBoLuc) {
+    }
+
     public record HocKyTongKetDto(Long hocKyId, String tenHocKy, String namHoc, int tongTinChi,
                                   int tinChiCoDiem, double gpa10, double gpa4) {
     }

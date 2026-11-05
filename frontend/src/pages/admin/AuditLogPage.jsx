@@ -11,7 +11,12 @@ const ACTIONS = {
   PREREQUISITE_REMOVED: "Xóa môn tiên quyết",
   COURSE_SECTION_CREATED: "Tạo lớp học phần",
   COURSE_SECTION_UPDATED: "Cập nhật lớp học phần",
+  COURSE_SECTION_CANCELLED: "Hủy lớp học phần",
   COURSE_SECTION_DELETED: "Xóa lớp học phần",
+  GRADE_SHEET_SUBMITTED: "Gửi duyệt bảng điểm",
+  GRADE_SHEET_APPROVED: "Phê duyệt bảng điểm",
+  GRADE_SHEET_PUBLISHED: "Công bố bảng điểm",
+  GRADE_SHEET_PUBLICATION_REVOKED: "Thu hồi công bố bảng điểm",
   REGISTRATION_WINDOW_CREATED: "Tạo đợt đăng ký",
   REGISTRATION_WINDOW_UPDATED: "Cập nhật đợt đăng ký",
   REGISTRATION_WINDOW_DELETED: "Xóa cấu hình đợt đăng ký",
@@ -44,6 +49,12 @@ const FIELDS = {
   soTinChiToiThieu: "Tín chỉ tối thiểu",
   soTinChiToiDa: "Tín chỉ tối đa",
   trangThai: "Trạng thái",
+  trangThaiCu: "Trạng thái trước",
+  trangThaiMoi: "Trạng thái mới",
+  trangThaiBangDiem: "Trạng thái bảng điểm",
+  phienBanCongBo: "Phiên bản công bố",
+  soSinhVienDangHoc: "Số SV đang học",
+  soSinhVienDuDieuKien: "Số SV đủ điều kiện",
   dangKyId: "Đăng ký ID",
   lopHocPhanId: "Lớp học phần ID",
   active: "Tài khoản hoạt động",
@@ -54,7 +65,7 @@ const FIELDS = {
   monTienQuyetId: "Môn tiên quyết ID",
 };
 
-const ENTITY_TYPES = ["COURSE", "COURSE_PREREQUISITE", "COURSE_SECTION", "SEMESTER", "STUDENT_ACCOUNT", "LECTURER_ACCOUNT", "COURSE_REGISTRATION"];
+const ENTITY_TYPES = ["COURSE", "COURSE_PREREQUISITE", "COURSE_SECTION", "GRADE_SHEET", "SEMESTER", "STUDENT_ACCOUNT", "LECTURER_ACCOUNT", "COURSE_REGISTRATION"];
 
 function displayValue(value) {
   if (typeof value === "boolean") return value ? "Có" : "Không";

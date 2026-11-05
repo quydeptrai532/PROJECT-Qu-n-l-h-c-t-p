@@ -344,7 +344,7 @@ public class DangKyService {
         for (DangKyHocPhan attempt : attempts) {
             if (!attempt.getLopHocPhan().getMonHoc().getId().equals(monHoc.getId())) continue;
             Diem grade = grades.get(attempt.getId());
-            if (grade != null && grade.getDiemTongKet() != null) {
+            if (attempt.getLopHocPhan().isBangDiemDaCongBo() && grade != null && grade.getDiemTongKet() != null) {
                 return grade.getDiemTongKet() < AcademicRules.DIEM_DAT ? "HOC_LAI" : "HOC_CAI_THIEN";
             }
         }

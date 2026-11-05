@@ -52,7 +52,8 @@ public class HocLaiCaiThienService {
         List<DangKyHocPhan> attempts = dangKyRepository.findBySinhVienIdOrderByLopHocPhanHocKyNgayBatDauDescIdDesc(student.getId());
         Map<Long, Diem> grades = gradeMap(attempts);
         Map<Long, List<DangKyHocPhan>> bySubject = attempts.stream()
-                .filter(attempt -> grades.get(attempt.getId()) != null
+                .filter(attempt -> attempt.getLopHocPhan().isBangDiemDaCongBo()
+                        && grades.get(attempt.getId()) != null
                         && grades.get(attempt.getId()).getDiemTongKet() != null)
                 .collect(Collectors.groupingBy(attempt -> attempt.getLopHocPhan().getMonHoc().getId()));
 

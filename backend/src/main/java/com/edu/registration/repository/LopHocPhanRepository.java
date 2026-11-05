@@ -49,6 +49,7 @@ public interface LopHocPhanRepository extends JpaRepository<LopHocPhan, Long> {
     Optional<LopHocPhan> findWithDetailsById(@Param("id") Long id);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @EntityGraph(attributePaths = {"monHoc", "monHoc.khoa", "hocKy", "giangVien"})
     @Query("select l from LopHocPhan l where l.id = :id")
     Optional<LopHocPhan> findByIdForUpdate(@Param("id") Long id);
 

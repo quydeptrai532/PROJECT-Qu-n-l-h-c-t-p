@@ -7,7 +7,6 @@ import com.edu.registration.security.CurrentUser;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -30,9 +29,9 @@ public class TienDoService {
    int gt=group.getTinChiYeuCau(), ge=0; List<Map<String,Object>> courses=new ArrayList<>();
    List<MonHoc> subjects=group.getMonHoc().stream().sorted(Comparator.comparing(MonHoc::getMa)).toList();
    for(MonHoc m:subjects){ if(!seen.add(m.getId())) continue; List<DangKyHocPhan> a=attempts.getOrDefault(m.getId(),List.of());
-    boolean passed=a.stream().map(d->byReg.get(d.getId())).filter(Objects::nonNull).map(Diem::getDiemTongKet).filter(Objects::nonNull).anyMatch(x->x>=PASS);
-    boolean active=a.stream().anyMatch(d->d.getLopHocPhan().getHocKy().getDangKyTu()!=null && !LocalDate.now().isAfter(d.getLopHocPhan().getHocKy().getNgayKetThuc()) && (byReg.get(d.getId())==null || byReg.get(d.getId()).getDiemTongKet()==null));
-    boolean failed=a.stream().map(d->byReg.get(d.getId())).filter(Objects::nonNull).map(Diem::getDiemTongKet).filter(Objects::nonNull).anyMatch(x->x<PASS);
+    boolean passed=a.stream().filter(d->d.getLopHocPhan().isBangDiemDaCongBo()).map(d->byReg.get(d.getId())).filter(Objects::nonNull).map(Diem::getDiemTongKet).filter(Objects::nonNull).anyMatch(x->x>=PASS);
+    boolean active=a.stream().anyMatch(d->d.getLopHocPhan().getHocKy().getDangKyTu()!=null && !LocalDate.now().isAfter(d.getLopHocPhan().getHocKy().getNgayKetThuc()) && (!d.getLopHocPhan().isBangDiemDaCongBo() || byReg.get(d.getId())==null || byReg.get(d.getId()).getDiemTongKet()==null));
+    boolean failed=a.stream().filter(d->d.getLopHocPhan().isBangDiemDaCongBo()).map(d->byReg.get(d.getId())).filter(Objects::nonNull).map(Diem::getDiemTongKet).filter(Objects::nonNull).anyMatch(x->x<PASS);
     String status=passed?"PASSED":active?"IN_PROGRESS":failed?"RETAKE":"NOT_STUDIED";
     if(passed) ge=m.getSoTinChi();
     Map<String,Object> course=new LinkedHashMap<>();course.put("id",m.getId());course.put("code",m.getMa());course.put("name",m.getTen());course.put("credits",m.getSoTinChi());course.put("status",status);course.put("reason",passed?"Có ít nhất một kết quả đạt.":active?"Đang có đăng ký trong học kỳ chưa kết thúc.":failed?"Có kết quả dưới ngưỡng đạt; cần học lại.":"Chưa có kết quả đạt hoặc đăng ký đang học.");courses.add(course);

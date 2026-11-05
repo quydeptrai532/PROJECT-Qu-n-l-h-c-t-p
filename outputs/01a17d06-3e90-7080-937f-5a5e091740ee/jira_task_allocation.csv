@@ -1,0 +1,192 @@
+﻿Issue Type,Summary,Description,Assignee,Priority,Status,Labels
+Task,"T01 - Tạo repo GitHub, nhánh main và dev, quy tắc đặt tên nhánh, commit và pull request","Ngày kế hoạch: 1
+Nhóm: M1
+Loại công việc: DevOps
+Nội dung: Tạo repo GitHub, nhánh main và dev, quy tắc đặt tên nhánh, commit và pull request",Vi Trung Quý,Medium,To Do,m1 plan-day-1 devops
+Task,"T02 - Cấu hình profile MySQL, viết Dockerfile backend và docker-compose chạy app cùng MySQL","Ngày kế hoạch: 1
+Nhóm: M1
+Loại công việc: DevOps
+Nội dung: Cấu hình profile MySQL, viết Dockerfile backend và docker-compose chạy app cùng MySQL",Vi Trung Quý,Medium,To Do,m1 plan-day-1 devops
+Task,T03 - API xem hồ sơ cá nhân,"Ngày kế hoạch: 2
+Nhóm: M1
+Loại công việc: BE
+Nội dung: API xem hồ sơ cá nhân",Vi Trung Quý,Medium,To Do,m1 plan-day-2 be
+Task,"T04 - API cập nhật hồ sơ cá nhân (họ tên, email)","Ngày kế hoạch: 2
+Nhóm: M1
+Loại công việc: BE
+Nội dung: API cập nhật hồ sơ cá nhân (họ tên, email)",Vi Trung Quý,Medium,To Do,m1 plan-day-2 be
+Task,"T05 - API đổi mật khẩu (kiểm tra mật khẩu cũ, mã hóa BCrypt mật khẩu mới)","Ngày kế hoạch: 2
+Nhóm: M1
+Loại công việc: BE
+Nội dung: API đổi mật khẩu (kiểm tra mật khẩu cũ, mã hóa BCrypt mật khẩu mới)",Vi Trung Quý,Medium,To Do,m1 plan-day-2 be
+Task,"T06 - Trang hồ sơ cá nhân: hiển thị thông tin, form cập nhật, form đổi mật khẩu","Ngày kế hoạch: 3
+Nhóm: M1
+Loại công việc: FE
+Nội dung: Trang hồ sơ cá nhân: hiển thị thông tin, form cập nhật, form đổi mật khẩu",Vi Trung Quý,Medium,To Do,m1 plan-day-3 fe
+Task,"T07 - Xử lý lỗi toàn cục (@RestControllerAdvice), ghi log SLF4J cho exception, cấu hình CORS","Ngày kế hoạch: 3
+Nhóm: M1
+Loại công việc: BE
+Nội dung: Xử lý lỗi toàn cục (@RestControllerAdvice), ghi log SLF4J cho exception, cấu hình CORS",Vi Trung Quý,Medium,To Do,m1 plan-day-3 be
+Task,T08 - API thêm môn tiên quyết cho môn học (cần T22),"Ngày kế hoạch: 4
+Nhóm: M1
+Loại công việc: BE
+Phụ thuộc: T22
+Nội dung: API thêm môn tiên quyết cho môn học (cần T22)",Vi Trung Quý,Medium,To Do,m1 plan-day-4 be
+Task,T09 - API xóa môn tiên quyết,"Ngày kế hoạch: 4
+Nhóm: M1
+Loại công việc: BE
+Nội dung: API xóa môn tiên quyết",Vi Trung Quý,Medium,To Do,m1 plan-day-4 be
+Task,T10 - Kiểm tra môn tiên quyết đã đạt khi sinh viên đăng ký học phần,"Ngày kế hoạch: 4
+Nhóm: M1
+Loại công việc: BE
+Nội dung: Kiểm tra môn tiên quyết đã đạt khi sinh viên đăng ký học phần",Vi Trung Quý,Medium,To Do,m1 plan-day-4 be
+Task,"T11 - API tạo đợt đăng ký (thời gian mở/đóng, tín chỉ tối thiểu, tối đa)","Ngày kế hoạch: 5
+Nhóm: M1
+Loại công việc: BE
+Nội dung: API tạo đợt đăng ký (thời gian mở/đóng, tín chỉ tối thiểu, tối đa)",Vi Trung Quý,Medium,To Do,m1 plan-day-5 be
+Task,T12 - API sửa đợt đăng ký,"Ngày kế hoạch: 5
+Nhóm: M1
+Loại công việc: BE
+Nội dung: API sửa đợt đăng ký",Vi Trung Quý,Medium,To Do,m1 plan-day-5 be
+Task,"T13 - Kiểm tra đợt đăng ký đang mở và tín chỉ tối thiểu khi đăng ký, hủy","Ngày kế hoạch: 5
+Nhóm: M1
+Loại công việc: BE
+Nội dung: Kiểm tra đợt đăng ký đang mở và tín chỉ tối thiểu khi đăng ký, hủy",Vi Trung Quý,Medium,To Do,m1 plan-day-5 be
+Task,T14 - Trang cấu hình đợt đăng ký (form tạo và form sửa),"Ngày kế hoạch: 6
+Nhóm: M1
+Loại công việc: FE
+Nội dung: Trang cấu hình đợt đăng ký (form tạo và form sửa)",Vi Trung Quý,Medium,To Do,m1 plan-day-6 fe
+Task,T44 - triển khai quy đổi 1 tín chỉ = 15 tiết lý thuyết = 5 buổi. Đỗ Thảo Minh: kiểm thử công thức và cách hiển thị số tiết/buổi...,"Ngày kế hoạch: 8
+Nhóm: M1
+Loại công việc: BE & FE
+Nội dung: Vi Trung Quý (BE & FE): triển khai quy đổi 1 tín chỉ = 15 tiết lý thuyết = 5 buổi. Đỗ Thảo Minh: kiểm thử công thức và cách hiển thị số tiết/buổi ở các màn hình liên quan.
+QA: Đỗ Thảo Minh kiểm thử nghiệm thu quy đổi tín chỉ/tiết/buổi và cách hiển thị.",Vi Trung Quý,Medium,To Do,m1 plan-day-8 be-&-fe
+Task,"T45 - triển khai thời khóa biểu tuần, điều hướng, ngày cụ thể, Chủ nhật và giới hạn học kỳ. Đỗ Thảo Minh: kiểm thử chuyển tuần,...","Ngày kế hoạch: 8
+Nhóm: M1
+Loại công việc: FE
+Nội dung: Vi Trung Quý (FE): triển khai thời khóa biểu tuần, điều hướng, ngày cụ thể, Chủ nhật và giới hạn học kỳ. Đỗ Thảo Minh: kiểm thử chuyển tuần, ngày đầu/cuối kỳ, Chủ nhật và tuần không có lịch.
+QA: Đỗ Thảo Minh kiểm thử chuyển tuần, ngày đầu/cuối kỳ, Chủ nhật và tuần không có lịch.",Vi Trung Quý,Medium,To Do,m1 plan-day-8 fe
+Task,"T46 - triển khai thông báo nghỉ học. Đỗ Thảo Minh: kiểm thử API/giao diện, ngày trùng/sai thứ/quá khứ, đúng lớp/buổi, quyền giả...","Ngày kế hoạch: 9
+Nhóm: M1
+Loại công việc: BE & FE
+Nội dung: Vi Trung Quý (BE & FE): triển khai thông báo nghỉ học. Đỗ Thảo Minh: kiểm thử API/giao diện, ngày trùng/sai thứ/quá khứ, đúng lớp/buổi, quyền giảng viên/sinh viên và hiển thị buổi nghỉ.
+QA: Đỗ Thảo Minh kiểm thử API/giao diện, ngày trùng/sai thứ/quá khứ, quyền theo lớp và hiển thị buổi nghỉ.",Vi Trung Quý,Medium,To Do,m1 plan-day-9 be-&-fe
+Task,"T15 - Tạo entity và repository cho khoa, ngành, môn học","Ngày kế hoạch: 1
+Nhóm: M2
+Loại công việc: BE
+Nội dung: Tạo entity và repository cho khoa, ngành, môn học",Vi Trung Quý,Medium,To Do,m2 plan-day-1 be
+Task,T16 - API thêm khoa,"Ngày kế hoạch: 2
+Nhóm: M2
+Loại công việc: BE
+Nội dung: API thêm khoa",Vi Trung Quý,Medium,To Do,m2 plan-day-2 be
+Task,T17 - API sửa khoa,"Ngày kế hoạch: 2
+Nhóm: M2
+Loại công việc: BE
+Nội dung: API sửa khoa",Vi Trung Quý,Medium,To Do,m2 plan-day-2 be
+Task,T18 - API xóa khoa (chặn xóa khi còn ngành hoặc môn học tham chiếu),"Ngày kế hoạch: 2
+Nhóm: M2
+Loại công việc: BE
+Nội dung: API xóa khoa (chặn xóa khi còn ngành hoặc môn học tham chiếu)",Vi Trung Quý,Medium,To Do,m2 plan-day-2 be
+Task,T19 - API thêm ngành,"Ngày kế hoạch: 2
+Nhóm: M2
+Loại công việc: BE
+Nội dung: API thêm ngành",Vi Trung Quý,Medium,To Do,m2 plan-day-2 be
+Task,T20 - API sửa ngành,"Ngày kế hoạch: 3
+Nhóm: M2
+Loại công việc: BE
+Nội dung: API sửa ngành",Vi Trung Quý,Medium,To Do,m2 plan-day-3 be
+Task,T21 - API xóa ngành (chặn xóa khi còn sinh viên tham chiếu),"Ngày kế hoạch: 3
+Nhóm: M2
+Loại công việc: BE
+Nội dung: API xóa ngành (chặn xóa khi còn sinh viên tham chiếu)",Vi Trung Quý,Medium,To Do,m2 plan-day-3 be
+Task,"T22 - API thêm môn học (mã, tên, số tín chỉ, khoa)","Ngày kế hoạch: 3
+Nhóm: M2
+Loại công việc: BE
+Nội dung: API thêm môn học (mã, tên, số tín chỉ, khoa)",Vi Trung Quý,Medium,To Do,m2 plan-day-3 be
+Task,T23 - API sửa môn học,"Ngày kế hoạch: 3
+Nhóm: M2
+Loại công việc: BE
+Nội dung: API sửa môn học",Vi Trung Quý,Medium,To Do,m2 plan-day-3 be
+Task,T24 - API xóa môn học (chặn xóa khi đã có lớp học phần),"Ngày kế hoạch: 4
+Nhóm: M2
+Loại công việc: BE
+Nội dung: API xóa môn học (chặn xóa khi đã có lớp học phần)",Vi Trung Quý,Medium,To Do,m2 plan-day-4 be
+Task,"T25 - Trang quản lý khoa và ngành: danh sách, form thêm, form sửa, nút xóa","Ngày kế hoạch: 4
+Nhóm: M2
+Loại công việc: FE
+Nội dung: Trang quản lý khoa và ngành: danh sách, form thêm, form sửa, nút xóa",Vi Trung Quý,Medium,To Do,m2 plan-day-4 fe
+Task,"T26 - Trang quản lý môn học: danh sách, form thêm, form sửa, nút xóa","Ngày kế hoạch: 5
+Nhóm: M2
+Loại công việc: FE
+Nội dung: Trang quản lý môn học: danh sách, form thêm, form sửa, nút xóa",Vi Trung Quý,Medium,To Do,m2 plan-day-5 fe
+Task,"T27 - API thêm sinh viên, giảng viên (tạo tài khoản, mã hóa mật khẩu mặc định)","Ngày kế hoạch: 4
+Nhóm: M2
+Loại công việc: BE
+Nội dung: API thêm sinh viên, giảng viên (tạo tài khoản, mã hóa mật khẩu mặc định)",Vi Trung Quý,Medium,To Do,m2 plan-day-4 be
+Task,"T28 - API sửa thông tin sinh viên, giảng viên","Ngày kế hoạch: 5
+Nhóm: M2
+Loại công việc: BE
+Nội dung: API sửa thông tin sinh viên, giảng viên",Vi Trung Quý,Medium,To Do,m2 plan-day-5 be
+Task,T29 - API khóa và mở khóa tài khoản (tài khoản bị khóa không đăng nhập được),"Ngày kế hoạch: 5
+Nhóm: M2
+Loại công việc: BE
+Nội dung: API khóa và mở khóa tài khoản (tài khoản bị khóa không đăng nhập được)",Vi Trung Quý,Medium,To Do,m2 plan-day-5 be
+Task,T30 - Viết GitHub Actions: build Maven và chạy test khi push lên main,"Ngày kế hoạch: 1
+Nhóm: M3
+Loại công việc: DevOps
+Nội dung: Viết GitHub Actions: build Maven và chạy test khi push lên main",Vi Trung Quý,Medium,To Do,m3 plan-day-1 devops
+Task,T31 - Bổ sung bước đóng gói và đẩy Docker image lên Registry,"Ngày kế hoạch: 2
+Nhóm: M3
+Loại công việc: DevOps
+Nội dung: Bổ sung bước đóng gói và đẩy Docker image lên Registry",Vi Trung Quý,Medium,To Do,m3 plan-day-2 devops
+Task,"T32 - lập test case theo FR/NFR, ghi điều kiện đầu vào, các bước thực hiện, kết quả mong đợi và mã chức năng liên quan.","Ngày kế hoạch: 3
+Nhóm: M3
+Loại công việc: QA
+Nội dung: Đỗ Thảo Minh: lập test case theo FR/NFR, ghi điều kiện đầu vào, các bước thực hiện, kết quả mong đợi và mã chức năng liên quan.",Đỗ Thảo Minh,Medium,To Do,m3 plan-day-3 qa
+Task,T33 - Gắn lớp học phần với môn học trong danh mục (cần T22),"Ngày kế hoạch: 4
+Nhóm: M3
+Loại công việc: BE
+Phụ thuộc: T22
+Nội dung: Gắn lớp học phần với môn học trong danh mục (cần T22)",Vi Trung Quý,Medium,To Do,m3 plan-day-4 be
+Task,T34 - Nâng cấp form thêm lớp học phần (chọn môn học từ danh mục),"Ngày kế hoạch: 4
+Nhóm: M3
+Loại công việc: FE
+Nội dung: Nâng cấp form thêm lớp học phần (chọn môn học từ danh mục)",Vi Trung Quý,Medium,To Do,m3 plan-day-4 fe
+Task,T35 - Nâng cấp form sửa lớp học phần,"Ngày kế hoạch: 5
+Nhóm: M3
+Loại công việc: FE
+Nội dung: Nâng cấp form sửa lớp học phần",Vi Trung Quý,Medium,To Do,m3 plan-day-5 fe
+Task,T36 - Nút xóa lớp học phần kèm hộp xác nhận và hiển thị lỗi khi lớp đã có sinh viên,"Ngày kế hoạch: 5
+Nhóm: M3
+Loại công việc: FE
+Nội dung: Nút xóa lớp học phần kèm hộp xác nhận và hiển thị lỗi khi lớp đã có sinh viên",Vi Trung Quý,Medium,To Do,m3 plan-day-5 fe
+Task,T37 - API thống kê số đăng ký theo môn và tỉ lệ lấp đầy lớp,"Ngày kế hoạch: 5
+Nhóm: M3
+Loại công việc: BE
+Nội dung: API thống kê số đăng ký theo môn và tỉ lệ lấp đầy lớp",Vi Trung Quý,Medium,To Do,m3 plan-day-5 be
+Task,T38 - API xuất danh sách sinh viên của lớp ra CSV,"Ngày kế hoạch: 5
+Nhóm: M3
+Loại công việc: BE
+Nội dung: API xuất danh sách sinh viên của lớp ra CSV",Vi Trung Quý,Medium,To Do,m3 plan-day-5 be
+Task,T39 - Trang thống kê cho quản trị (bảng và nút tải CSV),"Ngày kế hoạch: 6
+Nhóm: M3
+Loại công việc: FE
+Nội dung: Trang thống kê cho quản trị (bảng và nút tải CSV)",Vi Trung Quý,Medium,To Do,m3 plan-day-6 fe
+Task,"T40 - viết và chạy unit test nghiệp vụ đăng ký gồm đăng ký hợp lệ, trùng lịch, hết chỗ, vượt tín chỉ, thiếu môn tiên quyết và đ...","Ngày kế hoạch: 6
+Nhóm: M3
+Loại công việc: QA
+Phụ thuộc: T10; T13
+Nội dung: Đỗ Thảo Minh: viết và chạy unit test nghiệp vụ đăng ký gồm đăng ký hợp lệ, trùng lịch, hết chỗ, vượt tín chỉ, thiếu môn tiên quyết và đợt đăng ký đóng; bàn giao kết quả test và lỗi có bước tái hiện.",Đỗ Thảo Minh,Medium,To Do,m3 plan-day-6 qa
+Task,"T41 - Trang quản lý sinh viên, giảng viên: danh sách, form thêm, form sửa, nút khóa/mở khóa (cần T27-T29)","Ngày kế hoạch: 6
+Nhóm: M3
+Loại công việc: FE
+Phụ thuộc: T27; T28; T29
+Nội dung: Trang quản lý sinh viên, giảng viên: danh sách, form thêm, form sửa, nút khóa/mở khóa (cần T27-T29)",Vi Trung Quý,Medium,To Do,m3 plan-day-6 fe
+Task,"T42 - chạy kiểm thử E2E theo test case, mục tiêu đạt ≥ 80%; ghi kết quả đạt/trượt và lỗi cần xử lý. Quý hỗ trợ tích hợp, sửa lỗ...","Ngày kế hoạch: 6-7
+Nhóm: M3
+Loại công việc: QA
+Nội dung: Đỗ Thảo Minh: chạy kiểm thử E2E theo test case, mục tiêu đạt ≥ 80%; ghi kết quả đạt/trượt và lỗi cần xử lý. Quý hỗ trợ tích hợp, sửa lỗi và chạy lại.",Đỗ Thảo Minh,Medium,To Do,m3 plan-day-6-7 qa
+Task,"T43 - kiểm thử 50 request đồng thời, rà soát Chrome, Edge, Firefox, Safari; ghi cấu hình, kết quả và lỗi.","Ngày kế hoạch: 7
+Nhóm: M3
+Loại công việc: QA
+Nội dung: Đỗ Thảo Minh: kiểm thử 50 request đồng thời, rà soát Chrome, Edge, Firefox, Safari; ghi cấu hình, kết quả và lỗi.",Đỗ Thảo Minh,Medium,To Do,m3 plan-day-7 qa

@@ -8,6 +8,7 @@ import com.edu.registration.entity.HocKy;
 import com.edu.registration.entity.LichSuDangKy;
 import com.edu.registration.entity.LopHocPhan;
 import com.edu.registration.entity.MonHoc;
+import com.edu.registration.entity.TrangThaiBangDiem;
 import com.edu.registration.entity.TrangThaiDangKy;
 import com.edu.registration.exception.ApiException;
 import com.edu.registration.repository.DangKyHocPhanRepository;
@@ -150,6 +151,7 @@ public class LopHocPhanService {
             lop.setGiangVien(giangVien);
             apDung(lop, request);
             lop.setSiSoHienTai(0);
+            lop.setTrangThaiBangDiem(TrangThaiBangDiem.NHAP);
 
             LopHocPhan saved = lopHocPhanRepository.save(lop);
             audit.entityId(saved.getId());

@@ -7,7 +7,12 @@ import com.edu.registration.service.LopHocPhanService;
 import com.edu.registration.service.LopSinhVienExportService;
 import com.edu.registration.service.ThongBaoNghiService;
 import jakarta.validation.Valid;
-import org.springframework.http.*;
+import org.springframework.http.CacheControl;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -88,5 +93,35 @@ public class GiangVienController {
     public RegistrationDtos.DiemDto nhapDiem(@PathVariable Long dangKyId,
                                             @Valid @RequestBody RegistrationDtos.NhapDiemRequest request) {
         return diemService.nhapDiem(dangKyId, request);
+    }
+
+    @GetMapping({"/giang-vien/lop-hoc-phan/{id}/trang-thai-bang-diem", "/diem/lop-hoc-phan/{id}/trang-thai"})
+    @PreAuthorize("hasAnyRole('GIANG_VIEN', 'QUAN_TRI')")
+    public RegistrationDtos.TrangThaiBangDiemDto trangThaiBangDiem(@PathVariable Long id) {
+        return diemService.chiTietTrangThaiBangDiem(id);
+    }
+
+    @PostMapping({"/giang-vien/lop-hoc-phan/{id}/gui-duyet-diem", "/diem/lop-hoc-phan/{id}/gui-duyet"})
+    @PreAuthorize("hasAnyRole('GIANG_VIEN', 'QUAN_TRI')")
+    public RegistrationDtos.TrangThaiBangDiemDto guiDuyetBangDiem(@PathVariable Long id) {
+        return diemService.guiDuyetBangDiem(id);
+    }
+
+    @PostMapping({"/giang-vien/lop-hoc-phan/{id}/phe-duyet-diem", "/diem/lop-hoc-phan/{id}/phe-duyet"})
+    @PreAuthorize("hasAnyRole('GIANG_VIEN', 'QUAN_TRI')")
+    public RegistrationDtos.TrangThaiBangDiemDto pheDuyetBangDiem(@PathVariable Long id) {
+        return diemService.pheDuyetBangDiem(id);
+    }
+
+    @PostMapping({"/giang-vien/lop-hoc-phan/{id}/cong-bo-diem", "/diem/lop-hoc-phan/{id}/cong-bo"})
+    @PreAuthorize("hasAnyRole('GIANG_VIEN', 'QUAN_TRI')")
+    public RegistrationDtos.TrangThaiBangDiemDto congBoBangDiem(@PathVariable Long id) {
+        return diemService.congBoBangDiem(id);
+    }
+
+    @PostMapping({"/giang-vien/lop-hoc-phan/{id}/thu-hoi-cong-bo-diem", "/diem/lop-hoc-phan/{id}/thu-hoi-cong-bo"})
+    @PreAuthorize("hasAnyRole('GIANG_VIEN', 'QUAN_TRI')")
+    public RegistrationDtos.TrangThaiBangDiemDto thuHoiCongBoBangDiem(@PathVariable Long id) {
+        return diemService.thuHoiCongBoBangDiem(id);
     }
 }

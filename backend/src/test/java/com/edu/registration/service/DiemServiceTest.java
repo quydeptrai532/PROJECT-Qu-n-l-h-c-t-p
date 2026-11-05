@@ -8,6 +8,7 @@ import com.edu.registration.entity.HocKy;
 import com.edu.registration.entity.LopHocPhan;
 import com.edu.registration.entity.MonHoc;
 import com.edu.registration.entity.SinhVien;
+import com.edu.registration.entity.TrangThaiBangDiem;
 import com.edu.registration.entity.TrangThaiDangKy;
 import com.edu.registration.entity.User;
 import com.edu.registration.exception.ApiException;
@@ -35,7 +36,10 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -58,6 +62,8 @@ class DiemServiceTest {
     private CurrentUser currentUser;
     @Mock
     private DtoMapper mapper;
+    @Mock
+    private ThongBaoService thongBaoService;
 
     private DiemService diemService;
 
@@ -70,7 +76,8 @@ class DiemServiceTest {
     @BeforeEach
     void setUp() {
         diemService = new DiemService(dangKyHocPhanRepository, diemRepository, lopHocPhanRepository,
-                sinhVienRepository, giangVienRepository, hocKyRepository, currentUser, mapper);
+                sinhVienRepository, giangVienRepository, hocKyRepository, currentUser, mapper,
+                null, thongBaoService);
 
         user = new User();
         user.setId(1L);
@@ -124,7 +131,7 @@ class DiemServiceTest {
     }
 
     @Test
-    void nhapDiemTinhDiemTongKetTheoTrongSo() {
+    void nhapDiemTinhDiemTongKetTheoTrongSoVaGiuTrangThaiNhapKhongPhatThongBao() {
         dangNhapVoiGiangVien();
         when(dangKyHocPhanRepository.findById(300L)).thenReturn(Optional.of(dangKy));
         when(diemRepository.findByDangKyId(300L)).thenReturn(Optional.empty());
@@ -135,6 +142,50 @@ class DiemServiceTest {
         ArgumentCaptor<Diem> captor = ArgumentCaptor.forClass(Diem.class);
         verify(diemRepository).save(captor.capture());
         assertEquals(8.6, captor.getValue().getDiemTongKet());
+        assertEquals(TrangThaiBangDiem.NHAP, lopHocPhan.getTrangThaiBangDiem());
+        verify(thongBaoService, never()).gradesPublished(any(), any(), anyInt(), any());
+    }
+
+    @Test
+    void khongTheCongBoKhiBangDiemConNhapHoacChoDuyetVaChiThongBaoKhiDaDuyetSangDaCongBo() {
+        dangNhapVoiGiangVien();
+        lopHocPhan.setTrangThaiBangDiem(TrangThaiBangDiem.NHAP);
+        when(lopHocPhanRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(lopHocPhan));
+
+        // 1. Cannot publish while in NHAP
+        ApiException draftEx = assertThrows(ApiException.class, () -> diemService.congBoBangDiem(100L));
+        assertTrue(draftEx.getMessage().contains("cần được phê duyệt trước khi công bố"));
+        verify(thongBaoService, never()).gradesPublished(any(), any(), anyInt(), any());
+
+        // 2. Submit for approval -> CHO_DUYET (no notification)
+        Diem diem = new Diem();
+        diem.setDangKy(dangKy);
+        diem.setDiemQuaTrinh(8.0);
+        diem.setDiemCuoiKy(9.0);
+        diem.setDiemTongKet(8.6);
+        when(dangKyHocPhanRepository.findByLopHocPhan(100L, TrangThaiDangKy.DA_DANG_KY))
+                .thenReturn(List.of(dangKy));
+        when(diemRepository.findByDangKyIdIn(List.of(300L))).thenReturn(List.of(diem));
+
+        RegistrationDtos.TrangThaiBangDiemDto submitted = diemService.guiDuyetBangDiem(100L);
+        assertEquals("CHO_DUYET", submitted.trangThaiBangDiem());
+        verify(thongBaoService, never()).gradesPublished(any(), any(), anyInt(), any());
+
+        // 3. Cannot publish while in CHO_DUYET
+        ApiException pendingEx = assertThrows(ApiException.class, () -> diemService.congBoBangDiem(100L));
+        assertTrue(pendingEx.getMessage().contains("cần được phê duyệt trước khi công bố"));
+        verify(thongBaoService, never()).gradesPublished(any(), any(), anyInt(), any());
+
+        // 4. Approve -> DA_DUYET (still no notification)
+        RegistrationDtos.TrangThaiBangDiemDto approved = diemService.pheDuyetBangDiem(100L);
+        assertEquals("DA_DUYET", approved.trangThaiBangDiem());
+        verify(thongBaoService, never()).gradesPublished(any(), any(), anyInt(), any());
+
+        // 5. Publish after approval -> DA_CONG_BO (emits notification with version 1)
+        RegistrationDtos.TrangThaiBangDiemDto published = diemService.congBoBangDiem(100L);
+        assertEquals("DA_CONG_BO", published.trangThaiBangDiem());
+        assertEquals(1, published.phienBanCongBo());
+        verify(thongBaoService, times(1)).gradesPublished(eq(lopHocPhan), eq(List.of(dangKy)), eq(1), any());
     }
 
     @Test
@@ -191,6 +242,7 @@ class DiemServiceTest {
         LopHocPhan lopLan1 = taoLop(201L, "INT101.01-HK1", int101, hk1);
         LopHocPhan lopLan2 = taoLop(202L, "INT101.01-HK2", int101, hk2);
         LopHocPhan lopChuaCongBo = taoLop(203L, "MAT101.01-HK3", mat101, hk3);
+        lopChuaCongBo.setTrangThaiBangDiem(TrangThaiBangDiem.CHO_DUYET);
 
         DangKyHocPhan dkLan1 = taoDangKy(401L, lopLan1, LocalDateTime.of(2025, 8, 20, 8, 0));
         DangKyHocPhan dkLan2 = taoDangKy(402L, lopLan2, LocalDateTime.of(2026, 1, 20, 8, 0));
@@ -211,8 +263,8 @@ class DiemServiceTest {
         Diem diemNhapChuaCongBo = new Diem();
         diemNhapChuaCongBo.setDangKy(dkChuaCongBo);
         diemNhapChuaCongBo.setDiemQuaTrinh(9.0);
-        diemNhapChuaCongBo.setDiemCuoiKy(null);
-        diemNhapChuaCongBo.setDiemTongKet(null);
+        diemNhapChuaCongBo.setDiemCuoiKy(8.5);
+        diemNhapChuaCongBo.setDiemTongKet(8.7);
 
         when(dangKyHocPhanRepository.findAllActiveOfStudent(1L, TrangThaiDangKy.DA_DANG_KY))
                 .thenReturn(List.of(dkChuaCongBo, dkLan2, dkLan1));

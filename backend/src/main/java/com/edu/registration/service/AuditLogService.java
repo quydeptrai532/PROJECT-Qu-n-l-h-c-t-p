@@ -15,7 +15,6 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
@@ -38,8 +37,8 @@ public class AuditLogService {
             "siSoToiDa", "siSoHienTai", "conLai", "tenHocKy", "namHoc", "dangKyTu", "dangKyDen", "soTinChiToiThieu",
             "soTinChiToiDa", "trangThai", "dangKyId", "lopHocPhanId", "active", "maMon", "tenMon", "soTinChi",
             "loaiDangKy", "khoaId", "nganhId", "lopId", "monTienQuyetId", "lyDoHuy", "soBanGhi",
-            "maPhieu", "loaiYeuCau", "trangThaiCu", "trangThaiMoi", "soTepDinhKem", "diemId", "traoDoiId"
-
+            "maPhieu", "loaiYeuCau", "trangThaiCu", "trangThaiMoi", "soTepDinhKem", "diemId", "traoDoiId",
+            "trangThaiBangDiem", "phienBanCongBo", "soSinhVienDangHoc", "soSinhVienDuDieuKien", "soBanGhiDiem"
     );
 
     private final AuditLogRepository repository;
