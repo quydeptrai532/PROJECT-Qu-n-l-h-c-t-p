@@ -90,4 +90,27 @@ public final class RegistrationDtos {
                                   LocalDate ngayNghi, String lyDo, String tenGiangVien,
                                   LocalDateTime thoiGianTao) {
     }
+
+    public record ThongTinSinhVienPdfDto(String maSinhVien, String hoTen, String email,
+                                         String khoa, String nganh, String lopHanhChinh,
+                                         String khoaNhapHoc, String phienBanChuongTrinh) {
+    }
+
+    public record MucBangDiemPdfDto(int stt, Long dangKyId, Long hocKyId, String tenHocKy, String namHoc,
+                                    String maMon, String tenMon, int soTinChi, String maLop,
+                                    int lanHoc, int tongSoLanHoc, Double diemQuaTrinh, Double diemCuoiKy,
+                                    Double diemTongKet, double diemHe4, String trangThaiKetQua,
+                                    String tenTrangThaiKetQua) {
+    }
+
+    public record HocKyBangDiemPdfDto(Long hocKyId, String tenHocKy, String namHoc,
+                                      int tinChiCoDiem, int tinChiDat, double gpa10, double gpa4,
+                                      List<MucBangDiemPdfDto> items) {
+    }
+
+    public record BangDiemPdfDto(ThongTinSinhVienPdfDto sinhVien, String donViPhatHanh,
+                                 LocalDateTime thoiDiemPhatHanh, List<HocKyBangDiemPdfDto> hocKy,
+                                 int tongSoMonDaCongBo, int tongTinChiCoDiem, int tinChiTichLuy,
+                                 double gpa10, double gpa4, boolean coNhieuLanHoc) {
+    }
 }

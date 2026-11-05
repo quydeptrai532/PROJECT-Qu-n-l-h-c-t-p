@@ -10,6 +10,7 @@ import {
   ScrollText,
   TrendingUp,
 } from "lucide-react";
+import ExportTranscriptPdfButton from "../../components/ExportTranscriptPdfButton";
 import { Alert, Badge, EmptyState, PageHeader, Spinner, StatCard } from "../../components/ui";
 import { formatDiem } from "../../lib/format";
 import { useApi } from "../../lib/useApi";
@@ -35,6 +36,8 @@ export default function StudyHistoryPage() {
   const { data: hocKyList } = useApi("/hoc-ky");
   const [hocKyId, setHocKyId] = useState("");
   const [trangThai, setTrangThai] = useState("");
+  const [exportSuccess, setExportSuccess] = useState("");
+  const [exportError, setExportError] = useState("");
 
   const queryParams = useMemo(() => {
     const params = {};
@@ -119,9 +122,26 @@ export default function StudyHistoryPage() {
                 Đặt lại bộ lọc
               </button>
             )}
+            <ExportTranscriptPdfButton
+              hocKyId={hocKyId || undefined}
+              disabled={loading}
+              onSuccess={setExportSuccess}
+              onError={setExportError}
+            />
           </div>
         }
       />
+
+      {exportSuccess && (
+        <div className="mb-4">
+          <Alert tone="success">{exportSuccess}</Alert>
+        </div>
+      )}
+      {exportError && (
+        <div className="mb-4">
+          <Alert tone="error">{exportError}</Alert>
+        </div>
+      )}
 
       <div className="mb-4">
         <Alert tone="warning">

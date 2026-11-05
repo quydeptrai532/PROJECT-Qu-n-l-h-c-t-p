@@ -38,3 +38,6 @@ app:
   export:
     danh-sach-lop:
       cho-phep-email: ${EXPORT_CHO_PHEP_EMAIL:true}
+    bang-diem:
+      # Tên đơn vị phát hành chính thức; để trống nếu chưa cấu hình mẫu chính thức.
+      don-vi-phat-hanh: ${EXPORT_BANG_DIEM_DON_VI_PHAT_HANH:}
