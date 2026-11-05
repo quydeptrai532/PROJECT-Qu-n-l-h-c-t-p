@@ -52,3 +52,14 @@ app:
     bang-diem:
       # Tên đơn vị phát hành chính thức; để trống nếu chưa cấu hình mẫu chính thức.
       don-vi-phat-hanh: ${EXPORT_BANG_DIEM_DON_VI_PHAT_HANH:}
+  attendance:
+    # QLSV-70: Cấu hình quy tắc điểm danh và báo cáo chuyên cần (chờ Chủ dự án phê duyệt quy chế chính thức)
+    # Trạng thái tính vắng (mặc định: VANG)
+    trang-thai-tinh-vang: ${ATTENDANCE_TRANG_THAI_TINH_VANG:VANG}
+    # Vắng có phép có tính vào vắng không (mặc định: false)
+    co-phep-tinh-vang: ${ATTENDANCE_CO_PHEP_TINH_VANG:false}
+    # Quy đổi số lần muộn thành 1 lần vắng (0 = không quy đổi; ví dụ 3 = 3 lần muộn tính 1 vắng)
+    so-lan-muon-thanh-mot-vang: ${ATTENDANCE_SO_LAN_MUON_THANH_VANG:0}
+    # Mẫu số tỷ lệ chuyên cần: SO_BUOI_DA_DIEM_DANH (thực tế đã điểm danh) hoặc SO_BUOI_QUY_DINH
+    mau-so-chuyen-can: ${ATTENDANCE_MAU_SO_CHUYEN_CAN:SO_BUOI_DA_DIEM_DANH}
+    ghi-chu-quy-che: ${ATTENDANCE_GHI_CHU_QUY_CHE:Chính sách quy đổi muộn sang vắng, xử lý vắng có phép và mẫu số tỷ lệ chuyên cần đang áp dụng cấu hình dự kiến và chờ Chủ dự án phê duyệt chính thức.}
