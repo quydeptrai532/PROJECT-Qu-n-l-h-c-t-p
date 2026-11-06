@@ -82,6 +82,12 @@ public class LopHocPhan {
     @Column(name = "nguoi_cong_bo_bang_diem_id")
     private Long nguoiCongBoBangDiemId;
 
+    @Column(name = "nguong_so_buoi_vang")
+    private Integer nguongSoBuoiVang;
+
+    @Column(name = "nguong_ty_le_vang")
+    private Double nguongTyLeVang;
+
     public TrangThaiBangDiem getTrangThaiBangDiemHieuLuc() {
         return trangThaiBangDiem != null ? trangThaiBangDiem : TrangThaiBangDiem.NHAP;
     }
@@ -247,5 +253,21 @@ public class LopHocPhan {
 
     public void setNguoiCongBoBangDiemId(Long nguoiCongBoBangDiemId) {
         this.nguoiCongBoBangDiemId = nguoiCongBoBangDiemId;
+    }
+
+    public Integer getNguongSoBuoiVang() {
+        return nguongSoBuoiVang;
+    }
+
+    public void setNguongSoBuoiVang(Integer nguongSoBuoiVang) {
+        this.nguongSoBuoiVang = nguongSoBuoiVang;
+    }
+
+    public Double getNguongTyLeVang() {
+        return nguongTyLeVang;
+    }
+
+    public void setNguongTyLeVang(Double nguongTyLeVang) {
+        this.nguongTyLeVang = nguongTyLeVang;
     }
 }

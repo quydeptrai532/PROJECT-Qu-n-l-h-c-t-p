@@ -55,6 +55,8 @@ public class ThongBaoService {
     public static final String SECTION_CANCELLED_REASON_PREFIX = "Lớp học phần bị hủy";
     public static final String GRADES_PUBLISHED_EVENT = "GRADES_PUBLISHED";
     public static final String CLASS_ANNOUNCEMENT_EVENT = "CLASS_ANNOUNCEMENT";
+    public static final String ATTENDANCE_ALERT_EVENT = "ATTENDANCE_THRESHOLD_ALERT";
+    public static final String ATTENDANCE_RESOLVED_EVENT = "ATTENDANCE_ALERT_RESOLVED";
 
     private final ThongBaoRepository thongBaoRepository;
     private final DangKyHocPhanRepository dangKyRepository;
@@ -391,6 +393,55 @@ public class ThongBaoService {
             if (lecturerUser != null) {
                 send(lecturerUser, eventType, effectiveKey, title, message,
                         "NORMAL", "/lop-cua-toi/thoi-khoa-bieu", occurredAt);
+            }
+        });
+    }
+
+    /**
+     * Emits attendance threshold breach or resolution notification to lecturer and student (QLSV-71).
+     */
+    public void attendanceThresholdAlert(LopHocPhan section, SinhVien student,
+                                         String loaiNguong, double giaTriNguong,
+                                         int soBuoiVang, int tongBuoiHopLe, double tyLeVang,
+                                         boolean resolved) {
+        if (section == null || student == null) {
+            return;
+        }
+        String sectionCode = section.getMa();
+        String subjectName = section.getMonHoc() != null ? section.getMonHoc().getTen() : "";
+        User studentUser = student.getUser();
+        User lecturerUser = section.getGiangVien() != null ? section.getGiangVien().getUser() : null;
+
+        String thresholdDesc = "SO_BUOI_VANG".equalsIgnoreCase(loaiNguong)
+                ? ((int) giaTriNguong + " buổi")
+                : (giaTriNguong + "%");
+
+        String eventType = resolved ? ATTENDANCE_RESOLVED_EVENT : ATTENDANCE_ALERT_EVENT;
+        String idempotencyKey = "attendance-alert:" + section.getId() + ":" + student.getId()
+                + ":" + loaiNguong + ":" + soBuoiVang + "/" + tongBuoiHopLe + ":" + (resolved ? "RESOLVED" : "ALERT");
+
+        String title = resolved
+                ? "Giải tỏa cảnh báo chuyên cần: " + sectionCode
+                : "Cảnh báo vắng quá ngưỡng: " + sectionCode;
+
+        String message = resolved
+                ? "Cảnh báo chuyên cần đã được giải tỏa: Sinh viên " + student.getHoTen() + " (" + student.getMa() + ")"
+                  + " hiện có số buổi vắng là " + soBuoiVang + "/" + tongBuoiHopLe + " buổi hợp lệ (" + String.format(java.util.Locale.US, "%.1f", tyLeVang) + "%),"
+                  + " đã trở về dưới ngưỡng quy định của lớp " + sectionCode + " (" + subjectName + ")."
+                : "Sinh viên " + student.getHoTen() + " (" + student.getMa() + ")"
+                  + " đã vắng " + soBuoiVang + "/" + tongBuoiHopLe + " buổi hợp lệ (" + String.format(java.util.Locale.US, "%.1f", tyLeVang) + "%),"
+                  + " đạt/vượt ngưỡng " + thresholdDesc + " của lớp " + sectionCode + " (" + subjectName + ").";
+
+        String priority = resolved ? "NORMAL" : "HIGH";
+        LocalDateTime now = LocalDateTime.now();
+
+        dispatchAfterCommit(eventType + ":" + idempotencyKey, () -> {
+            if (studentUser != null) {
+                send(studentUser, eventType, idempotencyKey, title, message, priority, "/chuyen-can-cua-toi", now);
+            }
+            if (lecturerUser != null) {
+                send(lecturerUser, eventType, idempotencyKey, title, message, priority,
+                        "/lop-cua-toi/" + section.getId() + "/diem-danh", now);
             }
         });
     }

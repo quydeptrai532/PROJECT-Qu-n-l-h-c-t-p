@@ -24,6 +24,7 @@ import com.edu.registration.repository.SinhVienRepository;
 import com.edu.registration.security.CurrentUser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -62,6 +63,7 @@ public class AttendanceService {
     private final CurrentUser currentUser;
     private final AuditLogService auditLogService;
     private final AttendanceProperties attendanceProperties;
+    private final AttendanceAlertService attendanceAlertService;
 
     public AttendanceService(BuoiHocRepository buoiHocRepository,
                              DiemDanhRepository diemDanhRepository,
@@ -73,6 +75,23 @@ public class AttendanceService {
                              CurrentUser currentUser,
                              AuditLogService auditLogService,
                              AttendanceProperties attendanceProperties) {
+        this(buoiHocRepository, diemDanhRepository, lopHocPhanRepository, dangKyHocPhanRepository,
+                giangVienRepository, sinhVienRepository, hocKyRepository, currentUser, auditLogService,
+                attendanceProperties, null);
+    }
+
+    @Autowired
+    public AttendanceService(BuoiHocRepository buoiHocRepository,
+                             DiemDanhRepository diemDanhRepository,
+                             LopHocPhanRepository lopHocPhanRepository,
+                             DangKyHocPhanRepository dangKyHocPhanRepository,
+                             GiangVienRepository giangVienRepository,
+                             SinhVienRepository sinhVienRepository,
+                             HocKyRepository hocKyRepository,
+                             CurrentUser currentUser,
+                             AuditLogService auditLogService,
+                             AttendanceProperties attendanceProperties,
+                             AttendanceAlertService attendanceAlertService) {
         this.buoiHocRepository = buoiHocRepository;
         this.diemDanhRepository = diemDanhRepository;
         this.lopHocPhanRepository = lopHocPhanRepository;
@@ -83,6 +102,7 @@ public class AttendanceService {
         this.currentUser = currentUser;
         this.auditLogService = auditLogService;
         this.attendanceProperties = attendanceProperties;
+        this.attendanceAlertService = attendanceAlertService;
     }
 
     /**
@@ -133,6 +153,9 @@ public class AttendanceService {
                 ));
                 return null;
             });
+            if (attendanceAlertService != null) {
+                attendanceAlertService.kiemTraVaCapNhatCanhBaoChoLop(saved.getLopHocPhan().getId());
+            }
             return mapBuoiHocToDto(saved);
         } catch (DataIntegrityViolationException dive) {
             throw ApiException.conflict("Buổi học vào ngày " + ngayHoc + " (ca " + caHoc
@@ -261,6 +284,9 @@ public class AttendanceService {
             context.changes(Map.of("buoiHocId", buoiHocId, "lopHocPhanId", lopId), Map.of());
             return null;
         });
+        if (attendanceAlertService != null) {
+            attendanceAlertService.kiemTraVaCapNhatCanhBaoChoLop(lopId);
+        }
     }
 
     /**
@@ -338,6 +364,9 @@ public class AttendanceService {
             return null;
         });
 
+        if (attendanceAlertService != null) {
+            attendanceAlertService.kiemTraVaCapNhatCanhBaoChoLop(lop.getId());
+        }
         return chiTietBuoiHocVaDiemDanh(buoiHocId);
     }
 
