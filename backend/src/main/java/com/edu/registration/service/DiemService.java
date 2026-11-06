@@ -1,6 +1,8 @@
 package com.edu.registration.service;
 
 import com.edu.registration.dto.RegistrationDtos;
+import com.edu.registration.dto.ValidationErrorDetail;
+import java.math.BigDecimal;
 import com.edu.registration.entity.DangKyHocPhan;
 import com.edu.registration.entity.Diem;
 import com.edu.registration.entity.GiangVien;
@@ -137,13 +139,28 @@ public class DiemService {
             throw ApiException.badRequest("Đăng ký này đã bị hủy, không thể nhập điểm");
         }
         LopHocPhan lop = dangKy.getLopHocPhan();
-        kiemTraQuyenQuanLyBangDiem(lop);
+        kiemTraQuyenSuaDiem(lop);
 
         if (lop.getTrangThaiBangDiem() == TrangThaiBangDiem.DA_CONG_BO) {
             throw ApiException.conflict("Bảng điểm lớp học phần đã được công bố, không thể chỉnh sửa trực tiếp. Vui lòng thu hồi công bố trước khi điều chỉnh");
         }
 
-        double tongKet = Math.round((0.4 * request.diemQuaTrinh() + 0.6 * request.diemCuoiKy()) * 10.0) / 10.0;
+        SinhVien sv = dangKy.getSinhVien();
+        Long svId = sv != null ? sv.getId() : null;
+        String maSv = sv != null ? sv.getMa() : null;
+
+        List<ValidationErrorDetail> errors = new ArrayList<>();
+        validateDiem(request.diemQuaTrinh(), "diemQuaTrinh", dangKyId, svId, maSv, 1, errors);
+        validateDiem(request.diemCuoiKy(), "diemCuoiKy", dangKyId, svId, maSv, 1, errors);
+
+        if (!errors.isEmpty()) {
+            throw ApiException.validation(errors.get(0).message(), errors);
+        }
+
+        Double tongKet = null;
+        if (request.diemQuaTrinh() != null && request.diemCuoiKy() != null) {
+            tongKet = Math.round((0.4 * request.diemQuaTrinh() + 0.6 * request.diemCuoiKy()) * 10.0) / 10.0;
+        }
 
         Diem diem = diemRepository.findByDangKyId(dangKyId).orElseGet(() -> {
             Diem moi = new Diem();
@@ -165,9 +182,122 @@ public class DiemService {
             }
         }
 
-        log.info("Đã lưu điểm nháp cho đăng ký id={} thuộc lớp {} (trạng thái bảng điểm={})",
+        executeAudited("GRADE_UPDATED", "GRADE", dangKyId, audit -> {
+            Map<String, Object> changes = new LinkedHashMap<>();
+            changes.put("dangKyId", dangKy.getId());
+            changes.put("lopHocPhanId", lop.getId());
+            changes.put("maLop", lop.getMa());
+            changes.put("soBanGhiDiem", 1);
+            if (daLuu.getId() != null) {
+                changes.put("diemId", daLuu.getId());
+            }
+            changes.put("trangThaiBangDiem", lop.getTrangThaiBangDiemHieuLuc().name());
+            audit.changes(Map.of(), changes);
+            return null;
+        });
+
+        log.info("Đã lưu điểm cho đăng ký id={} thuộc lớp {} (trạng thái bảng điểm={})",
                 dangKy.getId(), lop.getMa(), lop.getTrangThaiBangDiemHieuLuc());
         return mapper.diem(dangKy, daLuu);
+    }
+
+    public List<RegistrationDtos.DiemDto> capNhatDiemHangLoat(Long lopHocPhanId, RegistrationDtos.CapNhatDiemHangLoatRequest request) {
+        if (request == null || request.danhSach() == null || request.danhSach().isEmpty()) {
+            throw ApiException.badRequest("Danh sách cập nhật điểm không được để trống");
+        }
+        LopHocPhan lop = layLopDeCapNhatBangDiem(lopHocPhanId);
+        kiemTraQuyenSuaDiem(lop);
+
+        if (lop.getTrangThaiBangDiem() == TrangThaiBangDiem.DA_CONG_BO) {
+            throw ApiException.conflict("Bảng điểm lớp học phần đã được công bố, không thể chỉnh sửa trực tiếp. Vui lòng thu hồi công bố trước khi điều chỉnh");
+        }
+
+        List<DangKyHocPhan> activeRegistrations =
+                dangKyHocPhanRepository.findByLopHocPhan(lopHocPhanId, TrangThaiDangKy.DA_DANG_KY);
+        Map<Long, DangKyHocPhan> activeMap = activeRegistrations.stream()
+                .collect(Collectors.toMap(DangKyHocPhan::getId, Function.identity()));
+
+        List<ValidationErrorDetail> errors = new ArrayList<>();
+        int rowIndex = 1;
+        for (RegistrationDtos.CapNhatDiemItemRequest item : request.danhSach()) {
+            if (item.dangKyId() == null) {
+                errors.add(new ValidationErrorDetail(null, null, null, rowIndex, "dangKyId", "dangKyId", "Mã đăng ký không được để trống"));
+                rowIndex++;
+                continue;
+            }
+            DangKyHocPhan dk = activeMap.get(item.dangKyId());
+            if (dk == null) {
+                errors.add(new ValidationErrorDetail(item.dangKyId(), null, null, rowIndex, "dangKyId", "dangKyId",
+                        "Đăng ký không thuộc lớp học phần hoặc đã bị hủy"));
+            } else {
+                SinhVien sv = dk.getSinhVien();
+                Long svId = sv != null ? sv.getId() : null;
+                String maSv = sv != null ? sv.getMa() : null;
+                validateDiem(item.diemQuaTrinh(), "diemQuaTrinh", item.dangKyId(), svId, maSv, rowIndex, errors);
+                validateDiem(item.diemCuoiKy(), "diemCuoiKy", item.dangKyId(), svId, maSv, rowIndex, errors);
+            }
+            rowIndex++;
+        }
+
+        if (!errors.isEmpty()) {
+            String errorSummary = errors.size() == 1
+                    ? errors.get(0).message()
+                    : "Dữ liệu điểm không hợp lệ (" + errors.size() + " lỗi)";
+            throw ApiException.validation(errorSummary, errors);
+        }
+
+        Map<Long, Diem> diemMap = layDiemTheoDangKy(activeRegistrations);
+        LocalDateTime now = LocalDateTime.now();
+        List<Diem> toSave = new ArrayList<>();
+
+        for (RegistrationDtos.CapNhatDiemItemRequest item : request.danhSach()) {
+            DangKyHocPhan dk = activeMap.get(item.dangKyId());
+            Diem diem = diemMap.get(item.dangKyId());
+            if (diem == null) {
+                diem = new Diem();
+                diem.setDangKy(dk);
+                diemMap.put(dk.getId(), diem);
+            }
+            diem.setDiemQuaTrinh(item.diemQuaTrinh());
+            diem.setDiemCuoiKy(item.diemCuoiKy());
+            if (item.diemQuaTrinh() != null && item.diemCuoiKy() != null) {
+                double tongKet = Math.round((0.4 * item.diemQuaTrinh() + 0.6 * item.diemCuoiKy()) * 10.0) / 10.0;
+                diem.setDiemTongKet(tongKet);
+            } else {
+                diem.setDiemTongKet(null);
+            }
+            diem.setCapNhatLuc(now);
+            toSave.add(diem);
+        }
+
+        diemRepository.saveAll(toSave);
+
+        if (lop.getTrangThaiBangDiem() != TrangThaiBangDiem.NHAP) {
+            lop.setTrangThaiBangDiem(TrangThaiBangDiem.NHAP);
+            lop.setDuyetBangDiemLuc(null);
+            lop.setNguoiDuyetBangDiemId(null);
+            lopHocPhanRepository.save(lop);
+        }
+
+        executeAudited("GRADE_UPDATED", "GRADE_SHEET", lopHocPhanId, audit -> {
+            Map<String, Object> changes = new LinkedHashMap<>();
+            changes.put("lopHocPhanId", lop.getId());
+            changes.put("maLop", lop.getMa());
+            changes.put("soBanGhiDiem", toSave.size());
+            changes.put("trangThaiBangDiem", lop.getTrangThaiBangDiemHieuLuc().name());
+            audit.changes(Map.of(), changes);
+            return null;
+        });
+
+        log.info("Đã cập nhật hàng loạt {} điểm cho lớp {} (id={})", toSave.size(), lop.getMa(), lop.getId());
+
+        return request.danhSach().stream()
+                .map(item -> {
+                    DangKyHocPhan dk = activeMap.get(item.dangKyId());
+                    Diem d = diemMap.get(item.dangKyId());
+                    return mapper.diem(dk, d);
+                })
+                .toList();
     }
 
     /**
@@ -515,6 +645,39 @@ public class DiemService {
         return lopHocPhanRepository.findByIdForUpdate(lopHocPhanId)
                 .or(() -> lopHocPhanRepository.findWithDetailsById(lopHocPhanId))
                 .orElseThrow(() -> ApiException.notFound("Lớp học phần không tồn tại"));
+    }
+
+    public static void validateDiem(Double diem, String tenCot, Long dangKyId, Long sinhVienId,
+                                    String maSinhVien, Integer dong, List<ValidationErrorDetail> errors) {
+        if (diem == null) {
+            return;
+        }
+        if (Double.isNaN(diem) || Double.isInfinite(diem) || diem < 0.0 || diem > 10.0) {
+            errors.add(new ValidationErrorDetail(
+                    dangKyId, sinhVienId, maSinhVien, dong, tenCot, tenCot,
+                    "Điểm phải từ 0 đến 10"
+            ));
+            return;
+        }
+        BigDecimal bd = BigDecimal.valueOf(diem);
+        if (bd.stripTrailingZeros().scale() > 2) {
+            errors.add(new ValidationErrorDetail(
+                    dangKyId, sinhVienId, maSinhVien, dong, tenCot, tenCot,
+                    "Điểm chỉ được có tối đa 2 chữ số thập phân"
+            ));
+        }
+    }
+
+    private GiangVien kiemTraQuyenSuaDiem(LopHocPhan lop) {
+        User actor = currentUser.get();
+        if (actor != null && actor.getRole() != null && actor.getRole() != Role.GIANG_VIEN) {
+            throw ApiException.forbidden("Chỉ giảng viên phụ trách lớp mới có quyền sửa điểm");
+        }
+        GiangVien giangVien = giangVienHienTai();
+        if (lop.getGiangVien() == null || !lop.getGiangVien().getId().equals(giangVien.getId())) {
+            throw ApiException.forbidden("Bạn không phụ trách lớp học phần này");
+        }
+        return giangVien;
     }
 
     private User kiemTraQuyenQuanLyBangDiem(LopHocPhan lop) {

@@ -1,6 +1,7 @@
 package com.edu.registration.service;
 
 import com.edu.registration.dto.RegistrationDtos;
+import com.edu.registration.dto.ValidationErrorDetail;
 import com.edu.registration.entity.DangKyHocPhan;
 import com.edu.registration.entity.Diem;
 import com.edu.registration.entity.GiangVien;
@@ -328,6 +329,114 @@ class DiemServiceTest {
         ApiException missingSemester = assertThrows(ApiException.class,
                 () -> diemService.lichSuHocTap(999L, null));
         assertEquals("Học kỳ không tồn tại", missingSemester.getMessage());
+    }
+
+    @Test
+    void nhapDiemTuChoiDiemNgoaiMienGiaTriVaTraVeChiTietCot() {
+        dangNhapVoiGiangVien();
+        when(dangKyHocPhanRepository.findById(300L)).thenReturn(Optional.of(dangKy));
+
+        // Quá trình < 0
+        ApiException ex1 = assertThrows(ApiException.class, () ->
+                diemService.nhapDiem(300L, new RegistrationDtos.NhapDiemRequest(-1.0, 8.0)));
+        assertEquals("Điểm phải từ 0 đến 10", ex1.getMessage());
+        assertEquals(1, ex1.getErrors().size());
+        assertEquals("diemQuaTrinh", ex1.getErrors().get(0).cot());
+        assertEquals(300L, ex1.getErrors().get(0).dangKyId());
+
+        // Cuối kỳ > 10
+        ApiException ex2 = assertThrows(ApiException.class, () ->
+                diemService.nhapDiem(300L, new RegistrationDtos.NhapDiemRequest(8.0, 10.5)));
+        assertEquals("Điểm phải từ 0 đến 10", ex2.getMessage());
+        assertEquals(1, ex2.getErrors().size());
+        assertEquals("diemCuoiKy", ex2.getErrors().get(0).cot());
+
+        verify(diemRepository, never()).save(any());
+    }
+
+    @Test
+    void nhapDiemTuChoiDiemQuaNhieuChuSoThapPhan() {
+        dangNhapVoiGiangVien();
+        when(dangKyHocPhanRepository.findById(300L)).thenReturn(Optional.of(dangKy));
+
+        ApiException ex = assertThrows(ApiException.class, () ->
+                diemService.nhapDiem(300L, new RegistrationDtos.NhapDiemRequest(8.125, 9.0)));
+        assertEquals("Điểm chỉ được có tối đa 2 chữ số thập phân", ex.getMessage());
+        assertEquals(1, ex.getErrors().size());
+        assertEquals("diemQuaTrinh", ex.getErrors().get(0).cot());
+        verify(diemRepository, never()).save(any());
+    }
+
+    @Test
+    void nhapDiemChoPhepGiaTriNullTrongTrangThaiNhapVaDiemTongKetNull() {
+        dangNhapVoiGiangVien();
+        when(dangKyHocPhanRepository.findById(300L)).thenReturn(Optional.of(dangKy));
+        when(diemRepository.findByDangKyId(300L)).thenReturn(Optional.empty());
+        when(diemRepository.save(any(Diem.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Nhập mỗi điểm quá trình, điểm cuối kỳ null -> điểm tổng kết null
+        diemService.nhapDiem(300L, new RegistrationDtos.NhapDiemRequest(7.5, null));
+        ArgumentCaptor<Diem> captor = ArgumentCaptor.forClass(Diem.class);
+        verify(diemRepository).save(captor.capture());
+        assertEquals(7.5, captor.getValue().getDiemQuaTrinh());
+        assertNull(captor.getValue().getDiemCuoiKy());
+        assertNull(captor.getValue().getDiemTongKet());
+    }
+
+    @Test
+    void nhapDiemTuChoiKhiBangDiemDaCongBo() {
+        dangNhapVoiGiangVien();
+        lopHocPhan.setTrangThaiBangDiem(TrangThaiBangDiem.DA_CONG_BO);
+        when(dangKyHocPhanRepository.findById(300L)).thenReturn(Optional.of(dangKy));
+
+        ApiException ex = assertThrows(ApiException.class, () ->
+                diemService.nhapDiem(300L, new RegistrationDtos.NhapDiemRequest(8.0, 9.0)));
+        assertTrue(ex.getMessage().contains("đã được công bố"));
+        verify(diemRepository, never()).save(any());
+    }
+
+    @Test
+    void capNhatDiemHangLoatThanhCongVaRollbackKhiCoLoi() {
+        dangNhapVoiGiangVien();
+        when(lopHocPhanRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(lopHocPhan));
+
+        DangKyHocPhan dk2 = new DangKyHocPhan();
+        dk2.setId(301L);
+        SinhVien sv2 = new SinhVien();
+        sv2.setId(2L);
+        sv2.setMa("SV002");
+        sv2.setHoTen("Lê Hoàng Nam");
+        dk2.setSinhVien(sv2);
+        dk2.setLopHocPhan(lopHocPhan);
+        dk2.setTrangThai(TrangThaiDangKy.DA_DANG_KY);
+
+        when(dangKyHocPhanRepository.findByLopHocPhan(100L, TrangThaiDangKy.DA_DANG_KY))
+                .thenReturn(List.of(dangKy, dk2));
+
+        // 1. Trường hợp có lỗi validation ở dòng 2 -> rollback toàn bộ, không lưu dòng nào
+        RegistrationDtos.CapNhatDiemHangLoatRequest badReq = new RegistrationDtos.CapNhatDiemHangLoatRequest(
+                List.of(
+                        new RegistrationDtos.CapNhatDiemItemRequest(300L, 8.5, 9.0),
+                        new RegistrationDtos.CapNhatDiemItemRequest(301L, 7.0, 11.0)
+                )
+        );
+        ApiException badEx = assertThrows(ApiException.class, () -> diemService.capNhatDiemHangLoat(100L, badReq));
+        assertEquals(1, badEx.getErrors().size());
+        assertEquals("diemCuoiKy", badEx.getErrors().get(0).cot());
+        assertEquals(301L, badEx.getErrors().get(0).dangKyId());
+        assertEquals(2, badEx.getErrors().get(0).dong());
+        verify(diemRepository, never()).saveAll(any());
+
+        // 2. Trường hợp hợp lệ -> lưu toàn bộ thành công
+        when(diemRepository.findByDangKyIdIn(any())).thenReturn(List.of());
+        RegistrationDtos.CapNhatDiemHangLoatRequest goodReq = new RegistrationDtos.CapNhatDiemHangLoatRequest(
+                List.of(
+                        new RegistrationDtos.CapNhatDiemItemRequest(300L, 8.0, 9.0),
+                        new RegistrationDtos.CapNhatDiemItemRequest(301L, 7.5, 8.5)
+                )
+        );
+        diemService.capNhatDiemHangLoat(100L, goodReq);
+        verify(diemRepository).saveAll(any());
     }
 
     private LopHocPhan taoLop(Long id, String ma, MonHoc mon, HocKy hocKy) {

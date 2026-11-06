@@ -1,9 +1,11 @@
 package com.edu.registration.dto;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
@@ -42,12 +44,32 @@ public final class RegistrationDtos {
                                   String loaiDangKy, List<LanHocTruocDto> cacLanHocTruoc) { }
 
     public record NhapDiemRequest(
-            @NotNull(message = "Vui lòng nhập điểm quá trình")
             @DecimalMin(value = "0", message = "Điểm phải từ 0 đến 10")
-            @DecimalMax(value = "10", message = "Điểm phải từ 0 đến 10") Double diemQuaTrinh,
-            @NotNull(message = "Vui lòng nhập điểm cuối kỳ")
+            @DecimalMax(value = "10", message = "Điểm phải từ 0 đến 10")
+            @Digits(integer = 2, fraction = 2, message = "Điểm chỉ được có tối đa 2 chữ số thập phân")
+            Double diemQuaTrinh,
             @DecimalMin(value = "0", message = "Điểm phải từ 0 đến 10")
-            @DecimalMax(value = "10", message = "Điểm phải từ 0 đến 10") Double diemCuoiKy) {
+            @DecimalMax(value = "10", message = "Điểm phải từ 0 đến 10")
+            @Digits(integer = 2, fraction = 2, message = "Điểm chỉ được có tối đa 2 chữ số thập phân")
+            Double diemCuoiKy) {
+    }
+
+    public record CapNhatDiemItemRequest(
+            @NotNull(message = "Mã đăng ký không được để trống")
+            Long dangKyId,
+            @DecimalMin(value = "0", message = "Điểm phải từ 0 đến 10")
+            @DecimalMax(value = "10", message = "Điểm phải từ 0 đến 10")
+            @Digits(integer = 2, fraction = 2, message = "Điểm chỉ được có tối đa 2 chữ số thập phân")
+            Double diemQuaTrinh,
+            @DecimalMin(value = "0", message = "Điểm phải từ 0 đến 10")
+            @DecimalMax(value = "10", message = "Điểm phải từ 0 đến 10")
+            @Digits(integer = 2, fraction = 2, message = "Điểm chỉ được có tối đa 2 chữ số thập phân")
+            Double diemCuoiKy) {
+    }
+
+    public record CapNhatDiemHangLoatRequest(
+            @NotEmpty(message = "Danh sách điểm không được để trống")
+            List<@Valid CapNhatDiemItemRequest> danhSach) {
     }
 
     public record DiemDto(Long dangKyId, Long sinhVienId, String maSinhVien, String hoTen, String email,
