@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, BookOpen, Calculator, CheckCircle2, ClipboardList, Eye, Megaphone, RotateCcw, Save, Search, Send, Users } from "lucide-react";
+import { ArrowLeft, Calculator, CheckCircle2, ClipboardList, Eye, Megaphone, RotateCcw, Save, Search, Send, Users } from "lucide-react";
 import api, { getErrorMessage } from "../../api/client";
 import ExportStudentsButton from "../../components/ExportStudentsButton";
 import ClassAnnouncementModal from "../../components/ClassAnnouncementModal";
@@ -18,7 +18,7 @@ const GRADE_SHEET_STATUS_META = {
 function tinhTongKet(quaTrinh, cuoiKy) {
     const qt = Number(quaTrinh);
     const ck = Number(cuoiKy);
-    if (quaTrinh === "" || cuoiKy === "" || Number.isNaN(qt) || Number.isNaN(ck)) return null;
+    if (quaTrinh === "" || cuoiKy === "" || quaTrinh === null || cuoiKy === null || Number.isNaN(qt) || Number.isNaN(ck)) return null;
     return Math.round((0.4 * qt + 0.6 * ck) * 10) / 10;
 }
 
@@ -33,6 +33,7 @@ export default function GradeEntryPage() {
 
     const [rows, setRows] = useState([]);
     const [edits, setEdits] = useState({});
+    const [fieldErrors, setFieldErrors] = useState({}); // { [dangKyId]: { diemQuaTrinh: "...", diemCuoiKy: "...", general: "..." } }
     const [busyId, setBusyId] = useState(null);
     const [workflowBusy, setWorkflowBusy] = useState(false);
     const [error, setError] = useState("");
@@ -70,6 +71,7 @@ export default function GradeEntryPage() {
     const statusMeta = GRADE_SHEET_STATUS_META[trangThaiBangDiem] || GRADE_SHEET_STATUS_META.NHAP;
     const daCongBo = trangThaiBangDiem === "DA_CONG_BO";
     const duDieuKienDuyet = rows.length > 0 && soDaNhap === rows.length && Object.keys(edits).length === 0;
+    const soLuongThayDoi = Object.keys(edits).length;
 
     const onChange = (dangKyId, field, value) => {
         setEdits((current) => ({
@@ -82,6 +84,23 @@ export default function GradeEntryPage() {
                 [field]: value,
             },
         }));
+
+        // Xóa lỗi tại ô tương ứng khi người dùng bắt đầu chỉnh sửa
+        if (fieldErrors[dangKyId]?.[field]) {
+            setFieldErrors((current) => {
+                const next = { ...current };
+                if (next[dangKyId]) {
+                    const sub = { ...next[dangKyId] };
+                    delete sub[field];
+                    if (Object.keys(sub).length === 0) {
+                        delete next[dangKyId];
+                    } else {
+                        next[dangKyId] = sub;
+                    }
+                }
+                return next;
+            });
+        }
     };
 
     const getValue = (row, field) => {
@@ -92,21 +111,57 @@ export default function GradeEntryPage() {
         return value === null || value === undefined ? "" : value;
     };
 
+    const parseErrorsToFieldMap = (resErrors, defaultDangKyId) => {
+        const nextErr = {};
+        if (Array.isArray(resErrors)) {
+            for (const item of resErrors) {
+                const targetId = item.dangKyId || defaultDangKyId;
+                const targetCol = item.cot || item.field || "general";
+                if (targetId) {
+                    if (!nextErr[targetId]) nextErr[targetId] = {};
+                    nextErr[targetId][targetCol] = item.message;
+                }
+            }
+        }
+        return nextErr;
+    };
+
     const luuDiem = async (row) => {
         const quaTrinh = getValue(row, "diemQuaTrinh");
         const cuoiKy = getValue(row, "diemCuoiKy");
-        if (quaTrinh === "" || cuoiKy === "") {
-            setError(`Vui lòng nhập đủ điểm quá trình và cuối kỳ cho ${row.maSinhVien}`);
+
+        // Validate client-side cơ bản để hỗ trợ người dùng (backend vẫn là nguồn xác thực cuối cùng)
+        const clientErrors = {};
+        if (quaTrinh !== "" && quaTrinh !== null && quaTrinh !== undefined) {
+            const qt = Number(quaTrinh);
+            if (Number.isNaN(qt) || qt < 0 || qt > 10) {
+                clientErrors.diemQuaTrinh = "Điểm phải từ 0 đến 10";
+            }
+        }
+        if (cuoiKy !== "" && cuoiKy !== null && cuoiKy !== undefined) {
+            const ck = Number(cuoiKy);
+            if (Number.isNaN(ck) || ck < 0 || ck > 10) {
+                clientErrors.diemCuoiKy = "Điểm phải từ 0 đến 10";
+            }
+        }
+        if (Object.keys(clientErrors).length > 0) {
+            setFieldErrors((current) => ({
+                ...current,
+                [row.dangKyId]: { ...(current[row.dangKyId] || {}), ...clientErrors },
+            }));
+            setError(`Dữ liệu điểm của sinh viên ${row.maSinhVien} không hợp lệ (phải từ 0 đến 10)`);
             return;
         }
+
         setBusyId(row.dangKyId);
         setError("");
         setMessage("");
         try {
-            const { data } = await api.put(`/diem/${row.dangKyId}`, {
-                diemQuaTrinh: Number(quaTrinh),
-                diemCuoiKy: Number(cuoiKy),
-            });
+            const payload = {
+                diemQuaTrinh: quaTrinh === "" ? null : Number(quaTrinh),
+                diemCuoiKy: cuoiKy === "" ? null : Number(cuoiKy),
+            };
+            const { data } = await api.put(`/diem/${row.dangKyId}`, payload);
             setRows((current) =>
                 current.map((item) => (item.dangKyId === row.dangKyId ? { ...item, ...data } : item))
             );
@@ -115,12 +170,89 @@ export default function GradeEntryPage() {
                 delete next[row.dangKyId];
                 return next;
             });
-            setMessage(`Đã lưu điểm nháp cho ${row.maSinhVien} - ${row.hoTen}`);
+            setFieldErrors((current) => {
+                const next = { ...current };
+                delete next[row.dangKyId];
+                return next;
+            });
+            setMessage(`Đã lưu điểm cho ${row.maSinhVien} - ${row.hoTen}`);
             reloadLop();
         } catch (err) {
-            setError(getErrorMessage(err));
+            const responseData = err.response?.data;
+            if (responseData?.errors && Array.isArray(responseData.errors) && responseData.errors.length > 0) {
+                const mapped = parseErrorsToFieldMap(responseData.errors, row.dangKyId);
+                setFieldErrors((current) => ({ ...current, ...mapped }));
+                setError(responseData.message || "Dữ liệu điểm không hợp lệ");
+            } else {
+                setError(getErrorMessage(err));
+            }
         } finally {
             setBusyId(null);
+        }
+    };
+
+    const luuTatCa = async () => {
+        if (soLuongThayDoi === 0) return;
+        setWorkflowBusy(true);
+        setError("");
+        setMessage("");
+
+        // Kiểm tra nhanh client-side hỗ trợ
+        const clientErrors = {};
+        const danhSachPayload = [];
+        for (const [dangKyIdStr, val] of Object.entries(edits)) {
+            const dkId = Number(dangKyIdStr);
+            const row = rows.find((r) => r.dangKyId === dkId);
+            const qtVal = val.diemQuaTrinh;
+            const ckVal = val.diemCuoiKy;
+
+            const errs = {};
+            if (qtVal !== "" && qtVal !== null && qtVal !== undefined) {
+                const qt = Number(qtVal);
+                if (Number.isNaN(qt) || qt < 0 || qt > 10) errs.diemQuaTrinh = "Điểm phải từ 0 đến 10";
+            }
+            if (ckVal !== "" && ckVal !== null && ckVal !== undefined) {
+                const ck = Number(ckVal);
+                if (Number.isNaN(ck) || ck < 0 || ck > 10) errs.diemCuoiKy = "Điểm phải từ 0 đến 10";
+            }
+            if (Object.keys(errs).length > 0) {
+                clientErrors[dkId] = errs;
+            }
+            danhSachPayload.push({
+                dangKyId: dkId,
+                diemQuaTrinh: qtVal === "" ? null : Number(qtVal),
+                diemCuoiKy: ckVal === "" ? null : Number(ckVal),
+            });
+        }
+
+        if (Object.keys(clientErrors).length > 0) {
+            setFieldErrors((current) => ({ ...current, ...clientErrors }));
+            setError("Có một số ô điểm nhập ngoài miền giá trị hợp lệ (0-10). Vui lòng kiểm tra lại");
+            setWorkflowBusy(false);
+            return;
+        }
+
+        try {
+            const { data } = await api.put(`/giang-vien/lop-hoc-phan/${id}/diem`, { danhSach: danhSachPayload });
+            setRows((current) => {
+                const updatedMap = new Map((data || []).map((item) => [item.dangKyId, item]));
+                return current.map((row) => updatedMap.has(row.dangKyId) ? { ...row, ...updatedMap.get(row.dangKyId) } : row);
+            });
+            setEdits({});
+            setFieldErrors({});
+            setMessage(`Đã lưu thành công ${danhSachPayload.length} điểm sinh viên trong một thao tác`);
+            await reloadLop();
+        } catch (err) {
+            const responseData = err.response?.data;
+            if (responseData?.errors && Array.isArray(responseData.errors) && responseData.errors.length > 0) {
+                const mapped = parseErrorsToFieldMap(responseData.errors, null);
+                setFieldErrors((current) => ({ ...current, ...mapped }));
+                setError(responseData.message || "Dữ liệu cập nhật có điểm không hợp lệ; toàn bộ giao dịch đã được rollback.");
+            } else {
+                setError(getErrorMessage(err));
+            }
+        } finally {
+            setWorkflowBusy(false);
         }
     };
 
@@ -276,9 +408,21 @@ export default function GradeEntryPage() {
                             />
                         </div>
                     </div>
-                    <p className="text-xs text-slate-500">
-                        Đã nhập điểm: {soDaNhap}/{rows.length} · Điểm tổng kết = 40% quá trình + 60% cuối kỳ
-                    </p>
+                    <div className="flex flex-wrap items-center gap-3">
+                        {soLuongThayDoi > 0 && !daCongBo && (
+                            <button
+                                type="button"
+                                className="btn-primary text-xs"
+                                disabled={workflowBusy}
+                                onClick={luuTatCa}
+                            >
+                                <Save size={14} /> Lưu tất cả thay đổi ({soLuongThayDoi})
+                            </button>
+                        )}
+                        <p className="text-xs text-slate-500">
+                            Đã nhập điểm: {soDaNhap}/{rows.length} · Điểm tổng kết = 40% quá trình + 60% cuối kỳ
+                        </p>
+                    </div>
                 </div>
 
                 {loadingSv ? (
@@ -303,8 +447,8 @@ export default function GradeEntryPage() {
                                 <th className="th">Họ tên</th>
                                 <th className="th">Email</th>
                                 <th className="th w-28 text-center">Hồ sơ</th>
-                                <th className="th w-32 text-center">Quá trình</th>
-                                <th className="th w-32 text-center">Cuối kỳ</th>
+                                <th className="th w-36 text-center">Quá trình</th>
+                                <th className="th w-36 text-center">Cuối kỳ</th>
                                 <th className="th w-28 text-center">Tổng kết</th>
                                 <th className="th w-28 text-right">Thao tác</th>
                             </tr>
@@ -317,8 +461,10 @@ export default function GradeEntryPage() {
                                 const daThayDoi =
                                     String(quaTrinh) !== String(row.diemQuaTrinh ?? "") ||
                                     String(cuoiKy) !== String(row.diemCuoiKy ?? "");
+                                const rowErrors = fieldErrors[row.dangKyId] || {};
+                                const coLoi = Boolean(rowErrors.diemQuaTrinh || rowErrors.diemCuoiKy || rowErrors.general);
                                 return (
-                                    <tr key={row.dangKyId} className="hover:bg-slate-50/60">
+                                    <tr key={row.dangKyId} className={`hover:bg-slate-50/60 ${coLoi ? "bg-rose-50/30" : ""}`}>
                                         <td className="td text-center text-slate-500">{index + 1}</td>
                                         <td className="td font-medium text-slate-900">
                                             <button
@@ -330,7 +476,14 @@ export default function GradeEntryPage() {
                                                 {row.maSinhVien}
                                             </button>
                                         </td>
-                                        <td className="td">{row.hoTen}</td>
+                                        <td className="td">
+                                            <div>
+                                                <span>{row.hoTen}</span>
+                                                {rowErrors.general && (
+                                                    <p className="mt-0.5 text-[11px] text-rose-600">{rowErrors.general}</p>
+                                                )}
+                                            </div>
+                                        </td>
                                         <td className="td text-slate-500">{row.email || "—"}</td>
                                         <td className="td text-center">
                                             <button
@@ -343,28 +496,42 @@ export default function GradeEntryPage() {
                                             </button>
                                         </td>
                                         <td className="td">
-                                            <input
-                                                className="input w-24 text-center"
-                                                type="number"
-                                                min="0"
-                                                max="10"
-                                                step="0.1"
-                                                disabled={daCongBo}
-                                                value={quaTrinh}
-                                                onChange={(event) => onChange(row.dangKyId, "diemQuaTrinh", event.target.value)}
-                                            />
+                                            <div className="flex flex-col items-center">
+                                                <input
+                                                    className={`input w-24 text-center ${rowErrors.diemQuaTrinh ? "!border-rose-500 !ring-rose-500 bg-rose-50/50" : ""}`}
+                                                    type="number"
+                                                    min="0"
+                                                    max="10"
+                                                    step="0.1"
+                                                    disabled={daCongBo}
+                                                    value={quaTrinh}
+                                                    onChange={(event) => onChange(row.dangKyId, "diemQuaTrinh", event.target.value)}
+                                                />
+                                                {rowErrors.diemQuaTrinh && (
+                                                    <span className="mt-1 max-w-[130px] text-center text-[10px] font-medium leading-tight text-rose-600">
+                                                        {rowErrors.diemQuaTrinh}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="td">
-                                            <input
-                                                className="input w-24 text-center"
-                                                type="number"
-                                                min="0"
-                                                max="10"
-                                                step="0.1"
-                                                disabled={daCongBo}
-                                                value={cuoiKy}
-                                                onChange={(event) => onChange(row.dangKyId, "diemCuoiKy", event.target.value)}
-                                            />
+                                            <div className="flex flex-col items-center">
+                                                <input
+                                                    className={`input w-24 text-center ${rowErrors.diemCuoiKy ? "!border-rose-500 !ring-rose-500 bg-rose-50/50" : ""}`}
+                                                    type="number"
+                                                    min="0"
+                                                    max="10"
+                                                    step="0.1"
+                                                    disabled={daCongBo}
+                                                    value={cuoiKy}
+                                                    onChange={(event) => onChange(row.dangKyId, "diemCuoiKy", event.target.value)}
+                                                />
+                                                {rowErrors.diemCuoiKy && (
+                                                    <span className="mt-1 max-w-[130px] text-center text-[10px] font-medium leading-tight text-rose-600">
+                                                        {rowErrors.diemCuoiKy}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="td text-center">
                                             <span className="inline-flex items-center gap-1 font-semibold text-slate-900">
@@ -393,7 +560,7 @@ export default function GradeEntryPage() {
             </div>
 
             <p className="mt-3 text-xs text-slate-500">
-                Điểm hợp lệ từ 0 đến 10. Sinh viên đạt môn khi điểm tổng kết từ 5.0 trở lên. Điểm nháp/chờ duyệt chưa hiển thị cho sinh viên cho tới khi bảng điểm được phê duyệt và công bố.
+                Điểm hợp lệ từ 0 đến 10. Điểm tổng kết = 0.4 × quá trình + 0.6 × cuối kỳ (làm tròn 1 chữ số thập phân). Sinh viên đạt môn khi điểm tổng kết từ 5.0 trở lên. Bảng điểm đã công bố không thể chỉnh sửa trực tiếp mà cần thu hồi công bố trước.
             </p>
 
             {/* Modal xem hồ sơ học tập tối thiểu sinh viên (QLSV-67 / TASK-LC-02) */}

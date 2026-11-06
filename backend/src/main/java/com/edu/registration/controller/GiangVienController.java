@@ -180,8 +180,8 @@ public class GiangVienController {
 
     @GetMapping("/giang-vien/lop-hoc-phan/{id}/sinh-vien/csv")
     public ResponseEntity<byte[]> xuatDanhSachSinhVien(@PathVariable Long id,
-                                                       @RequestParam(required = false) String tuKhoa,
-                                                       @RequestParam(required = false) String sapXep) {
+                                                        @RequestParam(required = false) String tuKhoa,
+                                                        @RequestParam(required = false) String sapXep) {
         LopSinhVienExportService.CsvFile tep = lopSinhVienExportService.xuatDanhSach(id, tuKhoa, sapXep);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(new MediaType("text", "csv", StandardCharsets.UTF_8));
@@ -195,6 +195,13 @@ public class GiangVienController {
     public RegistrationDtos.DiemDto nhapDiem(@PathVariable Long dangKyId,
                                             @Valid @RequestBody RegistrationDtos.NhapDiemRequest request) {
         return diemService.nhapDiem(dangKyId, request);
+    }
+
+    @PutMapping({"/giang-vien/lop-hoc-phan/{id}/diem", "/diem/lop-hoc-phan/{id}"})
+    public List<RegistrationDtos.DiemDto> capNhatDiemHangLoat(
+            @PathVariable Long id,
+            @Valid @RequestBody RegistrationDtos.CapNhatDiemHangLoatRequest request) {
+        return diemService.capNhatDiemHangLoat(id, request);
     }
 
     @GetMapping({"/giang-vien/lop-hoc-phan/{id}/trang-thai-bang-diem", "/diem/lop-hoc-phan/{id}/trang-thai"})
