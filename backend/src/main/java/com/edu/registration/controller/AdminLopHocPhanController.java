@@ -1,8 +1,11 @@
 package com.edu.registration.controller;
 
 import com.edu.registration.dto.LopHocPhanDtos;
+import com.edu.registration.dto.RegistrationDtos;
+import com.edu.registration.service.DiemService;
 import com.edu.registration.service.LopHocPhanService;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,9 +25,16 @@ import java.util.List;
 public class AdminLopHocPhanController {
 
     private final LopHocPhanService lopHocPhanService;
+    private final DiemService diemService;
 
     public AdminLopHocPhanController(LopHocPhanService lopHocPhanService) {
+        this(lopHocPhanService, null);
+    }
+
+    @Autowired
+    public AdminLopHocPhanController(LopHocPhanService lopHocPhanService, DiemService diemService) {
         this.lopHocPhanService = lopHocPhanService;
+        this.diemService = diemService;
     }
 
     @GetMapping("/lop-hoc-phan")
@@ -43,6 +53,33 @@ public class AdminLopHocPhanController {
     public LopHocPhanDtos.LopHocPhanResponse sua(@PathVariable Long id,
                                                  @Valid @RequestBody LopHocPhanDtos.LopHocPhanRequest request) {
         return lopHocPhanService.sua(id, request);
+    }
+
+    @PostMapping("/lop-hoc-phan/{id}/huy")
+    public LopHocPhanDtos.HuyLopHocPhanResponse huy(
+            @PathVariable Long id,
+            @Valid @RequestBody(required = false) LopHocPhanDtos.HuyLopHocPhanRequest request) {
+        return lopHocPhanService.huyLopHocPhan(id, request != null ? request.lyDo() : null);
+    }
+
+    @GetMapping("/lop-hoc-phan/{id}/trang-thai-bang-diem")
+    public RegistrationDtos.TrangThaiBangDiemDto trangThaiBangDiem(@PathVariable Long id) {
+        return diemService.chiTietTrangThaiBangDiem(id);
+    }
+
+    @PostMapping("/lop-hoc-phan/{id}/phe-duyet-diem")
+    public RegistrationDtos.TrangThaiBangDiemDto pheDuyetBangDiem(@PathVariable Long id) {
+        return diemService.pheDuyetBangDiem(id);
+    }
+
+    @PostMapping("/lop-hoc-phan/{id}/cong-bo-diem")
+    public RegistrationDtos.TrangThaiBangDiemDto congBoBangDiem(@PathVariable Long id) {
+        return diemService.congBoBangDiem(id);
+    }
+
+    @PostMapping("/lop-hoc-phan/{id}/thu-hoi-cong-bo-diem")
+    public RegistrationDtos.TrangThaiBangDiemDto thuHoiCongBoBangDiem(@PathVariable Long id) {
+        return diemService.thuHoiCongBoBangDiem(id);
     }
 
     @DeleteMapping("/lop-hoc-phan/{id}")

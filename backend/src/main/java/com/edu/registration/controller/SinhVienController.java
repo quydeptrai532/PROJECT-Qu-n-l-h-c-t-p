@@ -1,12 +1,28 @@
 package com.edu.registration.controller;
 
+import com.edu.registration.dto.LecturerDtos;
 import com.edu.registration.dto.LopHocPhanDtos;
 import com.edu.registration.dto.RegistrationDtos;
+import com.edu.registration.dto.StudentAcademicProfileDto;
 import com.edu.registration.service.DangKyService;
 import com.edu.registration.service.DiemService;
 import com.edu.registration.service.LopHocPhanService;
+import com.edu.registration.service.ThongBaoLopHocPhanService;
 import com.edu.registration.service.ThongBaoNghiService;
+import com.edu.registration.service.StudentAcademicProfileService;
+import com.edu.registration.service.SinhVienDashboardService;
+import com.edu.registration.service.HocLaiCaiThienService;
+import com.edu.registration.service.StudentTranscriptPdfService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Size;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.http.CacheControl;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,6 +33,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @RestController
@@ -27,13 +44,49 @@ public class SinhVienController {
     private final DangKyService dangKyService;
     private final DiemService diemService;
     private final ThongBaoNghiService thongBaoNghiService;
+    private final StudentAcademicProfileService studentAcademicProfileService;
+    private final SinhVienDashboardService sinhVienDashboardService;
+    private final HocLaiCaiThienService hocLaiCaiThienService;
+    private final StudentTranscriptPdfService studentTranscriptPdfService;
+    private final ThongBaoLopHocPhanService thongBaoLopHocPhanService;
 
     public SinhVienController(LopHocPhanService lopHocPhanService, DangKyService dangKyService,
-                              DiemService diemService, ThongBaoNghiService thongBaoNghiService) {
+                              DiemService diemService, ThongBaoNghiService thongBaoNghiService,
+                              StudentAcademicProfileService studentAcademicProfileService,
+                              SinhVienDashboardService sinhVienDashboardService,
+                              HocLaiCaiThienService hocLaiCaiThienService) {
+        this(lopHocPhanService, dangKyService, diemService, thongBaoNghiService,
+                studentAcademicProfileService, sinhVienDashboardService, hocLaiCaiThienService, null, null);
+    }
+
+    public SinhVienController(LopHocPhanService lopHocPhanService, DangKyService dangKyService,
+                              DiemService diemService, ThongBaoNghiService thongBaoNghiService,
+                              StudentAcademicProfileService studentAcademicProfileService,
+                              SinhVienDashboardService sinhVienDashboardService,
+                              HocLaiCaiThienService hocLaiCaiThienService,
+                              StudentTranscriptPdfService studentTranscriptPdfService) {
+        this(lopHocPhanService, dangKyService, diemService, thongBaoNghiService,
+                studentAcademicProfileService, sinhVienDashboardService, hocLaiCaiThienService,
+                studentTranscriptPdfService, null);
+    }
+
+    @Autowired
+    public SinhVienController(LopHocPhanService lopHocPhanService, DangKyService dangKyService,
+                              DiemService diemService, ThongBaoNghiService thongBaoNghiService,
+                              StudentAcademicProfileService studentAcademicProfileService,
+                              SinhVienDashboardService sinhVienDashboardService,
+                              HocLaiCaiThienService hocLaiCaiThienService,
+                              StudentTranscriptPdfService studentTranscriptPdfService,
+                              ThongBaoLopHocPhanService thongBaoLopHocPhanService) {
         this.lopHocPhanService = lopHocPhanService;
         this.dangKyService = dangKyService;
         this.diemService = diemService;
         this.thongBaoNghiService = thongBaoNghiService;
+        this.studentAcademicProfileService = studentAcademicProfileService;
+        this.sinhVienDashboardService = sinhVienDashboardService;
+        this.hocLaiCaiThienService = hocLaiCaiThienService;
+        this.studentTranscriptPdfService = studentTranscriptPdfService;
+        this.thongBaoLopHocPhanService = thongBaoLopHocPhanService;
     }
 
     @GetMapping("/lop-hoc-phan")
@@ -51,7 +104,7 @@ public class SinhVienController {
     @PostMapping("/dang-ky")
     @PreAuthorize("hasRole('SINH_VIEN')")
     public RegistrationDtos.DangKyDto dangKy(@Valid @RequestBody RegistrationDtos.DangKyRequest request) {
-        return dangKyService.dangKy(request.lopHocPhanId());
+        return dangKyService.dangKy(request.lopHocPhanId(), request.loaiDangKy());
     }
 
     @PostMapping("/dang-ky/xac-nhan-ke-hoach")
@@ -63,8 +116,9 @@ public class SinhVienController {
 
     @DeleteMapping("/dang-ky/{id}")
     @PreAuthorize("hasRole('SINH_VIEN')")
-    public void huyDangKy(@PathVariable Long id) {
-        dangKyService.huyDangKy(id);
+    public void huyDangKy(@PathVariable Long id,
+                          @RequestParam(required = false) @Size(max = 255) String lyDo) {
+        dangKyService.huyDangKy(id, lyDo);
     }
 
     @GetMapping("/dang-ky/me")
@@ -73,10 +127,29 @@ public class SinhVienController {
         return dangKyService.danhSachCuaToi(hocKyId);
     }
 
+    @GetMapping("/dang-ky/me/lich-su")
+    @PreAuthorize("hasRole('SINH_VIEN')")
+    public Page<RegistrationDtos.LichSuDangKyDto> lichSuDangKyCuaToi(
+            @RequestParam Long hocKyId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return dangKyService.lichSuCuaToi(hocKyId, page, size);
+    }
+
     @GetMapping("/sinh-vien/me/thoi-khoa-bieu")
     @PreAuthorize("hasRole('SINH_VIEN')")
     public List<RegistrationDtos.ThoiKhoaBieuDto> thoiKhoaBieu(@RequestParam(required = false) Long hocKyId) {
         return dangKyService.thoiKhoaBieu(hocKyId);
+    }
+
+
+    @GetMapping("/sinh-vien/lop-hoc-phan/{id}/thong-bao")
+    @PreAuthorize("hasRole('SINH_VIEN')")
+    public List<LecturerDtos.ThongBaoLopDto> thongBaoLop(@PathVariable Long id) {
+        if (thongBaoLopHocPhanService == null) {
+            return List.of();
+        }
+        return thongBaoLopHocPhanService.danhSachThongBaoChoSinhVien(id);
     }
 
     @GetMapping("/sinh-vien/me/thong-bao-nghi")
@@ -89,5 +162,44 @@ public class SinhVienController {
     @PreAuthorize("hasRole('SINH_VIEN')")
     public RegistrationDtos.KetQuaHocTapDto ketQuaHocTap() {
         return diemService.ketQuaHocTap();
+    }
+
+    @GetMapping("/sinh-vien/me/lich-su-hoc-tap")
+    @PreAuthorize("hasRole('SINH_VIEN')")
+    public RegistrationDtos.LichSuHocTapDto lichSuHocTap(
+            @RequestParam(required = false) Long hocKyId,
+            @RequestParam(required = false) String trangThai) {
+        return diemService.lichSuHocTap(hocKyId, trangThai);
+    }
+
+    @GetMapping("/sinh-vien/me/bang-diem/pdf")
+    @PreAuthorize("hasRole('SINH_VIEN')")
+    public ResponseEntity<byte[]> xuatBangDiemPdf(@RequestParam(required = false) Long hocKyId) {
+        StudentTranscriptPdfService.PdfFile tep = studentTranscriptPdfService.xuatBangDiemPdf(hocKyId);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDisposition(ContentDisposition.attachment()
+                .filename(tep.tenTep(), StandardCharsets.UTF_8).build());
+        headers.setCacheControl(CacheControl.noStore());
+        return new ResponseEntity<>(tep.noiDung(), headers, HttpStatus.OK);
+    }
+
+    @GetMapping("/sinh-vien/me/ho-so-dao-tao")
+    @PreAuthorize("hasRole('SINH_VIEN')")
+    public StudentAcademicProfileDto hoSoDaoTao() {
+        return studentAcademicProfileService.getMyProfile();
+    }
+
+    @GetMapping("/sinh-vien/me/canh-bao-dashboard")
+    @PreAuthorize("hasRole('SINH_VIEN')")
+    public List<SinhVienDashboardService.CanhBaoDto> canhBaoDashboard() {
+        return sinhVienDashboardService.canhBao();
+    }
+
+    @GetMapping("/sinh-vien/me/dang-ky-hoc-lai-cai-thien")
+    @PreAuthorize("hasRole('SINH_VIEN')")
+    public List<RegistrationDtos.DangKyHocLaiDto> danhSachHocLaiCaiThien(
+            @RequestParam(required = false) Long hocKyId) {
+        return hocLaiCaiThienService.danhSach(hocKyId);
     }
 }

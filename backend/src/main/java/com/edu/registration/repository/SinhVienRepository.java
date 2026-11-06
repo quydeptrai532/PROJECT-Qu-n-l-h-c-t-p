@@ -16,6 +16,12 @@ public interface SinhVienRepository extends JpaRepository<SinhVien, Long> {
 
     Optional<SinhVien> findByUser(User user);
 
+    @EntityGraph(attributePaths = {"khoa", "nganh", "lopHanhChinh", "chuongTrinh"})
+    Optional<SinhVien> findWithAcademicProfileByUserId(Long userId);
+
+    @EntityGraph(attributePaths = {"khoa", "nganh", "lopHanhChinh", "chuongTrinh"})
+    Optional<SinhVien> findWithAcademicProfileById(Long id);
+
     @Query("select sv from SinhVien sv join fetch sv.user u where u.trangThai = true")
     List<SinhVien> findAllActiveWithUser();
 

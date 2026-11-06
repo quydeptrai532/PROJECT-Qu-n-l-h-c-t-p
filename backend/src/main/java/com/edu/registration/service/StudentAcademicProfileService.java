@@ -1,0 +1,184 @@
+package com.edu.registration.service;
+
+import com.edu.registration.dto.LecturerDtos;
+import com.edu.registration.dto.StudentAcademicProfileDto;
+import com.edu.registration.entity.GiangVien;
+import com.edu.registration.entity.LopHocPhan;
+import com.edu.registration.entity.SinhVien;
+import com.edu.registration.entity.TrangThaiDangKy;
+import com.edu.registration.exception.ApiException;
+import com.edu.registration.repository.DangKyHocPhanRepository;
+import com.edu.registration.repository.GiangVienRepository;
+import com.edu.registration.repository.LopHocPhanRepository;
+import com.edu.registration.repository.SinhVienRepository;
+import com.edu.registration.security.CurrentUser;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Locale;
+
+@Service
+public class StudentAcademicProfileService {
+
+    private static final String NOT_ASSIGNED = "Chưa cập nhật";
+
+    private final CurrentUser currentUser;
+    private final SinhVienRepository sinhVienRepository;
+    private final GiangVienRepository giangVienRepository;
+    private final LopHocPhanRepository lopHocPhanRepository;
+    private final DangKyHocPhanRepository dangKyHocPhanRepository;
+
+    public StudentAcademicProfileService(CurrentUser currentUser, SinhVienRepository sinhVienRepository) {
+        this(currentUser, sinhVienRepository, null, null, null);
+    }
+
+    @Autowired
+    public StudentAcademicProfileService(CurrentUser currentUser,
+                                         SinhVienRepository sinhVienRepository,
+                                         GiangVienRepository giangVienRepository,
+                                         LopHocPhanRepository lopHocPhanRepository,
+                                         DangKyHocPhanRepository dangKyHocPhanRepository) {
+        this.currentUser = currentUser;
+        this.sinhVienRepository = sinhVienRepository;
+        this.giangVienRepository = giangVienRepository;
+        this.lopHocPhanRepository = lopHocPhanRepository;
+        this.dangKyHocPhanRepository = dangKyHocPhanRepository;
+    }
+
+    @Transactional(readOnly = true)
+    public StudentAcademicProfileDto getMyProfile() {
+        SinhVien student = sinhVienRepository.findWithAcademicProfileByUserId(currentUser.get().getId())
+                .orElseThrow(() -> ApiException.notFound("Không tìm thấy hồ sơ sinh viên"));
+
+        return toAcademicProfileDto(student);
+    }
+
+    /**
+     * Get minimal academic profile of a student for the authenticated lecturer (QLSV-67 / TASK-LC-02).
+     * Strictly verifies teaching assignment: the student must be currently registered in a class
+     * section assigned to the lecturer. Never relies on client-supplied IDs without server verification.
+     */
+    @Transactional(readOnly = true)
+    public LecturerDtos.StudentMinimalProfileDto getMinimalProfileForLecturer(Long studentId, Long lopHocPhanId) {
+        SinhVien student = xacThucQuyenXemSinhVien(studentId, lopHocPhanId);
+        return toStudentMinimalProfileDto(student);
+    }
+
+    /**
+     * Get academic profile DTO of an assigned student for the authenticated lecturer.
+     */
+    @Transactional(readOnly = true)
+    public StudentAcademicProfileDto getProfileDtoForLecturer(Long studentId, Long lopHocPhanId) {
+        SinhVien student = xacThucQuyenXemSinhVien(studentId, lopHocPhanId);
+        return toAcademicProfileDto(student);
+    }
+
+    /**
+     * List and search assigned students across the lecturer's teaching scope.
+     * Prevents any data leakage outside assigned course sections.
+     */
+    @Transactional(readOnly = true)
+    public List<LecturerDtos.StudentMinimalProfileDto> getAssignedStudentsForLecturer(Long lopHocPhanId, String keyword) {
+        GiangVien giangVien = giangVienHienTai();
+        if (lopHocPhanId != null) {
+            LopHocPhan lop = lopHocPhanRepository.findById(lopHocPhanId)
+                    .orElseThrow(() -> ApiException.notFound("Lớp học phần không tồn tại"));
+            if (lop.getGiangVien() == null || !lop.getGiangVien().getId().equals(giangVien.getId())) {
+                throw ApiException.forbidden("Bạn không phụ trách lớp học phần này");
+            }
+        }
+
+        List<SinhVien> danhSach = dangKyHocPhanRepository.findAssignedStudentsOfLecturer(
+                giangVien.getId(), lopHocPhanId, TrangThaiDangKy.DA_DANG_KY);
+
+        if (keyword != null && !keyword.isBlank()) {
+            String kw = keyword.trim().toLowerCase(Locale.ROOT);
+            danhSach = danhSach.stream()
+                    .filter(s -> (s.getMa() != null && s.getMa().toLowerCase(Locale.ROOT).contains(kw))
+                            || (s.getHoTen() != null && s.getHoTen().toLowerCase(Locale.ROOT).contains(kw))
+                            || (s.getEmail() != null && s.getEmail().toLowerCase(Locale.ROOT).contains(kw)))
+                    .toList();
+        }
+
+        return danhSach.stream()
+                .map(this::toStudentMinimalProfileDto)
+                .toList();
+    }
+
+    private SinhVien xacThucQuyenXemSinhVien(Long studentId, Long lopHocPhanId) {
+        GiangVien giangVien = giangVienHienTai();
+
+        if (lopHocPhanId != null) {
+            LopHocPhan lop = lopHocPhanRepository.findById(lopHocPhanId)
+                    .orElseThrow(() -> ApiException.notFound("Lớp học phần không tồn tại"));
+            if (lop.getGiangVien() == null || !lop.getGiangVien().getId().equals(giangVien.getId())) {
+                throw ApiException.forbidden("Bạn không phụ trách lớp học phần này");
+            }
+
+            SinhVien student = sinhVienRepository.findWithAcademicProfileById(studentId)
+                    .orElseThrow(() -> ApiException.notFound("Không tìm thấy hồ sơ sinh viên"));
+
+            boolean enrolledInClass = dangKyHocPhanRepository.existsBySinhVienIdAndLopHocPhanIdAndGiangVienIdAndTrangThai(
+                    student.getId(), lop.getId(), giangVien.getId(), TrangThaiDangKy.DA_DANG_KY);
+            if (!enrolledInClass) {
+                throw ApiException.forbidden("Sinh viên không thuộc lớp học phần mà bạn phụ trách");
+            }
+
+            return student;
+        }
+
+        SinhVien student = sinhVienRepository.findWithAcademicProfileById(studentId)
+                .orElseThrow(() -> ApiException.notFound("Không tìm thấy hồ sơ sinh viên"));
+
+        boolean assignedToLecturer = dangKyHocPhanRepository.existsBySinhVienIdAndGiangVienIdAndTrangThai(
+                student.getId(), giangVien.getId(), TrangThaiDangKy.DA_DANG_KY);
+        if (!assignedToLecturer) {
+            throw ApiException.forbidden("Bạn không có quyền xem thông tin sinh viên này do không phụ trách lớp của sinh viên");
+        }
+
+        return student;
+    }
+
+    private GiangVien giangVienHienTai() {
+        if (giangVienRepository == null) {
+            throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "Hệ thống chưa cấu hình kho dữ liệu giảng viên");
+        }
+        return giangVienRepository.findByUser(currentUser.get())
+                .orElseThrow(() -> ApiException.notFound("Không tìm thấy hồ sơ giảng viên"));
+    }
+
+    public StudentAcademicProfileDto toAcademicProfileDto(SinhVien student) {
+        return new StudentAcademicProfileDto(
+                student.getKhoa() != null ? student.getKhoa().getMa() : NOT_ASSIGNED,
+                student.getKhoa() != null ? student.getKhoa().getTen() : NOT_ASSIGNED,
+                student.getNganh() != null ? student.getNganh().getMa() : NOT_ASSIGNED,
+                student.getNganh() != null ? student.getNganh().getTen() : NOT_ASSIGNED,
+                student.getChuongTrinh() != null ? student.getChuongTrinh().getKhoaNhapHoc() : NOT_ASSIGNED,
+                student.getLopHanhChinh() != null ? student.getLopHanhChinh().getMa() : NOT_ASSIGNED,
+                student.getLopHanhChinh() != null ? student.getLopHanhChinh().getTen() : NOT_ASSIGNED,
+                student.getChuongTrinh() != null ? student.getChuongTrinh().getKhoaNhapHoc() : NOT_ASSIGNED,
+                student.getChuongTrinh() != null ? student.getChuongTrinh().getPhienBan() : NOT_ASSIGNED,
+                NOT_ASSIGNED);
+    }
+
+    public LecturerDtos.StudentMinimalProfileDto toStudentMinimalProfileDto(SinhVien student) {
+        return new LecturerDtos.StudentMinimalProfileDto(
+                student.getId(),
+                student.getMa(),
+                student.getHoTen(),
+                student.getEmail(),
+                student.getKhoa() != null ? student.getKhoa().getMa() : NOT_ASSIGNED,
+                student.getKhoa() != null ? student.getKhoa().getTen() : NOT_ASSIGNED,
+                student.getNganh() != null ? student.getNganh().getMa() : NOT_ASSIGNED,
+                student.getNganh() != null ? student.getNganh().getTen() : NOT_ASSIGNED,
+                student.getChuongTrinh() != null ? student.getChuongTrinh().getKhoaNhapHoc() : NOT_ASSIGNED,
+                student.getLopHanhChinh() != null ? student.getLopHanhChinh().getMa() : NOT_ASSIGNED,
+                student.getLopHanhChinh() != null ? student.getLopHanhChinh().getTen() : NOT_ASSIGNED,
+                student.getChuongTrinh() != null ? student.getChuongTrinh().getKhoaNhapHoc() : NOT_ASSIGNED,
+                student.getChuongTrinh() != null ? student.getChuongTrinh().getPhienBan() : NOT_ASSIGNED,
+                NOT_ASSIGNED);
+    }
+}

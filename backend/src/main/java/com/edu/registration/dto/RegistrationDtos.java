@@ -15,7 +15,8 @@ public final class RegistrationDtos {
     private RegistrationDtos() {
     }
 
-    public record DangKyRequest(@NotNull(message = "Vui lòng chọn lớp học phần") Long lopHocPhanId) {
+    public record DangKyRequest(@NotNull(message = "Vui lòng chọn lớp học phần") Long lopHocPhanId,
+                                String loaiDangKy) {
     }
 
     public record XacNhanKeHoachRequest(
@@ -27,6 +28,18 @@ public final class RegistrationDtos {
                             Long hocKyId, String tenHocKy, String namHoc, LocalDateTime thoiGianDangKy, String trangThai,
                             Double diemQuaTrinh, Double diemCuoiKy, Double diemTongKet) {
     }
+
+    public record LichSuDangKyDto(Long id, Long dangKyId, Long hocKyId, String maLop, String maMon,
+                                  String tenMon, LocalDateTime thoiGianDangKy, String trangThai,
+                                  LocalDateTime thoiDiem, LocalDateTime thoiGianHuy, String lyDoHuy) { }
+
+    public record LanHocTruocDto(Long dangKyId, String maLop, String tenHocKy,
+                                 LocalDateTime thoiGianDangKy, Double diemTongKet) { }
+
+    public record DangKyHocLaiDto(Long lopHocPhanId, String maLop, Long monHocId, String maMon, String tenMon,
+                                  int soTinChi, String tenGiangVien, String phong, int thu, int tietBatDau,
+                                  int soTiet, int siSoHienTai, int siSoToiDa, boolean dangMoDangKy,
+                                  String loaiDangKy, List<LanHocTruocDto> cacLanHocTruoc) { }
 
     public record NhapDiemRequest(
             @NotNull(message = "Vui lòng nhập điểm quá trình")
@@ -41,12 +54,33 @@ public final class RegistrationDtos {
                           Double diemQuaTrinh, Double diemCuoiKy, Double diemTongKet) {
     }
 
+    public record TrangThaiBangDiemDto(Long lopHocPhanId, String maLop, String maMon, String tenMon,
+                                       Long hocKyId, String tenHocKy, String namHoc,
+                                       String trangThaiBangDiem, int phienBanCongBo,
+                                       int soSinhVienDangHoc, int soSinhVienDuDieuKien,
+                                       LocalDateTime guiDuyetLuc, LocalDateTime duyetLuc, LocalDateTime congBoLuc) {
+    }
+
     public record HocKyTongKetDto(Long hocKyId, String tenHocKy, String namHoc, int tongTinChi,
                                   int tinChiCoDiem, double gpa10, double gpa4) {
     }
 
     public record KetQuaHocTapDto(List<DangKyDto> items, List<HocKyTongKetDto> hocKy,
                                   int tongTinChi, double gpa10, double gpa4, int tinChiTichLuy) {
+    }
+
+    public record MucLichSuHocTapDto(Long dangKyId, Long hocKyId, String tenHocKy, String namHoc,
+                                     LocalDate ngayBatDauHocKy, Long monHocId, String maMon, String tenMon,
+                                     int soTinChi, Long lopHocPhanId, String maLop, String tenGiangVien,
+                                     LocalDateTime thoiGianDangKy, Double diemQuaTrinh, Double diemCuoiKy,
+                                     Double diemTongKet, String trangThaiKetQua, String tenTrangThaiKetQua,
+                                     int lanHoc, int tongSoLanHoc) {
+    }
+
+    public record LichSuHocTapDto(List<MucLichSuHocTapDto> items, List<HocKyTongKetDto> hocKy,
+                                  List<MucLichSuHocTapDto> monChuaDat, int tongTinChi, int tinChiCoDiem,
+                                  int tinChiTichLuy, double gpa10, double gpa4, int soMonDat,
+                                  int soMonChuaDat, int soMonChuaCoDiem, boolean coNhieuLanHoc) {
     }
 
     public record ThoiKhoaBieuDto(Long lopHocPhanId, String maLop, String tenMon, String phong,
@@ -62,5 +96,28 @@ public final class RegistrationDtos {
     public record ThongBaoNghiDto(Long id, Long lopHocPhanId, String maLop, String tenMon,
                                   LocalDate ngayNghi, String lyDo, String tenGiangVien,
                                   LocalDateTime thoiGianTao) {
+    }
+
+    public record ThongTinSinhVienPdfDto(String maSinhVien, String hoTen, String email,
+                                         String khoa, String nganh, String lopHanhChinh,
+                                         String khoaNhapHoc, String phienBanChuongTrinh) {
+    }
+
+    public record MucBangDiemPdfDto(int stt, Long dangKyId, Long hocKyId, String tenHocKy, String namHoc,
+                                    String maMon, String tenMon, int soTinChi, String maLop,
+                                    int lanHoc, int tongSoLanHoc, Double diemQuaTrinh, Double diemCuoiKy,
+                                    Double diemTongKet, double diemHe4, String trangThaiKetQua,
+                                    String tenTrangThaiKetQua) {
+    }
+
+    public record HocKyBangDiemPdfDto(Long hocKyId, String tenHocKy, String namHoc,
+                                      int tinChiCoDiem, int tinChiDat, double gpa10, double gpa4,
+                                      List<MucBangDiemPdfDto> items) {
+    }
+
+    public record BangDiemPdfDto(ThongTinSinhVienPdfDto sinhVien, String donViPhatHanh,
+                                 LocalDateTime thoiDiemPhatHanh, List<HocKyBangDiemPdfDto> hocKy,
+                                 int tongSoMonDaCongBo, int tongTinChiCoDiem, int tinChiTichLuy,
+                                 double gpa10, double gpa4, boolean coNhieuLanHoc) {
     }
 }

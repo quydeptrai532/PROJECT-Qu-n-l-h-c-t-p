@@ -29,7 +29,9 @@ import { useApi } from "../../lib/useApi";
 export default function DashboardPage() {
   const { user } = useAuth();
   const { data: hocKyList } = useApi("/hoc-ky");
+  const { data: khoaList } = useApi("/admin/khoa");
   const [hocKyId, setHocKyId] = useState("");
+  const [khoaId, setKhoaId] = useState("");
 
   useEffect(() => {
     if (!hocKyId && hocKyList?.length) {
@@ -38,8 +40,11 @@ export default function DashboardPage() {
   }, [hocKyList, hocKyId]);
 
   const { data: tongQuan } = useApi("/admin/thong-ke/tong-quan");
-  const params = hocKyId ? { hocKyId } : undefined;
+  const params = hocKyId ? { hocKyId, ...(khoaId ? { khoaId } : {}) } : undefined;
   const { data: theoMon, loading, error } = useApi("/admin/thong-ke/theo-mon", params);
+  const hanhDongParams = hocKyId ? { hocKyId, ...(khoaId ? { khoaId } : {}) } : undefined;
+  const { data: hanhDong, loading: hanhDongLoading, error: hanhDongError } =
+    useApi("/admin/thong-ke/hanh-dong", hanhDongParams);
 
   const hocKy = hocKyList?.find((item) => String(item.id) === String(hocKyId));
   const tongDangKy = useMemo(
@@ -76,6 +81,7 @@ export default function DashboardPage() {
         title="Tổng quan đào tạo"
         description="Thống kê nhanh tình hình đăng ký học phần và quy mô đào tạo."
         actions={
+          <div className="flex flex-wrap gap-2">
           <select
             className="input w-auto min-w-[220px]"
             value={hocKyId}
@@ -87,6 +93,18 @@ export default function DashboardPage() {
               </option>
             ))}
           </select>
+          <select
+            className="input w-auto min-w-[180px]"
+            value={khoaId}
+            onChange={(event) => setKhoaId(event.target.value)}
+            aria-label="Lọc theo khoa"
+          >
+            <option value="">Tất cả khoa</option>
+            {(khoaList || []).map((item) => (
+              <option key={item.id} value={item.id}>{item.ten}</option>
+            ))}
+          </select>
+          </div>
         }
       />
 
@@ -118,6 +136,57 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      <section className="card mb-6 overflow-hidden" aria-labelledby="action-list-title">
+        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 px-5 py-4">
+          <div>
+            <h2 id="action-list-title" className="text-base font-semibold text-slate-900">Việc cần giáo vụ chú ý</h2>
+            <p className="mt-1 text-xs text-slate-500">
+              Quy tắc: lớp gần đầy từ 90%; ít đăng ký không quá 25%; nhu cầu môn khi đăng ký đạt tổng chỉ tiêu; đợt đóng trong 7 ngày.
+            </p>
+          </div>
+          <p className="text-xs text-slate-500" aria-live="polite">
+            {hanhDong?.capNhatLuc ? `Dữ liệu truy vấn lúc ${new Date(hanhDong.capNhatLuc).toLocaleString("vi-VN")}` : ""}
+          </p>
+        </div>
+        {hanhDongError ? (
+          <div className="p-5"><Alert tone="error">Không tải được danh sách việc cần chú ý: {hanhDongError}</Alert></div>
+        ) : hanhDongLoading ? (
+          <Spinner label="Đang tổng hợp đăng ký theo học kỳ..." />
+        ) : !hanhDong?.hocKyId ? (
+          <div className="px-5 py-10 text-center text-sm text-slate-500">Chưa có học kỳ để phân tích.</div>
+        ) : hanhDong.canhBao.length === 0 ? (
+          <div className="px-5 py-10 text-center text-sm text-slate-500">
+            Không có mục cần chú ý theo các quy tắc hiển thị cho {hanhDong.tenHocKy}{hanhDong.tenKhoa ? ` · ${hanhDong.tenKhoa}` : ""}.
+          </div>
+        ) : (
+          <ul className="divide-y divide-slate-100">
+            {hanhDong.canhBao.map((item, index) => (
+              <li key={`${item.loai}-${item.lopHocPhanId || item.monHocId || item.hocKyId}-${index}`} className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-semibold text-slate-900">{item.tieuDe}</span>
+                    <Badge tone={item.loai === "LOP_GAN_DAY" || item.loai === "MON_HET_CHO" ? "amber" : "slate"}>
+                      {item.loai === "LOP_GAN_DAY" ? "Gần đầy" : item.loai === "LOP_IT_DANG_KY" ? "Ít đăng ký" : item.loai === "MON_HET_CHO" ? "Đạt chỉ tiêu" : "Sắp đóng"}
+                    </Badge>
+                  </div>
+                  <p className="mt-1 text-sm text-slate-600">{item.lyDo}</p>
+                  <p className="mt-1 text-xs text-slate-400">{item.mucTinh} · {item.tenHocKy}</p>
+                  {(item.maLop || item.maMon) && (
+                    <p className="mt-1 text-xs font-medium text-slate-500">
+                      {item.maLop ? `Lớp ${item.maLop} · ` : ""}{item.maMon ? `${item.maMon} · ${item.tenMon}` : ""}
+                      {item.soLop > 1 ? ` · ${item.soLop} lớp` : ""}
+                    </p>
+                  )}
+                </div>
+                <Link to={item.duongDan} className="btn-secondary shrink-0 self-start sm:self-center">
+                  Xem dữ liệu nguồn
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <StatCard label="Sinh viên" value={tongQuan?.soSinhVien ?? "—"} icon={UserRound} />

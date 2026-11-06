@@ -10,6 +10,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +48,18 @@ public class GlobalExceptionHandler {
         log.warn("Vi phạm ràng buộc dữ liệu: {}", ex.getMostSpecificCause().getMessage());
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(new ErrorResponse("Dữ liệu đang được tham chiếu hoặc vi phạm ràng buộc duy nhất", Instant.now()));
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponse> handleMaxUploadSize(MaxUploadSizeExceededException ex) {
+        return ResponseEntity.badRequest()
+                .body(new ErrorResponse("Kích thước tệp tải lên vượt quá giới hạn cho phép", Instant.now()));
+    }
+
+    @ExceptionHandler(MultipartException.class)
+    public ResponseEntity<ErrorResponse> handleMultipart(MultipartException ex) {
+        return ResponseEntity.badRequest()
+                .body(new ErrorResponse("Yêu cầu tải tệp lên không hợp lệ", Instant.now()));
     }
 
     @ExceptionHandler(AccessDeniedException.class)

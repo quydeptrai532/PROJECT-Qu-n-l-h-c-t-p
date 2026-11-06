@@ -21,10 +21,24 @@ spring:
         format_sql: true
   servlet:
     multipart:
-      max-file-size: 5MB
-      max-request-size: 5MB
+      max-file-size: ${SUPPORT_MAX_FILE_SIZE:5MB}
+      max-request-size: ${SUPPORT_MAX_REQUEST_SIZE:16MB}
 
 app:
+  support-request:
+    # Cấu hình tập trung tạm thời cho phiếu hỗ trợ/khiếu nại sinh viên (cần chủ dự án xác nhận danh mục/chính sách tệp/SLA chính thức).
+    storage-dir: ${SUPPORT_UPLOAD_DIR:./data/support-attachments}
+    max-file-size-bytes: ${SUPPORT_MAX_FILE_SIZE_BYTES:5242880}
+    max-files-per-request: ${SUPPORT_MAX_FILES_PER_REQUEST:3}
+    allowed-extensions: ${SUPPORT_ALLOWED_EXTENSIONS:pdf,png,jpg,jpeg}
+    allowed-types: ${SUPPORT_ALLOWED_TYPES:HOC_PHAN,DIEM_SO,HOC_KY,HO_SO_HOC_VU,KHAC}
+    allowed-statuses: ${SUPPORT_ALLOWED_STATUSES:MOI_TAO,DANG_XU_LY,CHO_PHAN_HOI_SINH_VIEN,DA_GIAI_QUYET,TU_CHOI,DA_DONG}
+    comment-allowed-statuses: ${SUPPORT_COMMENT_ALLOWED_STATUSES:MOI_TAO,DANG_XU_LY,CHO_PHAN_HOI_SINH_VIEN,DA_GIAI_QUYET}
+    # Không tuyên bố SLA chính thức khi chưa có quyết định của chủ dự án.
+    sla-note: ${SUPPORT_SLA_NOTE:}
+  dashboard:
+    # Học kỳ/đợt đăng ký được xem là "sắp tới" trong vòng 14 ngày; chỉnh tại cấu hình này.
+    upcoming-window-days: ${DASHBOARD_UPCOMING_WINDOW_DAYS:14}
   jwt:
     secret: ${JWT_SECRET:day-la-khoa-bi-mat-cho-he-thong-quan-ly-dao-tao-phai-du-32-byte}
     expiration-ms: ${JWT_EXPIRATION_MS:86400000}
@@ -32,3 +46,20 @@ app:
     allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:3000}
   seed:
     enabled: ${SEED_ENABLED:true}
+  export:
+    danh-sach-lop:
+      cho-phep-email: ${EXPORT_CHO_PHEP_EMAIL:true}
+    bang-diem:
+      # Tên đơn vị phát hành chính thức; để trống nếu chưa cấu hình mẫu chính thức.
+      don-vi-phat-hanh: ${EXPORT_BANG_DIEM_DON_VI_PHAT_HANH:}
+  attendance:
+    # QLSV-70: Cấu hình quy tắc điểm danh và báo cáo chuyên cần (chờ Chủ dự án phê duyệt quy chế chính thức)
+    # Trạng thái tính vắng (mặc định: VANG)
+    trang-thai-tinh-vang: ${ATTENDANCE_TRANG_THAI_TINH_VANG:VANG}
+    # Vắng có phép có tính vào vắng không (mặc định: false)
+    co-phep-tinh-vang: ${ATTENDANCE_CO_PHEP_TINH_VANG:false}
+    # Quy đổi số lần muộn thành 1 lần vắng (0 = không quy đổi; ví dụ 3 = 3 lần muộn tính 1 vắng)
+    so-lan-muon-thanh-mot-vang: ${ATTENDANCE_SO_LAN_MUON_THANH_VANG:0}
+    # Mẫu số tỷ lệ chuyên cần: SO_BUOI_DA_DIEM_DANH (thực tế đã điểm danh) hoặc SO_BUOI_QUY_DINH
+    mau-so-chuyen-can: ${ATTENDANCE_MAU_SO_CHUYEN_CAN:SO_BUOI_DA_DIEM_DANH}
+    ghi-chu-quy-che: ${ATTENDANCE_GHI_CHU_QUY_CHE:Chính sách quy đổi muộn sang vắng, xử lý vắng có phép và mẫu số tỷ lệ chuyên cần đang áp dụng cấu hình dự kiến và chờ Chủ dự án phê duyệt chính thức.}

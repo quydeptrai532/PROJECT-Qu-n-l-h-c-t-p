@@ -1,10 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
-import { Download, Layers, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import { Ban, CheckCircle2, Download, Layers, Megaphone, Pencil, Plus, RotateCcw, Search, Trash2 } from "lucide-react";
 import api, { getErrorMessage } from "../../api/client";
 import { useConfirm } from "../../components/ConfirmDialog";
-import { Alert, EmptyState, Field, Modal, PageHeader, Spinner } from "../../components/ui";
+import { Alert, Badge, EmptyState, Field, Modal, PageHeader, Spinner } from "../../components/ui";
 import { lichHoc, soBuoiHoc, tietLyThuyet } from "../../lib/format";
 import { useApi } from "../../lib/useApi";
+
+const GRADE_SHEET_STATUS_META = {
+  NHAP: { label: " Điểm: Nháp", tone: "slate" },
+  CHO_DUYET: { label: "Điểm: Chờ duyệt", tone: "amber" },
+  DA_DUYET: { label: "Điểm: Đã duyệt", tone: "blue" },
+  DA_CONG_BO: { label: "Điểm: Đã công bố", tone: "green" },
+};
 
 const EMPTY_FORM = {
   ma: "",
@@ -19,13 +27,14 @@ const EMPTY_FORM = {
 };
 
 export default function CourseClassPage() {
+  const [searchParams] = useSearchParams();
   const confirm = useConfirm();
   const { data: hocKyList } = useApi("/admin/hoc-ky");
   const { data: monHocList } = useApi("/admin/mon-hoc");
   const { data: giangVienList } = useApi("/admin/giang-vien");
 
-  const [hocKyId, setHocKyId] = useState("");
-  const [keyword, setKeyword] = useState("");
+  const [hocKyId, setHocKyId] = useState(() => searchParams.get("hocKyId") || "");
+  const [keyword, setKeyword] = useState(() => searchParams.get("keyword") || "");
   const [message, setMessage] = useState("");
   const [warning, setWarning] = useState("");
   const [actionError, setActionError] = useState("");
@@ -145,6 +154,43 @@ export default function CourseClassPage() {
     }
   };
 
+  const huyLop = async (row) => {
+    const daXacNhan = await confirm({
+      title: "Hủy lớp học phần",
+      message: `Bạn có chắc muốn hủy lớp ${row.ma} - ${row.tenMon}?`,
+      detail: "Tất cả đăng ký đang hiệu lực của lớp sẽ chuyển sang Đã hủy và gửi thông báo tự động tới sinh viên bị ảnh hưởng.",
+      confirmLabel: "Hủy lớp học phần",
+      tone: "danger",
+    });
+    if (!daXacNhan) return;
+    const lyDo = window.prompt("Lý do hủy lớp học phần (không bắt buộc):") ?? "";
+    setActionError("");
+    setMessage("");
+    setWarning("");
+    try {
+      const { data } = await api.post(`/admin/lop-hoc-phan/${row.id}/huy`, {
+        lyDo: lyDo.trim() || null,
+      });
+      setMessage(`Đã hủy lớp ${data.maLop} (${data.soDangKyBiHuy} đăng ký được chuyển sang Đã hủy và thông báo tới sinh viên)`);
+      reload();
+    } catch (err) {
+      setActionError(getErrorMessage(err));
+    }
+  };
+
+  const thucHienBangDiem = async (row, endpoint, successText) => {
+    setActionError("");
+    setMessage("");
+    setWarning("");
+    try {
+      await api.post(`/admin/lop-hoc-phan/${row.id}/${endpoint}`);
+      setMessage(successText);
+      reload();
+    } catch (err) {
+      setActionError(getErrorMessage(err));
+    }
+  };
+
   const taiCsv = async (row) => {
     setActionError("");
     try {
@@ -215,7 +261,7 @@ export default function CourseClassPage() {
           <EmptyState icon={Layers} title="Chưa có lớp học phần" description="Bấm Mở lớp để tạo lớp cho học kỳ này." />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[980px]">
+            <table className="w-full min-w-[1060px]">
               <thead className="bg-slate-50">
                 <tr>
                   <th className="th">Mã lớp</th>
@@ -224,56 +270,103 @@ export default function CourseClassPage() {
                   <th className="th">Lịch học</th>
                   <th className="th">Phòng</th>
                   <th className="th text-center">Sĩ số</th>
+                  <th className="th text-center">Bảng điểm</th>
                   <th className="th text-right">Thao tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {rows.map((row) => (
-                  <tr key={row.id} className="hover:bg-slate-50/60">
-                    <td className="td font-medium text-slate-900">{row.ma}</td>
-                    <td className="td">
-                      <p className="font-medium text-slate-800">{row.tenMon}</p>
-                      <p className="text-xs text-slate-500">
-                        {row.maMon} · {row.soTinChi} TC · {tietLyThuyet(row.soTinChi)} tiết LT ·{" "}
-                        {soBuoiHoc(row.soTinChi)} buổi
-                      </p>
-                    </td>
-                    <td className="td">{row.tenGiangVien}</td>
-                    <td className="td">{lichHoc(row.thu, row.tietBatDau, row.soTiet)}</td>
-                    <td className="td">{row.phong}</td>
-                    <td className="td text-center">
-                      {row.siSoHienTai}/{row.siSoToiDa}
-                    </td>
-                    <td className="td">
-                      <div className="flex justify-end gap-1">
-                        <button
-                          type="button"
-                          className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100"
-                          onClick={() => taiCsv(row)}
-                          title="Xuất danh sách CSV"
-                        >
-                          <Download size={15} />
-                        </button>
-                        <button
-                          type="button"
-                          className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100"
-                          onClick={() => openEdit(row)}
-                          title="Sửa"
-                        >
-                          <Pencil size={15} />
-                        </button>
-                        <button
-                          type="button"
-                          className="rounded-md p-1.5 text-rose-500 hover:bg-rose-50"
-                          onClick={() => remove(row)}
-                          title="Xóa"
-                        >
-                          <Trash2 size={15} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {rows.map((row) => {
+                  const statusMeta = GRADE_SHEET_STATUS_META[row.trangThaiBangDiem] || GRADE_SHEET_STATUS_META.NHAP;
+                  return (
+                    <tr key={row.id} className="hover:bg-slate-50/60">
+                      <td className="td font-medium text-slate-900">{row.ma}</td>
+                      <td className="td">
+                        <p className="font-medium text-slate-800">{row.tenMon}</p>
+                        <p className="text-xs text-slate-500">
+                          {row.maMon} · {row.soTinChi} TC · {tietLyThuyet(row.soTinChi)} tiết LT ·{" "}
+                          {soBuoiHoc(row.soTinChi)} buổi
+                        </p>
+                      </td>
+                      <td className="td">{row.tenGiangVien}</td>
+                      <td className="td">{lichHoc(row.thu, row.tietBatDau, row.soTiet)}</td>
+                      <td className="td">{row.phong}</td>
+                      <td className="td text-center">
+                        {row.siSoHienTai}/{row.siSoToiDa}
+                      </td>
+                      <td className="td text-center">
+                        <Badge tone={statusMeta.tone}>{statusMeta.label}</Badge>
+                      </td>
+                      <td className="td">
+                        <div className="flex justify-end gap-1">
+                          {(row.trangThaiBangDiem === "CHO_DUYET" || row.trangThaiBangDiem === "NHAP") && row.siSoHienTai > 0 && (
+                            <button
+                              type="button"
+                              className="rounded-md p-1.5 text-sky-600 hover:bg-sky-50"
+                              onClick={() => thucHienBangDiem(row, "phe-duyet-diem", `Đã phê duyệt bảng điểm lớp ${row.ma}`)}
+                              title="Phê duyệt bảng điểm"
+                            >
+                              <CheckCircle2 size={15} />
+                            </button>
+                          )}
+                          {row.trangThaiBangDiem === "DA_DUYET" && (
+                            <button
+                              type="button"
+                              className="rounded-md p-1.5 text-emerald-600 hover:bg-emerald-50"
+                              onClick={() => thucHienBangDiem(row, "cong-bo-diem", `Đã công bố bảng điểm lớp ${row.ma} và thông báo tới sinh viên`)}
+                              title="Công bố bảng điểm"
+                            >
+                              <Megaphone size={15} />
+                            </button>
+                          )}
+                          {row.trangThaiBangDiem === "DA_CONG_BO" && (
+                            <button
+                              type="button"
+                              className="rounded-md p-1.5 text-slate-600 hover:bg-slate-100"
+                              onClick={() => thucHienBangDiem(row, "thu-hoi-cong-bo-diem", `Đã thu hồi công bố bảng điểm lớp ${row.ma}`)}
+                              title="Thu hồi công bố bảng điểm"
+                            >
+                              <RotateCcw size={15} />
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100"
+                            onClick={() => taiCsv(row)}
+                            title="Xuất danh sách CSV"
+                          >
+                            <Download size={15} />
+                          </button>
+                          <button
+                            type="button"
+                            className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100"
+                            onClick={() => openEdit(row)}
+                            title="Sửa"
+                          >
+                            <Pencil size={15} />
+                          </button>
+                          {row.siSoHienTai > 0 && (
+                            <button
+                              type="button"
+                              className="rounded-md p-1.5 text-amber-600 hover:bg-amber-50"
+                              onClick={() => huyLop(row)}
+                              title="Hủy lớp học phần"
+                            >
+                              <Ban size={15} />
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            className="rounded-md p-1.5 text-rose-500 hover:bg-rose-50"
+                            onClick={() => remove(row)}
+                            title="Xóa"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

@@ -7,11 +7,16 @@ import RoleDashboard from "./pages/RoleDashboard";
 import RegisterPage from "./pages/student/RegisterPage";
 import CoursePlannerPage from "./pages/student/CoursePlannerPage";
 import MyCoursesPage from "./pages/student/MyCoursesPage";
+import RegistrationHistoryPage from "./pages/student/RegistrationHistoryPage";
+import RetakeRegistrationPage from "./pages/student/RetakeRegistrationPage";
 import TimetablePage from "./pages/student/TimetablePage";
 import GradesPage from "./pages/student/GradesPage";
+import StudyHistoryPage from "./pages/student/StudyHistoryPage";
 import LecturerClassesPage from "./pages/lecturer/LecturerClassesPage";
 import LecturerTimetablePage from "./pages/lecturer/TimetablePage";
 import GradeEntryPage from "./pages/lecturer/GradeEntryPage";
+import LecturerAttendancePage from "./pages/lecturer/LecturerAttendancePage";
+import StudentAttendancePage from "./pages/student/StudentAttendancePage";
 import DashboardPage from "./pages/admin/DashboardPage";
 import SemesterPage from "./pages/admin/SemesterPage";
 import FacultyPage from "./pages/admin/FacultyPage";
@@ -23,6 +28,10 @@ import StudentPage from "./pages/admin/StudentPage";
 import LecturerPage from "./pages/admin/LecturerPage";
 import AuditLogPage from "./pages/admin/AuditLogPage";
 import NotificationsPage from "./pages/NotificationsPage";
+import ProgressPlannerPage from "./pages/student/ProgressPlannerPage";
+import CurriculumPage from "./pages/admin/CurriculumPage";
+import SupportRequestsPage from "./pages/student/SupportRequestsPage";
+import AdminSupportRequestsPage from "./pages/admin/AdminSupportRequestsPage";
 
 function RootRedirect() {
   const { user } = useAuth();
@@ -52,6 +61,7 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+      <Route path="/dang-ky-hoc-lai" element={<ProtectedRoute roles={["SINH_VIEN"]}><RetakeRegistrationPage /></ProtectedRoute>} />
       <Route
         path="/ke-hoach-hoc-tap"
         element={
@@ -68,6 +78,7 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+      <Route path="/lich-su-dang-ky" element={<ProtectedRoute roles={["SINH_VIEN"]}><RegistrationHistoryPage /></ProtectedRoute>} />
       <Route
         path="/thoi-khoa-bieu"
         element={
@@ -84,6 +95,17 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/lich-su-hoc-tap"
+        element={
+          <ProtectedRoute roles={["SINH_VIEN"]}>
+            <StudyHistoryPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route path="/chuyen-can-cua-toi" element={<ProtectedRoute roles={["SINH_VIEN"]}><StudentAttendancePage /></ProtectedRoute>} />
+      <Route path="/tien-do" element={<ProtectedRoute roles={["SINH_VIEN"]}><ProgressPlannerPage /></ProtectedRoute>} />
+      <Route path="/yeu-cau-ho-tro" element={<ProtectedRoute roles={["SINH_VIEN"]}><SupportRequestsPage /></ProtectedRoute>} />
       <Route
         path="/thong-bao"
         element={
@@ -114,6 +136,14 @@ export default function App() {
         element={
           <ProtectedRoute roles={["GIANG_VIEN"]}>
             <GradeEntryPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/lop-cua-toi/:id/diem-danh"
+        element={
+          <ProtectedRoute roles={["GIANG_VIEN", "QUAN_TRI"]}>
+            <LecturerAttendancePage />
           </ProtectedRoute>
         }
       />
@@ -198,6 +228,8 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+      <Route path="/quan-tri/chuong-trinh-dao-tao" element={<ProtectedRoute roles={["QUAN_TRI"]}><CurriculumPage /></ProtectedRoute>} />
+      <Route path="/quan-tri/yeu-cau-ho-tro" element={<ProtectedRoute roles={["QUAN_TRI"]}><AdminSupportRequestsPage /></ProtectedRoute>} />
 
       <Route
         path="/ho-so"

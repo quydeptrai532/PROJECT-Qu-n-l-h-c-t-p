@@ -3,18 +3,24 @@ import { NavLink, useLocation } from "react-router-dom";
 import {
   BookMarked,
   BookOpen,
+  BookOpenCheck,
   Bell,
   Building2,
+  CalendarCheck,
   CalendarDays,
   CalendarRange,
   ClipboardList,
+  ChartNoAxesCombined,
+  LibraryBig,
   GraduationCap,
   History,
   Layers,
   LayoutDashboard,
+  LifeBuoy,
   LogOut,
   Menu,
   Network,
+  ScrollText,
   UserCog,
   UserRound,
   Users,
@@ -27,10 +33,16 @@ const NAV = {
   SINH_VIEN: [
     { to: "/tong-quan", label: "Tổng quan", icon: LayoutDashboard },
     { to: "/dang-ky", label: "Đăng ký học phần", icon: BookOpen },
+    { to: "/dang-ky-hoc-lai", label: "Học lại / cải thiện", icon: BookOpenCheck },
     { to: "/ke-hoach-hoc-tap", label: "Kế hoạch học tập", icon: CalendarRange },
     { to: "/hoc-phan-cua-toi", label: "Học phần của tôi", icon: ClipboardList },
+    { to: "/lich-su-dang-ky", label: "Lịch sử đăng ký", icon: History },
     { to: "/thoi-khoa-bieu", label: "Thời khóa biểu", icon: CalendarDays },
     { to: "/diem", label: "Điểm & kết quả", icon: GraduationCap },
+    { to: "/chuyen-can-cua-toi", label: "Chuyên cần", icon: CalendarCheck },
+    { to: "/lich-su-hoc-tap", label: "Lịch sử học tập", icon: ScrollText },
+    { to: "/tien-do", label: "Tiến độ học tập", icon: ChartNoAxesCombined },
+    { to: "/yeu-cau-ho-tro", label: "Hỗ trợ & khiếu nại", icon: LifeBuoy },
     { to: "/thong-bao", label: "Thông báo", icon: Bell },
   ],
   GIANG_VIEN: [
@@ -48,7 +60,9 @@ const NAV = {
     { to: "/quan-tri/mon-hoc", label: "Môn học", icon: BookMarked },
     { to: "/quan-tri/lop-hoc-phan", label: "Lớp học phần", icon: Layers },
     { to: "/quan-tri/sinh-vien", label: "Sinh viên", icon: UserRound },
+    { to: "/quan-tri/chuong-trinh-dao-tao", label: "Chương trình đào tạo", icon: LibraryBig },
     { to: "/quan-tri/giang-vien", label: "Giảng viên", icon: UserCog },
+    { to: "/quan-tri/yeu-cau-ho-tro", label: "Yêu cầu hỗ trợ", icon: LifeBuoy },
     { to: "/quan-tri/nhat-ky-hoat-dong", label: "Nhật ký hoạt động", icon: History },
   ],
 };
@@ -91,6 +105,8 @@ export default function Layout({ children }) {
     ? exact.label
     : location.pathname.endsWith("/nhap-diem")
     ? "Nhập điểm"
+    : location.pathname.endsWith("/diem-danh")
+    ? "Điểm danh & Chuyên cần"
     : "Hồ sơ cá nhân";
 
   const homNay = new Date().toLocaleDateString("vi-VN", {

@@ -32,7 +32,7 @@ export default function CoursePlannerPage() {
   const { user } = useAuth();
   const confirm = useConfirm();
   const { data: hocKyList, loading: termsLoading, error: termsError } = useApi("/hoc-ky");
-  const [hocKyId, setHocKyId] = useState("");
+  const [hocKyId, setHocKyId] = useState(() => new URLSearchParams(window.location.search).get("hocKyId") || "");
   const [keyword, setKeyword] = useState("");
   const [cart, setCart] = useState({ key: "", ids: [] });
   const [error, setError] = useState("");
@@ -150,6 +150,7 @@ export default function CoursePlannerPage() {
       updateCart(remaining);
       setSuccess(`Đã đăng ký chính thức ${data.length} lớp học phần.`);
       await Promise.all([reloadClasses(), reloadRegistrations()]);
+      window.dispatchEvent(new Event("notifications:updated"));
     } catch (requestError) {
       setError(getErrorMessage(requestError));
       await Promise.all([reloadClasses(), reloadRegistrations()]);

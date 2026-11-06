@@ -27,6 +27,9 @@ services:
       JWT_EXPIRATION_MS: 86400000
       CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173
       SEED_ENABLED: "true"
+      SUPPORT_UPLOAD_DIR: /app/data/support-attachments
+    volumes:
+      - support_uploads:/app/data/support-attachments
     depends_on:
       mysql:
         condition: service_healthy
@@ -43,3 +46,4 @@ services:
 
 volumes:
   mysql_data:
+  support_uploads:

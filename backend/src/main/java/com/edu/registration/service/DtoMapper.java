@@ -58,20 +58,23 @@ public class DtoMapper {
                 lop.getMonHoc().getSoTinChi(), lop.getHocKy().getId(), lop.getHocKy().getTen(),
                 lop.getGiangVien().getId(), lop.getGiangVien().getHoTen(), lop.getPhong(),
                 lop.getThu(), lop.getTietBatDau(), lop.getSoTiet(), lop.getSiSoToiDa(),
-                lop.getSiSoHienTai(), lop.getConLai());
+                lop.getSiSoHienTai(), lop.getConLai(),
+                lop.getTrangThaiBangDiemHieuLuc().name(), lop.getPhienBanCongBo(),
+                lop.getGuiDuyetBangDiemLuc(), lop.getDuyetBangDiemLuc(), lop.getCongBoBangDiemLuc());
     }
 
     public RegistrationDtos.DangKyDto dangKy(DangKyHocPhan dangKy, Diem diem) {
         LopHocPhan lop = dangKy.getLopHocPhan();
+        boolean daCongBo = lop != null && lop.isBangDiemDaCongBo() && diem != null && diem.getDiemTongKet() != null;
         return new RegistrationDtos.DangKyDto(dangKy.getId(), lop.getId(), lop.getMa(),
                 lop.getMonHoc().getId(), lop.getMonHoc().getMa(), lop.getMonHoc().getTen(),
                 lop.getMonHoc().getSoTinChi(), lop.getGiangVien().getHoTen(), lop.getPhong(),
                 lop.getThu(), lop.getTietBatDau(), lop.getSoTiet(),
                 lop.getHocKy().getId(), lop.getHocKy().getTen(), lop.getHocKy().getNamHoc(),
                 dangKy.getThoiGianDangKy(), dangKy.getTrangThai().name(),
-                diem != null ? diem.getDiemQuaTrinh() : null,
-                diem != null ? diem.getDiemCuoiKy() : null,
-                diem != null ? diem.getDiemTongKet() : null);
+                daCongBo ? diem.getDiemQuaTrinh() : null,
+                daCongBo ? diem.getDiemCuoiKy() : null,
+                daCongBo ? diem.getDiemTongKet() : null);
     }
 
     public RegistrationDtos.DiemDto diem(DangKyHocPhan dangKy, Diem diem) {

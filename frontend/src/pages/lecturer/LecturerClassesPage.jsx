@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ClipboardList, Layers, MapPin, Users } from "lucide-react";
+import { CalendarCheck, ClipboardList, Layers, MapPin, Megaphone, Users } from "lucide-react";
+import ClassAnnouncementModal from "../../components/ClassAnnouncementModal";
 import { Alert, Badge, EmptyState, PageHeader, Spinner } from "../../components/ui";
 import { lichHoc } from "../../lib/format";
 import { useApi } from "../../lib/useApi";
@@ -8,6 +9,7 @@ import { useApi } from "../../lib/useApi";
 export default function LecturerClassesPage() {
   const { data, loading, error } = useApi("/giang-vien/me/lop-hoc-phan");
   const [hocKyId, setHocKyId] = useState("");
+  const [selectedLopForAnnouncement, setSelectedLopForAnnouncement] = useState(null);
 
   const hocKyList = useMemo(() => {
     const map = new Map();
@@ -82,16 +84,38 @@ export default function LecturerClassesPage() {
                 </div>
               </dl>
 
-              <Link
-                to={`/lop-cua-toi/${lop.id}/nhap-diem`}
-                className="btn-primary mt-5 w-full py-2 text-sm"
-              >
-                Nhập điểm & xem danh sách
-              </Link>
+              <div className="mt-5 space-y-2">
+                <Link
+                  to={`/lop-cua-toi/${lop.id}/nhap-diem`}
+                  className="btn-primary w-full py-2 text-sm justify-center"
+                >
+                  Nhập điểm & xem danh sách
+                </Link>
+                <Link
+                  to={`/lop-cua-toi/${lop.id}/diem-danh`}
+                  className="btn-secondary w-full py-1.5 text-xs justify-center"
+                >
+                  <CalendarCheck size={14} /> Điểm danh & chuyên cần
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setSelectedLopForAnnouncement(lop)}
+                  className="btn-secondary w-full py-1.5 text-xs justify-center"
+                >
+                  <Megaphone size={14} /> Gửi thông báo
+                </button>
+              </div>
             </div>
           ))}
         </div>
       )}
+
+      {/* Modal gửi thông báo cho lớp (QLSV-68 / TASK-LC-03) */}
+      <ClassAnnouncementModal
+        open={Boolean(selectedLopForAnnouncement)}
+        onClose={() => setSelectedLopForAnnouncement(null)}
+        lop={selectedLopForAnnouncement}
+      />
     </div>
   );
 }

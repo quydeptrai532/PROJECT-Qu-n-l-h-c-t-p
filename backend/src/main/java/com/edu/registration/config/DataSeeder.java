@@ -12,6 +12,7 @@ import com.edu.registration.entity.MonTienQuyet;
 import com.edu.registration.entity.Nganh;
 import com.edu.registration.entity.Role;
 import com.edu.registration.entity.SinhVien;
+import com.edu.registration.entity.TrangThaiBangDiem;
 import com.edu.registration.entity.TrangThaiDangKy;
 import com.edu.registration.entity.User;
 import com.edu.registration.repository.DangKyHocPhanRepository;
@@ -288,6 +289,7 @@ public class DataSeeder implements CommandLineRunner {
         lop.setSoTiet(soTiet);
         lop.setSiSoToiDa(siSoToiDa);
         lop.setSiSoHienTai(0);
+        lop.setTrangThaiBangDiem(TrangThaiBangDiem.NHAP);
         return lopHocPhanRepository.save(lop);
     }
 
@@ -299,6 +301,10 @@ public class DataSeeder implements CommandLineRunner {
         diem.setDiemCuoiKy(cuoiKy);
         diem.setDiemTongKet(Math.round((0.4 * quaTrinh + 0.6 * cuoiKy) * 10.0) / 10.0);
         diemRepository.save(diem);
+        if (lop.getTrangThaiBangDiem() != TrangThaiBangDiem.DA_CONG_BO) {
+            lop.setTrangThaiBangDiem(TrangThaiBangDiem.DA_CONG_BO);
+            lopHocPhanRepository.save(lop);
+        }
     }
 
     private DangKyHocPhan dangKyHienTai(SinhVien sinhVien, LopHocPhan lop) {

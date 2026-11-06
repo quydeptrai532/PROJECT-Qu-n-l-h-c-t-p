@@ -2,8 +2,8 @@ import { expect } from "@playwright/test";
 
 export async function login(page, username, password) {
   await page.goto("/login");
-  await page.getByLabel("Tên đăng nhập", { exact: true }).fill(username);
-  await page.getByLabel("Mật khẩu", { exact: true }).fill(password);
+  await page.locator("#username").fill(username);
+  await page.locator("#password").fill(password);
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
   await expect(page).not.toHaveURL(/\/login$/);
 }
