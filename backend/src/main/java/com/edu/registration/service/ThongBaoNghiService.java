@@ -32,6 +32,7 @@ public class ThongBaoNghiService {
     private final HocKyService hocKyService;
     private final CurrentUser currentUser;
     private final ThongBaoService thongBaoService;
+    private final AttendanceAlertService attendanceAlertService;
 
     public ThongBaoNghiService(ThongBaoNghiRepository thongBaoNghiRepository,
                                LopHocPhanRepository lopHocPhanRepository,
@@ -42,13 +43,24 @@ public class ThongBaoNghiService {
                 hocKyService, currentUser, null);
     }
 
-    @Autowired
     public ThongBaoNghiService(ThongBaoNghiRepository thongBaoNghiRepository,
                                LopHocPhanRepository lopHocPhanRepository,
                                GiangVienRepository giangVienRepository,
                                SinhVienRepository sinhVienRepository,
                                HocKyService hocKyService, CurrentUser currentUser,
                                ThongBaoService thongBaoService) {
+        this(thongBaoNghiRepository, lopHocPhanRepository, giangVienRepository,
+                sinhVienRepository, hocKyService, currentUser, thongBaoService, null);
+    }
+
+    @Autowired
+    public ThongBaoNghiService(ThongBaoNghiRepository thongBaoNghiRepository,
+                               LopHocPhanRepository lopHocPhanRepository,
+                               GiangVienRepository giangVienRepository,
+                               SinhVienRepository sinhVienRepository,
+                               HocKyService hocKyService, CurrentUser currentUser,
+                               ThongBaoService thongBaoService,
+                               AttendanceAlertService attendanceAlertService) {
         this.thongBaoNghiRepository = thongBaoNghiRepository;
         this.lopHocPhanRepository = lopHocPhanRepository;
         this.giangVienRepository = giangVienRepository;
@@ -56,6 +68,7 @@ public class ThongBaoNghiService {
         this.hocKyService = hocKyService;
         this.currentUser = currentUser;
         this.thongBaoService = thongBaoService;
+        this.attendanceAlertService = attendanceAlertService;
     }
 
     @Transactional(readOnly = true)
@@ -112,6 +125,9 @@ public class ThongBaoNghiService {
         if (thongBaoService != null) {
             thongBaoService.classSessionCancelled(saved);
         }
+        if (attendanceAlertService != null) {
+            attendanceAlertService.kiemTraVaCapNhatCanhBaoChoLop(lop.getId());
+        }
         return map(saved);
     }
 
@@ -120,7 +136,11 @@ public class ThongBaoNghiService {
         ThongBaoNghi thongBao = thongBaoNghiRepository
                 .findByIdAndLopHocPhanGiangVienId(id, giangVien.getId())
                 .orElseThrow(() -> ApiException.notFound("Thông báo nghỉ không tồn tại"));
+        Long lopId = thongBao.getLopHocPhan().getId();
         thongBaoNghiRepository.delete(thongBao);
+        if (attendanceAlertService != null) {
+            attendanceAlertService.kiemTraVaCapNhatCanhBaoChoLop(lopId);
+        }
     }
 
     private RegistrationDtos.ThongBaoNghiDto map(ThongBaoNghi thongBao) {

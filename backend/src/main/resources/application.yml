@@ -63,3 +63,11 @@ app:
     # Mẫu số tỷ lệ chuyên cần: SO_BUOI_DA_DIEM_DANH (thực tế đã điểm danh) hoặc SO_BUOI_QUY_DINH
     mau-so-chuyen-can: ${ATTENDANCE_MAU_SO_CHUYEN_CAN:SO_BUOI_DA_DIEM_DANH}
     ghi-chu-quy-che: ${ATTENDANCE_GHI_CHU_QUY_CHE:Chính sách quy đổi muộn sang vắng, xử lý vắng có phép và mẫu số tỷ lệ chuyên cần đang áp dụng cấu hình dự kiến và chờ Chủ dự án phê duyệt chính thức.}
+    # QLSV-71: Cấu hình cảnh báo vắng quá ngưỡng (chờ Chủ dự án phê duyệt quy chế chính thức)
+    # Mặc định tắt (false); chỉ kích hoạt cảnh báo khi có ngưỡng xác nhận cho môn/lớp hoặc tập trung.
+    canh-bao-kich-hoat: ${ATTENDANCE_CANH_BAO_KICH_HOAT:false}
+    # Ngưỡng số buổi vắng cấu hình tập trung (mặc định để trống)
+    nguong-so-buoi-vang: ${ATTENDANCE_NGUONG_SO_BUOI_VANG:}
+    # Ngưỡng tỷ lệ vắng (%) cấu hình tập trung (mặc định để trống)
+    nguong-ty-le-vang: ${ATTENDANCE_NGUONG_TY_LE_VANG:}
+    ghi-chu-nguong: ${ATTENDANCE_GHI_CHU_NGUONG:Quy chế ngưỡng số buổi vắng và tỷ lệ vắng để kích hoạt cảnh báo chuyên cần chưa được Chủ dự án chốt chính thức. Hệ thống chỉ kích hoạt cảnh báo khi có ngưỡng xác nhận cho môn/lớp hoặc tập trung.}

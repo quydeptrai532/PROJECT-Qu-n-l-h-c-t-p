@@ -43,5 +43,7 @@ public interface ThongBaoNghiRepository extends JpaRepository<ThongBaoNghi, Long
 
     Optional<ThongBaoNghi> findByIdAndLopHocPhanGiangVienId(Long id, Long giangVienId);
 
+    List<ThongBaoNghi> findByLopHocPhanId(Long lopHocPhanId);
+
     void deleteByLopHocPhanId(Long lopHocPhanId);
 }
